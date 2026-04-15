@@ -1,0 +1,1 @@
+CreateConVar("mw2_score_limit", "7500", {FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "Sets the score limit for the HUD.")
