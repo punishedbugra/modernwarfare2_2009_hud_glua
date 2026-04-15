@@ -3,6 +3,7 @@
 local LastScoreState = "tied"
 local NearEndTriggered = false
 local MusicTriggered = false
+local MW2_ANNOUNCER_DEBUG = false
 
 -- Helper to play sounds with toggle checks
 local function PlayAnnouncerSound(path, isMusic)
@@ -11,15 +12,90 @@ local function PlayAnnouncerSound(path, isMusic)
     else
         if not GetConVar("mw2_enable_announcer"):GetBool() then return end
     end
-    
+
+    if MW2_ANNOUNCER_DEBUG then
+        print("[ANNOUNCER] PLAY:", path)
+    end
+
     surface.PlaySound(path)
+end
+
+-- Resolve announcer sound with language + suffix fallback
+local function GetAnnouncerSound(basePath, keys)
+    local ply = LocalPlayer()
+    if not IsValid(ply) then return nil end
+
+    local faction = ply:GetNW2String("MW2_Faction", "")
+    if faction == "" then
+        faction = cookie.GetString("MW2_SelectedFaction", "rangers")
+    end
+
+    if not FACTIONS or not FACTIONS[faction] then
+        if MW2_ANNOUNCER_DEBUG then
+            print("[ANNOUNCER] Invalid faction:", faction)
+        end
+        return nil
+    end
+
+    local voice = FACTIONS[faction].voice
+    local lang = GetConVar("gmod_language"):GetString() or "en"
+
+    local function tryLang(l)
+        if MW2_ANNOUNCER_DEBUG then
+            print("[ANNOUNCER] Trying language:", l)
+        end
+
+        for _, key in ipairs(keys) do
+
+            -- suffix search
+            for i = 1, 99 do
+                local suffix = (i < 10 and "0" .. i or tostring(i))
+                local path = "announcer/" .. l .. "/" .. voice .. "/mp/" .. voice .. "_1mc_" .. key .. "_" .. suffix .. ".wav"
+
+				print("[ANNOUNCER] CHECKING:", path)
+
+                if file.Exists("sound/" .. path, "GAME") then
+                    if MW2_ANNOUNCER_DEBUG then
+                        print("[ANNOUNCER] FOUND (suffix):", path)
+                    end
+                    return path
+                end
+            end
+
+            -- fallback no suffix
+            local path = "announcer/" .. l .. "/" .. voice .. "/mp/" .. voice .. "_1mc_" .. key .. ".wav"
+
+			print("[ANNOUNCER] CHECKING:", path)
+
+            if file.Exists("sound/" .. path, "GAME") then
+                if MW2_ANNOUNCER_DEBUG then
+                    print("[ANNOUNCER] FOUND (base):", path)
+                end
+                return path
+            end
+
+            if MW2_ANNOUNCER_DEBUG then
+                print("[ANNOUNCER] NOT FOUND:", key, "in", l, "voice:", voice)
+            end
+        end
+
+        return nil
+    end
+
+    local result = tryLang(lang) or tryLang("en")
+
+    if MW2_ANNOUNCER_DEBUG then
+        print("[ANNOUNCER] FINAL RESULT:", result or "NONE")
+    end
+
+    return result
 end
 
 hook.Add("Think", "MW2_Announcer_Score_Think", function()
     local ply = LocalPlayer()
     if not IsValid(ply) then return end
 
-    -- 1. Retrieve current faction and short tag
+    -- 1. Retrieve current faction and voice tag
     local currentFaction = ply:GetNW2String("MW2_Faction", "")
     if currentFaction == "" then
         currentFaction = cookie.GetString("MW2_SelectedFaction", "rangers")
@@ -27,8 +103,8 @@ hook.Add("Think", "MW2_Announcer_Score_Think", function()
 
     if not FACTIONS or not FACTIONS[currentFaction] then return end
     
-    local facShort = FACTIONS[currentFaction].short
-    local basePath = "announcer/" .. facShort .. "/" .. facShort .. "_"
+    local factionVoice = FACTIONS[currentFaction].voice
+    local basePath = "announcer/" .. factionVoice .. "/" .. factionVoice .. "_"
 
     -- 2. Calculate Scores
     local lpScore = math.max(0, ply:Frags()) * 100
@@ -69,24 +145,14 @@ hook.Add("Think", "MW2_Announcer_Score_Think", function()
     if not NearEndTriggered then
         if (limit - lpScore) <= 300 and lpScore > topEnemyScore and lpScore > 0 then
             NearEndTriggered = true
-            local winLines = {
-                "1mc_winning_fight_01.mp3",
-                "1mc_winning_01.mp3",
-                "1mc_winning_02.mp3",
-                "1mc_winning_03.mp3"
-            }
-            PlayAnnouncerSound(basePath .. winLines[math.random(#winLines)], false)
+			local sound = GetAnnouncerSound(basePath, { "winning_fight", "winning" })
+
+			if sound then PlayAnnouncerSound(sound, false) end
 
         elseif (limit - topEnemyScore) <= 300 and topEnemyScore > lpScore and topEnemyScore > 0 then
             NearEndTriggered = true
-            local loseLines = {
-                "1mc_losing_fight_01.mp3",
-                "1mc_losing_fight_02.mp3",
-                "1mc_losing_01.mp3",
-                "1mc_losing_02.mp3",
-                "1mc_losing_03.mp3"
-            }
-            PlayAnnouncerSound(basePath .. loseLines[math.random(#loseLines)], false)
+			local sound = GetAnnouncerSound(basePath, { "losing_fight", "losing" })
+			if sound then PlayAnnouncerSound(sound, false) end
         end
     end
 
@@ -101,16 +167,18 @@ hook.Add("Think", "MW2_Announcer_Score_Think", function()
     if currentState ~= LastScoreState then
         if currentState == "winning" then
             if lpScore == 100 and topEnemyScore == 0 then
-                local aheadSounds = {"1mc_ahead_01.mp3", "1mc_lead_taken_01.mp3"}
-                PlayAnnouncerSound(basePath .. aheadSounds[math.random(#aheadSounds)], false)
+				local sound = GetAnnouncerSound(basePath, { "ahead", "lead_taken" })
+				if sound then PlayAnnouncerSound(sound, false) end
             else
-                PlayAnnouncerSound(basePath .. "1mc_lead_taken_01.mp3", false)
+				local sound = GetAnnouncerSound(basePath, { "lead_taken" })
+				if sound then PlayAnnouncerSound(sound, false) end
             end
         elseif currentState == "losing" then
-            PlayAnnouncerSound(basePath .. "1mc_lead_lost_01.mp3", false)
+			local sound = GetAnnouncerSound(basePath, { "lead_lost" })
+			if sound then PlayAnnouncerSound(sound, false) end
         elseif currentState == "tied" and (lpScore > 0 or topEnemyScore > 0) then
-            local tiedLines = {"1mc_tied_01.mp3", "1mc_tied_02.mp3"}
-            PlayAnnouncerSound(basePath .. tiedLines[math.random(#tiedLines)], false)
+			local sound = GetAnnouncerSound(basePath, { "tied" })
+			if sound then PlayAnnouncerSound(sound, false) end
         end
         
         LastScoreState = currentState

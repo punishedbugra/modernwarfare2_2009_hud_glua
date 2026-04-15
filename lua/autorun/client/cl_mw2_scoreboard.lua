@@ -278,16 +278,16 @@ hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
     local fData = FACTIONS and FACTIONS[myFactionKey] or { name = "Friendly", color = Color(100, 100, 100) }
     local hy    = friendlyStartY + S(CFG.STATS_HEADER_Y)
 
-    draw.SimpleText("Deaths", "MW2_Scoreboard_Text", barRight - S(CFG.OFF_DEATHS),  hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
-    draw.SimpleText("Assists", "MW2_Scoreboard_Text", barRight - S(CFG.OFF_ASSISTS), hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
-    draw.SimpleText("Kills", "MW2_Scoreboard_Text", barRight - S(CFG.OFF_KILLS),   hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
-    draw.SimpleText("Score", "MW2_Scoreboard_Text", barRight - S(CFG.OFF_SCORE),   hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
+    draw.SimpleText(language.GetPhrase( "MW2_CGAME_SB_DEATHS" ), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_DEATHS),  hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
+    draw.SimpleText(language.GetPhrase( "MW2_CGAME_SB_ASSISTS" ), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_ASSISTS), hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
+    draw.SimpleText(language.GetPhrase( "MW2_CGAME_SB_KILLS" ), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_KILLS),   hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
+    draw.SimpleText(language.GetPhrase( "MW2_CGAME_SB_SCORE" ), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_SCORE),   hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
 
     -- Friendly team section
     surface.SetMaterial(hMatIcon)
     surface.SetDrawColor(255, 255, 255, 255)
     surface.DrawTexturedRect(barX + S(CFG.ICON_X_OFF), friendlyStartY + S(CFG.ICON_Y_OFF), S(CFG.ICON_SIZE), S(CFG.ICON_SIZE))
-    draw.SimpleText(fData.name .. " (" .. #friendlyPlayers .. ")", "MW2_Scoreboard_Text", barX + S(CFG.FAC_NAME_X), friendlyStartY + S(CFG.FAC_NAME_Y), Color(255, 255, 255, 255))
+    draw.SimpleText( language.GetPhrase( fData.short ) .. " (" .. #friendlyPlayers .. ")", "MW2_Scoreboard_Text", barX + S(CFG.FAC_NAME_X), friendlyStartY + S(CFG.FAC_NAME_Y), Color(255, 255, 255, 255))
 
     for i, ply in ipairs(friendlyPlayers) do
         local rowY = friendlyStartY + (i - 1) * (barH + S(CFG.ROW_GAP))
@@ -303,7 +303,7 @@ hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
         surface.SetMaterial(eMatIcon)
         surface.SetDrawColor(255, 255, 255, 255)
         surface.DrawTexturedRect(barX + S(CFG.ICON_X_OFF), enemyStartY + S(CFG.ICON_Y_OFF), S(CFG.ICON_SIZE), S(CFG.ICON_SIZE))
-        draw.SimpleText(eData.name .. " (" .. #enemyPlayers .. ")", "MW2_Scoreboard_Text", barX + S(CFG.FAC_NAME_X), enemyStartY + S(CFG.FAC_NAME_Y), Color(255, 255, 255, 255))
+        draw.SimpleText( language.GetPhrase( eData.short ) .. " (" .. #enemyPlayers .. ")", "MW2_Scoreboard_Text", barX + S(CFG.FAC_NAME_X), enemyStartY + S(CFG.FAC_NAME_Y), Color(255, 255, 255, 255))
 
         for i, ply in ipairs(enemyPlayers) do
             local rowY = enemyStartY + (i - 1) * (barH + S(CFG.ROW_GAP))

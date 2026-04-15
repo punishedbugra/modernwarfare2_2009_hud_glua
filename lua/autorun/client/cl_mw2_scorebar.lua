@@ -99,12 +99,54 @@ local ARROW_CFG = {
 
 -- fucktion data
 FACTIONS = {
-    ["rangers"]      = { name = "Rangers",   short = "US", scoreIcon = "factions/faction_128_rangers_fade.png",      color = Color(100, 105, 80)  },
-    ["taskforce141"] = { name = "TF 141",    short = "UK", scoreIcon = "factions/faction_128_taskforce141_fade.png", color = Color(70, 80, 80)    },
-    ["seals"]        = { name = "SEALs",     short = "NS", scoreIcon = "factions/faction_128_seals_fade.png",        color = Color(65, 90, 130)   },
-    ["ussr"]         = { name = "Spetsnaz",  short = "RU", scoreIcon = "factions/faction_128_ussr_fade.png",          color = Color(105, 40, 45)   },
-    ["arab"]         = { name = "OpFor",     short = "AB", scoreIcon = "factions/faction_128_arab_fade.png",          color = Color(105, 60, 45)   },
-    ["militia"]      = { name = "Militia",   short = "PG", scoreIcon = "factions/faction_128_militia_fade.png",       color = Color(100, 10, 15)   },
+    ["rangers"]      = {
+		name = "MW2_MP_US_ARMY_NAME",
+		short = "MW2_MP_US_ARMY_SHORT_NAME",
+		voice = "US",
+		scoreIcon = "factions/faction_128_rangers_fade.png",
+		color = Color(100, 105, 80)
+	},
+	
+    ["taskforce141"] = {
+		name = "MW2_MP_TASKFORCE_NAME",
+		short = "MW2_MP_TASKFORCE_SHORT_NAME",
+		voice = "UK",
+		scoreIcon = "factions/faction_128_taskforce141_fade.png",
+		color = Color(70, 80, 80)
+	},
+	
+    ["seals"]        = {
+		name = "MW2_MP_SEALS_UDT_NAME",
+		short = "MW2_MP_SEALS_UDT_SHORT_NAME",
+		voice = "NS",
+		scoreIcon = "factions/faction_128_seals_fade.png",
+		color = Color(65, 90, 130)
+	},
+	
+    ["ussr"]         = {
+		name = "MW2_MP_SPETSNAZ_NAME",
+		short = "MW2_MPUI_SPETSNAZ_SHORT",
+		voice = "RU",
+		scoreIcon = "factions/faction_128_ussr_fade.png",
+		color = Color(105, 40, 45)
+	},
+	
+    ["arab"]         = {
+		name = "MW2_MP_OPFOR_NAME",
+		short = "MW2_MPUI_OPFOR_SHORT",
+		voice = "AB",
+		scoreIcon = "factions/faction_128_arab_fade.png",
+		color = Color(105, 60, 45)
+	},
+	
+    ["militia"]      = {
+		name = "MW2_MP_MILITIA_NAME",
+		short = "MW2_MP_MILITIA_SHORT_NAME",
+		voice = "PG",
+		scoreIcon = "factions/faction_128_militia_fade.png",
+		color = Color(100, 10, 15)
+	},
+	
 }
 
 local function SyncFactionPersistence()

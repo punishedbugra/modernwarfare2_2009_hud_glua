@@ -38,13 +38,13 @@ if CLIENT then
         local ct = CurTime()
         scoreVal   = scoreVal + amount
         scoreAlpha = 255
-        scoreTime  = ct + 3.2
+        scoreTime  = ct + 1.5
         scoreStart = ct
     end
 
     -- [[ SQUEEZED SCORE DRAW ]]
     local function DrawSqueezedScore(val, x, y, alpha)
-        local textCol   = Color(205, 215, 95, alpha)
+        local textCol   = Color(255, 255, 50, alpha)
         local shadowCol = Color(0, 0, 0, alpha * 0.8)
         local s_val     = tostring(val)
         local partPlus  = "+"
@@ -69,8 +69,10 @@ if CLIENT then
         local curX = x - (totalW / 2)
 
         local function DrawComponent(txt, font, px, py)
-            draw.SimpleText(txt, font, px + SX(1), py + SY(1), shadowCol, 0, 1)
-            draw.SimpleText(txt, font, px,          py,          textCol,   0, 1)
+            -- draw.SimpleText(txt, font, px + SX(1), py + SY(1), shadowCol, 0, 1)
+            -- draw.SimpleText(txt, font, px,          py,          textCol,   0, 1)
+			
+			draw.SimpleTextOutlined(txt, font, px, py, textCol, 0, 1, 1.0, shadowCol)
             surface.SetFont(font)
             local w = surface.GetTextSize(txt)
             return w
