@@ -184,8 +184,9 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
     for i = 1, #str do
         local char     = str:sub(i, i)
         local nextChar = str:sub(i + 1, i + 1)
-        draw.SimpleText(char, font, runX + SX(2), y + SY(2), Color(0, 0, 0, color.a * 0.8), 0, 0)
-        draw.SimpleText(char, font, runX,         y,         color,                          0, 0)
+        -- draw.SimpleText(char, font, runX + SX(2), y + SY(2), Color(0, 0, 0, color.a * 0.8), 0, 0)
+        -- draw.SimpleText(char, font, runX,         y,         color,                          0, 0)
+		draw.SimpleTextOutlined(char, font, runX, y, color, 0, 0, 1.5, Color(0,0,0, color.a * 0.8))
         local w = surface.GetTextSize(char)
         if i < #str then
             local gap

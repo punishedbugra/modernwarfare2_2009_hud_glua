@@ -253,13 +253,15 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
         local outlineCol = Color(0, 0, 0, color.a)
 
         if o > 0 then
-            draw.SimpleText(char, font, runX - o, y,     outlineCol, 0, 0)
-            draw.SimpleText(char, font, runX + o, y,     outlineCol, 0, 0)
-            draw.SimpleText(char, font, runX,     y - o, outlineCol, 0, 0)
-            draw.SimpleText(char, font, runX,     y + o, outlineCol, 0, 0)
+            -- draw.SimpleText(char, font, runX - o, y,     outlineCol, 0, 0)
+            -- draw.SimpleText(char, font, runX + o, y,     outlineCol, 0, 0)
+            -- draw.SimpleText(char, font, runX,     y - o, outlineCol, 0, 0)
+            -- draw.SimpleText(char, font, runX,     y + o, outlineCol, 0, 0)
         end
 
-        draw.SimpleText(char, font, runX, y, color, 0, 0)
+        -- draw.SimpleText(char, font, runX, y, color, 0, 0)
+		
+		draw.SimpleTextOutlined(char, font, runX, y, color, 0, 0, 1.5, outlineCol)
 
         local w = surface.GetTextSize(char)
         if i < #str then
@@ -333,7 +335,9 @@ hook.Add("HUDPaint", "MW2_ScoreBar", function()
         statusCol  = COL_LOSING
     end
 
-    draw.SimpleText(statusText, "MW2_Status", barX + SX(CFG.STATUS_X), barY + SY(CFG.STATUS_Y), statusCol, TEXT_ALIGN_LEFT)
+    -- draw.SimpleText(statusText, "MW2_Status", barX + SX(CFG.STATUS_X), barY + SY(CFG.STATUS_Y), statusCol, TEXT_ALIGN_LEFT)
+	
+	draw.SimpleTextOutlined(statusText, "MW2_Status", barX + SX(CFG.STATUS_X), barY + SY(CFG.STATUS_Y), statusCol, 0, 0, 1.5, Color(0,0,0))
 end)
 
 hook.Add("HUDPaint", "MW2_Scorebar_Merged", function()
