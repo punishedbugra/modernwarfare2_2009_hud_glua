@@ -36,7 +36,7 @@ local CFG = {
     OBJ_ERASE     = 0.7,
 }
 
-CreateClientConVar("mw2_selected_gamemode", "1", true, false)
+CreateClientConVar("mw2_selected_gamemode", "war", true, false)
 
 local function MW2_RS_InitFonts()
     surface.CreateFont("MW2_RS_H_Pri", { font = "Carbon Regular", size = S(CFG.HEADER_FONT_SIZE), weight = 800,  blursize = 0, antialias = true,  outline = false })
@@ -59,26 +59,61 @@ hook.Add("OnScreenSizeChanged", "MW2_RS_ReinitFonts", function()
 end)
 
 local MW2_RS_GM_NAMES = {
-    "Team Deathmatch",
-    "Free-for-All",
-    "Domination",
-    "Search and Destroy",
+    "war", -- Team Deathmatch
+    "dm", -- Free-for-All
+    "dom", -- Domination
+    "sd", -- Search & Destroy
+    "sab", -- Sabotage
+    "ctf", -- Capture the Flag
+    "hq", -- Headquarters
+    "oneflag", -- One Flag CTF
+    "arena", -- Arena
+    "dd", -- Demolition
+    "gtnw", -- Global Thermonuclear War
 }
 
 local MW2_RS_GLITCH = { "a", "¶", "Ð", "ق", "§", "ð", "œ", "ش", "Ф" }
 
 local MW2_RS_OBJECTIVES = {
-    ["Team Deathmatch"]    = "MW2_MP_OBJ_WAR_HINT",
-    ["Free-for-All"]       = "MW2_MP_OBJ_DM_HINT",
-    ["Domination"]         = "MW2_OBJECTIVES_DOM_HINT",
-    ["Search and Destroy"] = "MW2_OBJECTIVES_SD_ATTACKER_HINT",
+    ["war"] = "MW2_MP_OBJ_WAR_HINT", -- TDM
+    ["dm"] = "MW2_MP_OBJ_DM_HINT", -- FFA
+    ["dom"] = "MW2_OBJECTIVES_DOM_HINT", -- Domination
+    ["sd"] = "MW2_OBJECTIVES_SD_ATTACKER_HINT", -- Search & Destroy
+    ["sab"] = "MW2_OBJECTIVES_SAB_HINT", -- Sabotage
+    ["ctf"] = "MW2_OBJECTIVES_CTF_HINT", -- Capture the Flag
+    ["hq"] = "MW2_OBJECTIVES_KOTH_HINT", -- Headquarters
+    ["oneflag"] = "MW2_OBJECTIVES_ONE_FLAG_ATTACKER_HINT", -- One Flag CTF
+    ["arena"] = "MW2_OBJECTIVES_ARENA_HINT", -- Arena
+    ["dd"] = "MW2_OBJECTIVES_SD_ATTACKER_HINT", -- Demolition
+    ["gtnw"] = "MW2_OBJECTIVES_GTNW_HINT", -- Global Thermonuclear War
 }
 
 local MW2_RS_ANNOUNCER_TAG = {
-    ["Team Deathmatch"]    = "team_deathmtch",
-    ["Free-for-All"]       = "freeforall",
-    ["Domination"]         = "domination",
-    ["Search and Destroy"] = "searchdestroy",
+    ["war"] = "team_deathmtch",
+    ["dm"] = "freeforall",
+    ["dom"] = "domination",
+    ["sd"] = "searchdestroy",
+    ["sab"] = "sabotage",
+    ["ctf"] = "captureflag",
+    ["hq"] = "headquarters",
+    ["oneflag"] = "one_flag",
+    ["arena"] = "arena",
+    ["dd"] = "demolition",
+    ["gtnw"] = "gtw",
+}
+
+local MW2_RS_ANNOUNCER_BOOST = {
+    ["war"] = "boost",
+    ["dm"] = "boost",
+    ["dom"] = "capture_obj",
+    ["sd"] = "objs_destroy",
+    ["sab"] = "obj_destroy",
+    ["ctf"] = "capture_obj",
+    ["hq"] = "capture_obj",
+    ["oneflag"] = "capture_obj",
+    ["arena"] = "boost",
+    ["dd"] = "objs_destroy",
+    ["gtnw"] = "capture_obj",
 }
 
 local MW2_RS_SPAWN_MUSIC = {
@@ -91,7 +126,7 @@ local MW2_RS_SPAWN_MUSIC = {
 }
 
 local OBJ_GLOW           = Color(0, 220, 80)
-local COUNTDOWN_DURATION = 10
+local COUNTDOWN_DURATION = 3
 
 local rs_active      = false
 local rs_movement_locked = false
@@ -111,6 +146,7 @@ local rs_h_done    = false
 local rs_h_blanks  = {}
 local rs_h_nxt_e   = 0
 local rs_h_edone   = false
+local rs_h_erase_sound_played = false
 
 local rs_remaining = COUNTDOWN_DURATION
 local rs_last_dig  = -1
@@ -125,19 +161,39 @@ local rs_o_erasing = false
 local rs_o_blanks  = {}
 local rs_o_nxt_e   = 0
 local rs_o_edone   = false
+local rs_o_erase_sound_played = false
 
 local rs_bw         = 0
 local rs_boost_done = false
 local rs_locked_ang = nil
+local rs_gamemode	= "war"
 
 local sb_open = false
 
 hook.Add("ScoreboardShow", "MW2_RS_SBShow", function() sb_open = true  end)
 hook.Add("ScoreboardHide", "MW2_RS_SBHide", function() sb_open = false end)
 
+local function utf8_sub(str, startChar, endChar)
+    startChar = startChar or 1
+    endChar = endChar or -1
+
+    local startByte = utf8.offset(str, startChar)
+    local endByte = utf8.offset(str, endChar + 1)
+
+    if startByte then
+        if endByte then
+            return string.sub(str, startByte, endByte - 1)
+        else
+            return string.sub(str, startByte)
+        end
+    end
+
+    return ""
+end
+
 local function BlankStep(blanks, text, n)
     local avail = {}
-    for i = 1, #text do
+    for i = 1, utf8.len(text) do
         local found = false
         for _, b in ipairs(blanks) do
             if b == i then found = true; break end
@@ -153,21 +209,22 @@ end
 
 local function ApplyBlanks(text, blanks)
     local chars = {}
-    for i = 1, #text do chars[i] = text:sub(i, i) end
+    for i = 1, utf8.len(text) do chars[i] = utf8.sub(text, i, i) end
     for _, b in ipairs(blanks) do
         if chars[b] then chars[b] = " " end
     end
     return table.concat(chars)
 end
 
-local function DrawCODText(text, pri, sec, shd, x, y, glow)
-    draw.SimpleText(text, sec, x + 2, y + 1, glow,                     TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-    draw.SimpleText(text, shd, x + 2, y + 1, Color(0, 0, 0, 255),      TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-    draw.SimpleText(text, pri, x,     y,     Color(255, 255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-	
-	-- draw.DrawText( text, sec, x + 2, y + 1, glow, TEXT_ALIGN_CENTER )
-	-- draw.DrawText( text, shd, x + 2, y + 1, Color(0, 0, 0, 255), TEXT_ALIGN_CENTER )
-	-- draw.DrawText( text, p, x, y, Color(255, 255, 255, 255), TEXT_ALIGN_CENTER )
+local function DrawCODText(text, fullText, pri, sec, shd, x, y, glow)
+    surface.SetFont(pri)
+    local fullW = surface.GetTextSize(fullText)
+
+    local startX = x - fullW / 2
+
+    draw.SimpleText(text, sec, startX + 2, y + 1, glow, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    draw.SimpleText(text, shd, startX + 2, y + 1, Color(0,0,0,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    draw.SimpleText(text, pri, startX,     y,     Color(255,255,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
 end
 
 local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, align, squeezeOneBefore, outlineW)
@@ -225,6 +282,7 @@ local function MW2_RS_Start(gamemode)
     rs_seq_start   = CurTime()
     rs_phase_start = CurTime()
     rs_boost_done  = false
+	rs_gamemode    = gamemode
 
     -- Lock and explicitly reset angle pitch/roll upon respawn
     rs_locked_ang = lp:EyeAngles()
@@ -242,21 +300,23 @@ local function MW2_RS_Start(gamemode)
     rs_h_done    = false
     rs_h_blanks  = {}
     rs_h_edone   = false
+	rs_h_erase_sound_played = false
 
     rs_remaining = COUNTDOWN_DURATION
     rs_last_dig  = -1
     rs_dig_scale = 1.0
 
-    rs_o_text    = language.GetPhrase( MW2_RS_OBJECTIVES[gamemode] or "MW2_MP_OBJ_WAR_HINT" )
+    rs_o_text    = language.GetPhrase( MW2_RS_OBJECTIVES[gamemode] or MW2_RS_OBJECTIVES["war"] )
     rs_o_written = 0
     rs_o_done    = false
     rs_o_erasing = false
     rs_o_blanks  = {}
     rs_o_edone   = false
+	rs_o_erase_sound_played = false
 
     rs_bw = 1
 
-    if MW2_RS_SPAWN_MUSIC[rs_short] then
+    if GetConVar("mw2_enable_music"):GetBool() and MW2_RS_SPAWN_MUSIC[rs_short] then
         surface.PlaySound(MW2_RS_SPAWN_MUSIC[rs_short])
     end
 
@@ -294,12 +354,14 @@ hook.Add("Think", "MW2_RS_Think", function()
         end
 
         if not rs_h_done then
-            local interval = CFG.HEADER_WRITE / math.max(1, #rs_h_text)
-            if now >= rs_h_nxt_w and rs_h_written < #rs_h_text then
+            -- local interval = CFG.HEADER_WRITE / math.max(1, utf8.len(rs_h_text))
+			local CHARS_PER_SEC = 16
+			local interval = 1 / CHARS_PER_SEC
+            if now >= rs_h_nxt_w and rs_h_written < utf8.len(rs_h_text) then
                 rs_h_written = rs_h_written + 1
                 rs_h_nxt_w   = now + interval
                 surface.PlaySound("hud/cod_write.mp3")
-                if rs_h_written >= #rs_h_text then rs_h_done = true end
+                if rs_h_written >= utf8.len(rs_h_text) then rs_h_done = true end
             end
         end
 
@@ -320,17 +382,20 @@ hook.Add("Think", "MW2_RS_Think", function()
 
         if not rs_boost_done then
             rs_boost_done = true
-			local sound = MW2HUD_GetAnnouncerSound(basePath, { "boost" })
+			local sound = MW2HUD_GetAnnouncerSound(basePath, { MW2_RS_ANNOUNCER_BOOST[rs_gamemode] or MW2_RS_ANNOUNCER_BOOST["war"] })
 			if sound then MW2HUD_PlayAnnouncerSound(sound, false) end
         end
 
         if not rs_h_edone then
-            local step_iv = erase_t / math.max(1, math.ceil(#rs_h_text / 5))
+            local step_iv = erase_t / math.max(1, math.ceil(utf8.len(rs_h_text) / 5))
             if now >= rs_h_nxt_e then
                 rs_h_nxt_e = now + step_iv
                 BlankStep(rs_h_blanks, rs_h_text, 5)
-                surface.PlaySound("hud/cod_dissapear.mp3")
-                if #rs_h_blanks >= #rs_h_text then rs_h_edone = true end
+                if not rs_h_erase_sound_played then
+					surface.PlaySound("hud/cod_dissapear.mp3")
+					rs_h_erase_sound_played = true
+				end
+                if #rs_h_blanks >= utf8.len(rs_h_text) then rs_h_edone = true end
             end
         end
 
@@ -355,12 +420,14 @@ hook.Add("Think", "MW2_RS_Think", function()
         local et = math.max(0.01, CFG.OBJ_ERASE)
 
         if not rs_o_done then
-            local interval = wt / math.max(1, #rs_o_text)
-            if now >= rs_o_nxt_w and rs_o_written < #rs_o_text then
+            local interval = wt / math.max(1, utf8.len(rs_o_text))
+			local CHARS_PER_SEC = 12
+			local interval = 1 / CHARS_PER_SEC
+            if now >= rs_o_nxt_w and rs_o_written < utf8.len(rs_o_text) then
                 rs_o_written = rs_o_written + 1
                 rs_o_nxt_w   = now + interval
                 surface.PlaySound("hud/cod_write.mp3")
-                if rs_o_written >= #rs_o_text then
+                if rs_o_written >= utf8.len(rs_o_text) then
                     rs_o_done    = true
                     rs_o_hang_st = now
                 end
@@ -372,12 +439,15 @@ hook.Add("Think", "MW2_RS_Think", function()
             end
         else
             if not rs_o_edone then
-                local step_iv = et / math.max(1, math.ceil(#rs_o_text / 5))
+                local step_iv = et / math.max(1, math.ceil(utf8.len(rs_o_text) / 5))
                 if now >= rs_o_nxt_e then
                     rs_o_nxt_e = now + step_iv
                     BlankStep(rs_o_blanks, rs_o_text, 5)
-                    surface.PlaySound("hud/cod_dissapear.mp3")
-                    if #rs_o_blanks >= #rs_o_text then rs_o_edone = true end
+                    if not rs_o_erase_sound_played then
+						surface.PlaySound("hud/cod_dissapear.mp3")
+						rs_o_erase_sound_played = true
+					end
+                    if #rs_o_blanks >= utf8.len(rs_o_text) then rs_o_edone = true end
                 end
             else
                 MW2_RS_End()
@@ -403,8 +473,8 @@ hook.Add("HUDPaint", "MW2_RS_Draw", function()
     if rs_phase == "faction" or rs_phase == "erase_faction" then
         local disp
         if rs_phase == "faction" then
-            disp = rs_h_text:sub(1, rs_h_written)
-            if not rs_h_done and rs_h_written < #rs_h_text then
+            disp = utf8_sub(rs_h_text, 0, rs_h_written)
+            if not rs_h_done and rs_h_written < utf8.len(rs_h_text) then
                 disp = disp .. MW2_RS_GLITCH[math.random(1, #MW2_RS_GLITCH)]
             end
         else
@@ -412,7 +482,7 @@ hook.Add("HUDPaint", "MW2_RS_Draw", function()
         end
 
         if disp ~= "" then
-            DrawCODText(disp, "MW2_RS_H_Pri", "MW2_RS_H_Sec", "MW2_RS_H_Shd", hx, hy, rs_glow)
+            DrawCODText(disp, rs_h_text, "MW2_RS_H_Pri", "MW2_RS_H_Sec", "MW2_RS_H_Shd", hx, hy, rs_glow)
         end
 
         if rs_icon_mat and rs_icon_alpha > 0 then
@@ -451,8 +521,8 @@ hook.Add("HUDPaint", "MW2_RS_Draw", function()
 
         local disp
         if not rs_o_done then
-            disp = rs_o_text:sub(1, rs_o_written)
-            if rs_o_written < #rs_o_text then
+            disp = utf8_sub(rs_o_text, 0, rs_o_written)
+            if rs_o_written < utf8.len(rs_o_text) then
                 disp = disp .. MW2_RS_GLITCH[math.random(1, #MW2_RS_GLITCH)]
             end
         elseif rs_o_erasing then
@@ -462,7 +532,7 @@ hook.Add("HUDPaint", "MW2_RS_Draw", function()
         end
 
         if disp ~= "" then
-            DrawCODText(disp, "MW2_RS_O_Pri", "MW2_RS_O_Sec", "MW2_RS_O_Shd", ox, oy, OBJ_GLOW)
+            DrawCODText(disp, rs_o_text, "MW2_RS_O_Pri", "MW2_RS_O_Sec", "MW2_RS_O_Shd", ox, oy, OBJ_GLOW)
         end
     end
 end)
@@ -533,8 +603,9 @@ local function MW2_RS_OpenConfirm()
     btn_go:SetText("#MW2HUD.RoundStart.Yes")
     btn_go.DoClick = function()
         rs_confirm:Remove()
-        local idx = GetConVar("mw2_selected_gamemode"):GetInt()
-        local gm  = MW2_RS_GM_NAMES[math.Clamp(idx, 1, #MW2_RS_GM_NAMES)]
+
+        local gm = GetConVar("mw2_selected_gamemode"):GetString()
+
         net.Start("MW2_StartRound")
             net.WriteString(gm)
         net.SendToServer()
@@ -556,22 +627,45 @@ end)
 
 hook.Add("PopulateToolMenu", "MW2_RS_PopMenu", function()
 	
-	if not LocalPlayer():IsAdmin() then return end
+	-- if not LocalPlayer():IsAdmin() then return end
 
     spawnmenu.AddToolMenuOption("Options", "MW2", "MW2_RoundStart", "#MW2HUD.RoundStart", "", "", function(panel)
         panel:ClearControls()
 
-        local gm_combo = vgui.Create("DComboBox")
-        gm_combo:AddChoice("Team Deathmatch",    1)
-        gm_combo:AddChoice("Free-for-All",       2)
-        gm_combo:AddChoice("Domination",         3)
-        gm_combo:AddChoice("Search and Destroy", 4)
-        local cur_idx = GetConVar("mw2_selected_gamemode"):GetInt()
-        gm_combo:SetValue(MW2_RS_GM_NAMES[math.Clamp(cur_idx, 1, 4)] or MW2_RS_GM_NAMES[1])
-        gm_combo.OnSelect = function(_, _, _, data)
-            RunConsoleCommand("mw2_selected_gamemode", tostring(data))
-        end
-        panel:AddItem(gm_combo)
+		local gm_combo = vgui.Create("DComboBox")
+
+		local choices = {
+			{ "#MW2_MPUI_WAR", "war" },
+			{ "#MW2_MPUI_DEATHMATCH", "dm" },
+			{ "#MW2_MPUI_DOMINATION", "dom" },
+			{ "#MW2_MPUI_SEARCH_AND_DESTROY", "sd" },
+			{ "#MW2_MPUI_SABOTAGE", "sab" },
+			{ "#MW2_MPUI_CAPTURE_THE_FLAG", "ctf" },
+			{ "#MW2_MPUI_HEADQUARTERS", "hq" },
+			{ "#MW2_MPUI_ONE_FLAG", "oneflag" },
+			{ "#MW2_MPUI_ARENA", "arena" },
+			{ "#MW2_MPUI_DD", "dd" },
+			{ "#MW2_MPUI_GTNW", "gtnw" },
+		}
+
+		for _, v in ipairs(choices) do
+			gm_combo:AddChoice(v[1], v[2])
+		end
+
+		local cur_mode = GetConVar("mw2_selected_gamemode"):GetString()
+
+		for _, v in ipairs(choices) do
+			if v[2] == cur_mode then
+				gm_combo:SetValue(v[1])
+				break
+			end
+		end
+
+		gm_combo.OnSelect = function(_, _, text, data)
+			RunConsoleCommand("mw2_selected_gamemode", data)
+		end
+
+		panel:AddItem(gm_combo)
 
         local start_btn = vgui.Create("DButton")
         start_btn:SetText("#MW2HUD.RoundStart.Start")

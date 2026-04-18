@@ -80,7 +80,7 @@ hook.Add("Think", "MW2_Announcer_Score_Think", function()
     if currentState ~= LastScoreState then
         if currentState == "winning" then
             if lpScore == 100 and topEnemyScore == 0 then
-				local sound = MW2HUD_GetAnnouncerSound(basePath, { "ahead", "lead_taken" })
+				local sound = MW2HUD_GetAnnouncerSound(basePath, { "lead_taken" })
 				if sound then MW2HUD_PlayAnnouncerSound(sound, false) end
             else
 				local sound = MW2HUD_GetAnnouncerSound(basePath, { "lead_taken" })
