@@ -167,6 +167,8 @@ end)
 
 -- [[ RENDERING ]]
 hook.Add("HUDPaint", "MW2_Killfeed_Draw", function()
+    if not GetConVar("mw2_enable_killfeed"):GetBool() then return end
+
     local ct = CurTime()
 
     -- Scale all layout values uniformly at draw time.

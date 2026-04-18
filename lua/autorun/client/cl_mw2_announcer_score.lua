@@ -3,93 +3,6 @@
 local LastScoreState = "tied"
 local NearEndTriggered = false
 local MusicTriggered = false
-local MW2_ANNOUNCER_DEBUG = false
-
--- Helper to play sounds with toggle checks
-local function PlayAnnouncerSound(path, isMusic)
-    if isMusic then
-        if not GetConVar("mw2_enable_music"):GetBool() then return end
-    else
-        if not GetConVar("mw2_enable_announcer"):GetBool() then return end
-    end
-
-    if MW2_ANNOUNCER_DEBUG then
-        print("[ANNOUNCER] PLAY:", path)
-    end
-
-    surface.PlaySound(path)
-end
-
--- Resolve announcer sound with language + suffix fallback
-local function GetAnnouncerSound(basePath, keys)
-    local ply = LocalPlayer()
-    if not IsValid(ply) then return nil end
-
-    local faction = ply:GetNW2String("MW2_Faction", "")
-    if faction == "" then
-        faction = cookie.GetString("MW2_SelectedFaction", "rangers")
-    end
-
-    if not FACTIONS or not FACTIONS[faction] then
-        if MW2_ANNOUNCER_DEBUG then
-            print("[ANNOUNCER] Invalid faction:", faction)
-        end
-        return nil
-    end
-
-    local voice = FACTIONS[faction].voice
-    local lang = GetConVar("gmod_language"):GetString() or "en"
-
-    local function tryLang(l)
-        if MW2_ANNOUNCER_DEBUG then
-            print("[ANNOUNCER] Trying language:", l)
-        end
-
-        for _, key in ipairs(keys) do
-
-            -- suffix search
-            for i = 1, 99 do
-                local suffix = (i < 10 and "0" .. i or tostring(i))
-                local path = "announcer/" .. l .. "/" .. voice .. "/mp/" .. voice .. "_1mc_" .. key .. "_" .. suffix .. ".wav"
-
-				print("[ANNOUNCER] CHECKING:", path)
-
-                if file.Exists("sound/" .. path, "GAME") then
-                    if MW2_ANNOUNCER_DEBUG then
-                        print("[ANNOUNCER] FOUND (suffix):", path)
-                    end
-                    return path
-                end
-            end
-
-            -- fallback no suffix
-            local path = "announcer/" .. l .. "/" .. voice .. "/mp/" .. voice .. "_1mc_" .. key .. ".wav"
-
-			print("[ANNOUNCER] CHECKING:", path)
-
-            if file.Exists("sound/" .. path, "GAME") then
-                if MW2_ANNOUNCER_DEBUG then
-                    print("[ANNOUNCER] FOUND (base):", path)
-                end
-                return path
-            end
-
-            if MW2_ANNOUNCER_DEBUG then
-                print("[ANNOUNCER] NOT FOUND:", key, "in", l, "voice:", voice)
-            end
-        end
-
-        return nil
-    end
-
-    local result = tryLang(lang) or tryLang("en")
-
-    if MW2_ANNOUNCER_DEBUG then
-        print("[ANNOUNCER] FINAL RESULT:", result or "NONE")
-    end
-
-    return result
-end
 
 hook.Add("Think", "MW2_Announcer_Score_Think", function()
     local ply = LocalPlayer()
@@ -101,9 +14,9 @@ hook.Add("Think", "MW2_Announcer_Score_Think", function()
         currentFaction = cookie.GetString("MW2_SelectedFaction", "rangers")
     end
 
-    if not FACTIONS or not FACTIONS[currentFaction] then return end
+    if not MW2Factions or not MW2Factions[currentFaction] then return end
     
-    local factionVoice = FACTIONS[currentFaction].voice
+    local factionVoice = MW2Factions[currentFaction].voice
     local basePath = "announcer/" .. factionVoice .. "/" .. factionVoice .. "_"
 
     -- 2. Calculate Scores
@@ -134,10 +47,10 @@ hook.Add("Think", "MW2_Announcer_Score_Think", function()
     if not MusicTriggered then
         if (limit - lpScore) <= 300 and lpScore > 0 then
             MusicTriggered = true
-            PlayAnnouncerSound("music/hz_mp_opfor_victory.mp3", true)
+            MW2HUD_PlayAnnouncerSound("music/hz_mp_opfor_victory.mp3", true)
         elseif (limit - topEnemyScore) <= 300 and topEnemyScore > 0 then
             MusicTriggered = true
-            PlayAnnouncerSound("music/hz_mp_timeout_losing.mp3", true)
+            MW2HUD_PlayAnnouncerSound("music/hz_mp_timeout_losing.mp3", true)
         end
     end
 
@@ -145,14 +58,14 @@ hook.Add("Think", "MW2_Announcer_Score_Think", function()
     if not NearEndTriggered then
         if (limit - lpScore) <= 300 and lpScore > topEnemyScore and lpScore > 0 then
             NearEndTriggered = true
-			local sound = GetAnnouncerSound(basePath, { "winning_fight", "winning" })
+			local sound = MW2HUD_GetAnnouncerSound(basePath, { "winning_fight", "winning" })
 
-			if sound then PlayAnnouncerSound(sound, false) end
+			if sound then MW2HUD_PlayAnnouncerSound(sound, false) end
 
         elseif (limit - topEnemyScore) <= 300 and topEnemyScore > lpScore and topEnemyScore > 0 then
             NearEndTriggered = true
-			local sound = GetAnnouncerSound(basePath, { "losing_fight", "losing" })
-			if sound then PlayAnnouncerSound(sound, false) end
+			local sound = MW2HUD_GetAnnouncerSound(basePath, { "losing_fight", "losing" })
+			if sound then MW2HUD_PlayAnnouncerSound(sound, false) end
         end
     end
 
@@ -167,18 +80,18 @@ hook.Add("Think", "MW2_Announcer_Score_Think", function()
     if currentState ~= LastScoreState then
         if currentState == "winning" then
             if lpScore == 100 and topEnemyScore == 0 then
-				local sound = GetAnnouncerSound(basePath, { "ahead", "lead_taken" })
-				if sound then PlayAnnouncerSound(sound, false) end
+				local sound = MW2HUD_GetAnnouncerSound(basePath, { "ahead", "lead_taken" })
+				if sound then MW2HUD_PlayAnnouncerSound(sound, false) end
             else
-				local sound = GetAnnouncerSound(basePath, { "lead_taken" })
-				if sound then PlayAnnouncerSound(sound, false) end
+				local sound = MW2HUD_GetAnnouncerSound(basePath, { "lead_taken" })
+				if sound then MW2HUD_PlayAnnouncerSound(sound, false) end
             end
         elseif currentState == "losing" then
-			local sound = GetAnnouncerSound(basePath, { "lead_lost" })
-			if sound then PlayAnnouncerSound(sound, false) end
+			local sound = MW2HUD_GetAnnouncerSound(basePath, { "lead_lost" })
+			if sound then MW2HUD_PlayAnnouncerSound(sound, false) end
         elseif currentState == "tied" and (lpScore > 0 or topEnemyScore > 0) then
-			local sound = GetAnnouncerSound(basePath, { "tied" })
-			if sound then PlayAnnouncerSound(sound, false) end
+			local sound = MW2HUD_GetAnnouncerSound(basePath, { "tied" })
+			if sound then MW2HUD_PlayAnnouncerSound(sound, false) end
         end
         
         LastScoreState = currentState

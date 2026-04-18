@@ -1,5 +1,6 @@
 -- [[ cl_mw2_killmedals.lua ]]
 
+-- [[ GLOBALS ]]
 -- Global flag for the Challenge System to read
 _G.MW2_MedalsActive = _G.MW2_MedalsActive or false
 
@@ -21,6 +22,7 @@ if CLIENT then
     local MEDAL_CFG = {
         X_OFFSET = 0,    -- Horizontal offset from center
         Y_OFFSET = -250, -- Vertical offset (Match this with cl_mw2_challenge.lua)
+        DRAW_OUTLINES = true, -- Set to false to remove black outlines/shadows
     }
 
     local medalQueue  = {}
@@ -48,7 +50,14 @@ if CLIENT then
         MW2_InitMedalFonts()
     end)
 
+    -- [[ MEDAL QUEUE LOGIC ]]
     local function AddMedalToQueue(txt, hasIcon, pts, desc, isSpecial)
+        if _G.MW2_AddScore then _G.MW2_AddScore(pts) end
+        
+        -- Check for the CVar before queuing
+        local cv = GetConVar("mw2_enable_medals")
+        if cv and not cv:GetBool() then return end
+
         table.insert(medalQueue, {
             text      = txt,
             hasIcon   = hasIcon,
@@ -56,7 +65,6 @@ if CLIENT then
             desc      = desc,
             isSpecial = isSpecial
         })
-        if _G.MW2_AddScore then _G.MW2_AddScore(pts) end
     end
 
     -- [[ NETWORK RECEIVERS (Communicating with Challenge System) ]]
@@ -119,17 +127,14 @@ if CLIENT then
                 elseif age > FADE_OUT_START then
                     local progress = (age - FADE_OUT_START) / EXIT_DURATION
                     alpha = math.Clamp((1 - progress) * 255, 0, 255)
-                    scale = Lerp(progress, 1.0, 2.0)
+                    scale = Lerp(progress, 1.0, 3.0)
                 end
 
-                -- Center of screen plus uniform-scaled offsets.
-                -- S() on both axes keeps the medal centered correctly on any
-                -- aspect ratio — no more horizontal drift on 21:9.
                 local cx = (ScrW() / 2) + S(MEDAL_CFG.X_OFFSET)
                 local cy = (ScrH() / 2) + S(MEDAL_CFG.Y_OFFSET)
 
                 local colWhite      = Color(255, 255, 255, alpha)
-                local colBlack      = Color(0, 0, 0, alpha)
+                local colBlack      = Color(0, 0, 0, alpha * 0.8)
                 local colYellow     = Color(COL_POINTS.r, COL_POINTS.g, COL_POINTS.b, alpha)
                 local colRedGlow    = Color(195, 110, 115, alpha * 0.5)
                 local colRedOutline = Color(180, 0, 0, alpha * 0.8)
@@ -141,8 +146,6 @@ if CLIENT then
 
                 cam.PushModelMatrix(mat)
                     -- 1. Draw Medal Icon
-                    -- S() for both position offsets and size keeps the icon
-                    -- square and correctly placed on any aspect ratio.
                     if activeMedal.hasIcon then
                         surface.SetDrawColor(255, 255, 255, alpha)
                         surface.SetMaterial(Material("icons/crosshair_red.png", "smooth"))
@@ -150,19 +153,22 @@ if CLIENT then
                     end
 
                     -- 2. Draw Medal Text
-                    -- draw.SimpleText( language.GetPhrase("MW2_" .. activeMedal.text ), "MW2_MedalGlow",    cx, cy, colRedGlow,    1, 1)
-                    -- draw.SimpleText( language.GetPhrase("MW2_" .. activeMedal.text ), "MW2_MedalOutline", cx, cy, colRedOutline, 1, 1)
-                    -- draw.SimpleText( language.GetPhrase("MW2_" .. activeMedal.text ), "MW2_MedalPrimary", cx, cy, colWhite,      1, 1)
-					
-					draw.SimpleTextOutlined(language.GetPhrase("MW2_" .. activeMedal.text ), "MW2_MedalPrimary", cx, cy, colWhite, 1, 1, 1.5, colRedGlow)
+                    local localizedText = language.GetPhrase("MW2_" .. activeMedal.text)
+                    draw.SimpleText(localizedText, "MW2_MedalGlow",    cx, cy, colRedGlow,    1, 1)
+                    draw.SimpleText(localizedText, "MW2_MedalOutline", cx, cy, colRedOutline, 1, 1)
+                    draw.SimpleText(localizedText, "MW2_MedalPrimary", cx, cy, colWhite,      1, 1)
 
                     -- 3. Draw Description or Points
                     if activeMedal.desc then
+                        local localizedDesc = language.GetPhrase("MW2_" .. activeMedal.desc)
+                        
                         if activeMedal.isSpecial then
-                            -- draw.SimpleText( language.GetPhrase("MW2_" .. activeMedal.desc ), "MW2_MedalDesc", cx, cy + S(35), colWhite, 1, 1)
-							draw.SimpleTextOutlined( language.GetPhrase("MW2_" .. activeMedal.desc ), "MW2_MedalDesc", cx, cy + S(35), colWhite, 1, 1, 1.0, colBlack)
+                            if MEDAL_CFG.DRAW_OUTLINES then
+                                draw.SimpleText(localizedDesc, "MW2_MedalDesc", cx + 1, cy + S(35) + 1, colBlack, 1, 1)
+                            end
+                            draw.SimpleText(localizedDesc, "MW2_MedalDesc", cx, cy + S(35), colWhite, 1, 1)
                         else
-                            local descText     =  language.GetPhrase("MW2_" .. activeMedal.desc ) .. " ("
+                            local descText     = localizedDesc .. " ("
                             local pointsText   = "+" .. activeMedal.points
                             local bracketClose = ")"
 
@@ -172,19 +178,22 @@ if CLIENT then
                             local totalW = w1 + w2 + surface.GetTextSize(bracketClose)
 
                             local startX = cx - (totalW / 2)
-                            -- draw.SimpleText(descText,     "MW2_MedalDesc", startX,           cy + S(35), colWhite,  0, 1)
-                            -- draw.SimpleText(pointsText,   "MW2_MedalDesc", startX + w1,      cy + S(35), colYellow, 0, 1)
-                            -- draw.SimpleText(bracketClose, "MW2_MedalDesc", startX + w1 + w2, cy + S(35), colWhite,  0, 1)
-							
-							draw.SimpleTextOutlined(descText, "MW2_MedalDesc", startX, cy + S(35), colWhite, 0, 1, 1.0, colBlack)
-							draw.SimpleTextOutlined(pointsText, "MW2_MedalDesc", startX + w1, cy + S(35), colYellow, 0, 1, 1.0, colBlack)
-							draw.SimpleTextOutlined(bracketClose, "MW2_MedalDesc", startX + w1 + w2, cy + S(35), colWhite, 0, 1, 1.0, colBlack)
+                            
+                            if MEDAL_CFG.DRAW_OUTLINES then
+                                draw.SimpleText(descText,     "MW2_MedalDesc", startX + 1,        cy + S(35) + 1, colBlack, 0, 1)
+                                draw.SimpleText(pointsText,   "MW2_MedalDesc", startX + w1 + 1,   cy + S(35) + 1, colBlack, 0, 1)
+                                draw.SimpleText(bracketClose, "MW2_MedalDesc", startX + w1 + w2 + 1, cy + S(35) + 1, colBlack, 0, 1)
+                            end
+
+                            draw.SimpleText(descText,     "MW2_MedalDesc", startX,           cy + S(35), colWhite,  0, 1)
+                            draw.SimpleText(pointsText,   "MW2_MedalDesc", startX + w1,      cy + S(35), colYellow, 0, 1)
+                            draw.SimpleText(bracketClose, "MW2_MedalDesc", startX + w1 + w2, cy + S(35), colWhite,  0, 1)
                         end
                     else
-                        -- draw.SimpleText("+" .. activeMedal.points, "MW2_MedalPoints", cx + S(2), cy + S(37), Color(0, 0, 0, alpha * 0.8), 1, 1)
-                        -- draw.SimpleText("+" .. activeMedal.points, "MW2_MedalPoints", cx,         cy + S(35), colYellow,                   1, 1)
-
-						draw.SimpleTextOutlined("+" .. activeMedal.points, "MW2_MedalPoints", cx, cy + S(35), colYellow, 1, 1, 1.1, Color(0, 0, 0, alpha * 0.8))
+                        if MEDAL_CFG.DRAW_OUTLINES then
+                            draw.SimpleText("+" .. activeMedal.points, "MW2_MedalPoints", cx + S(2), cy + S(37), colBlack, 1, 1)
+                        end
+                        draw.SimpleText("+" .. activeMedal.points, "MW2_MedalPoints", cx,         cy + S(35), colYellow, 1, 1)
                     end
                 cam.PopModelMatrix()
             end

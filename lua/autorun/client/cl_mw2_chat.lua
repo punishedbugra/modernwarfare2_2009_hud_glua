@@ -72,20 +72,33 @@ local function OpenMW2Chat(isTeam)
     MW2_ChatEntry:MakePopup()
     MW2_ChatEntry:RequestFocus()
     
+    -- Allow common command prefixes to be handled correctly
     MW2_ChatEntry.OnKeyCodeTyped = function(self, code)
         if code == KEY_ESCAPE then
             CloseMW2Chat()
             return true 
         elseif code == KEY_ENTER then
             local txt = self:GetText()
-            if txt and txt ~= "" then RunConsoleCommand(chatType, txt) end
+            
+            if txt and txt:Trim() ~= "" then
+                -- This ensures that hooks like "OnPlayerChat" and "PlayerSay" 
+                -- are triggered properly for commands like !help or /menu
+                RunConsoleCommand(chatType, txt) 
+            end
+            
             CloseMW2Chat()
             return true
         end
     end
 
+    -- Fix: Ensure clicking away or losing focus cleans up the UI properly
     MW2_ChatEntry.OnFocusChanged = function(self, gained)
-        if not gained then timer.Simple(0, function() CloseMW2Chat() end) end
+        if not gained then 
+            timer.Simple(0, function() 
+                if not IsValid(self) then return end
+                CloseMW2Chat() 
+            end) 
+        end
     end
 end
 

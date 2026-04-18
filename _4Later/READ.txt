@@ -1,0 +1,5 @@
+- Contains *all* announcer sounds, including Workshop Lua files. Kept as a backup. Should not be added to Workshop addon.
+- On gmpublisher, add the following to the "Ignored File Patterns", excluding quotes:
+	∟ _4Later/**
+
+This excludes the folder from being picked up by the publishing tool, and won't add it to Workshop.

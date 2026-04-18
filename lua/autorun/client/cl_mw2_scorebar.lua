@@ -98,62 +98,73 @@ local ARROW_CFG = {
 }
 
 -- fucktion data
-FACTIONS = {
-    ["rangers"]      = {
+MW2Factions = {
+    ["rangers"] = {
 		name = "MW2_MP_US_ARMY_NAME",
 		short = "MW2_MP_US_ARMY_SHORT_NAME",
 		voice = "US",
+		spawnIcon = "factions/faction_128_rangers.png",
 		scoreIcon = "factions/faction_128_rangers_fade.png",
-		color = Color(100, 105, 80)
+		color = Color(100, 105, 80),
+		glow = Color(240, 230, 190)
 	},
 	
     ["taskforce141"] = {
 		name = "MW2_MP_TASKFORCE_NAME",
 		short = "MW2_MP_TASKFORCE_SHORT_NAME",
 		voice = "UK",
+		spawnIcon = "factions/faction_128_taskforce141.png",
 		scoreIcon = "factions/faction_128_taskforce141_fade.png",
-		color = Color(70, 80, 80)
+		color = Color(70, 80, 80),
+		glow = Color(225, 225, 255)
 	},
 	
-    ["seals"]        = {
+    ["seals"] = {
 		name = "MW2_MP_SEALS_UDT_NAME",
 		short = "MW2_MP_SEALS_UDT_SHORT_NAME",
 		voice = "NS",
+		spawnIcon = "factions/faction_128_seals.png",
 		scoreIcon = "factions/faction_128_seals_fade.png",
-		color = Color(65, 90, 130)
+		color = Color(65, 90, 130),
+		glow = Color(170, 170, 185)
 	},
 	
-    ["ussr"]         = {
+    ["ussr"] = {
 		name = "MW2_MP_SPETSNAZ_NAME",
 		short = "MW2_MPUI_SPETSNAZ_SHORT",
 		voice = "RU",
+		spawnIcon = "factions/faction_128_ussr.png",
 		scoreIcon = "factions/faction_128_ussr_fade.png",
-		color = Color(105, 40, 45)
+		color = Color(105, 40, 45),
+		glow = Color(185, 140, 120)
 	},
 	
-    ["arab"]         = {
+    ["arab"] = {
 		name = "MW2_MP_OPFOR_NAME",
 		short = "MW2_MPUI_OPFOR_SHORT",
 		voice = "AB",
+		spawnIcon = "factions/faction_128_arab.png",
 		scoreIcon = "factions/faction_128_arab_fade.png",
-		color = Color(105, 60, 45)
+		color = Color(105, 60, 45),
+		glow = Color(220, 180, 150)
 	},
 	
-    ["militia"]      = {
+    ["militia"] = {
 		name = "MW2_MP_MILITIA_NAME",
 		short = "MW2_MP_MILITIA_SHORT_NAME",
 		voice = "PG",
+		spawnIcon = "factions/faction_128_militia.png",
 		scoreIcon = "factions/faction_128_militia_fade.png",
-		color = Color(100, 10, 15)
+		color = Color(100, 10, 15),
+		glow = Color(150, 85, 85)
 	},
-	
 }
 
 local function SyncFactionPersistence()
     local lp = LocalPlayer()
     if not IsValid(lp) then return end
     local saved = cookie.GetString("MW2_SelectedFaction", "rangers")
-    if not FACTIONS[saved] then saved = "rangers" end
+    if not MW2Factions[saved] then saved = "rangers" end
     lp:SetNW2String("MW2_Faction", saved)
     RunConsoleCommand("mw2_setfaction", saved)
 end
@@ -171,7 +182,7 @@ hook.Add("NotifyShouldTransmit", "MW2_SyncFactionOnSpawn", function(ent, should)
 end)
 
 local FACTION_MATS = {}
-for key, data in pairs(FACTIONS) do
+for key, data in pairs(MW2Factions) do
     FACTION_MATS[key] = Material(data.scoreIcon, "smooth")
 end
 
@@ -218,11 +229,11 @@ end)
 
 concommand.Add("set_faction", function(ply, cmd, args)
     local faction = args[1] and string.lower(args[1]) or ""
-    if FACTIONS[faction] then
+    if MW2Factions[faction] then
         LocalPlayer():SetNW2String("MW2_Faction", faction)
         cookie.Set("MW2_SelectedFaction", faction)
         RunConsoleCommand("mw2_setfaction", faction)
-        print("[MW2] Faction set to: " .. FACTIONS[faction].name)
+        print("[MW2] Faction set to: " .. MW2Factions[faction].name)
     else
         print("[MW2] Unknown faction. Valid: rangers, taskforce141, seals, ussr, arab, militia")
     end
@@ -253,15 +264,13 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
         local outlineCol = Color(0, 0, 0, color.a)
 
         if o > 0 then
-            -- draw.SimpleText(char, font, runX - o, y,     outlineCol, 0, 0)
-            -- draw.SimpleText(char, font, runX + o, y,     outlineCol, 0, 0)
-            -- draw.SimpleText(char, font, runX,     y - o, outlineCol, 0, 0)
-            -- draw.SimpleText(char, font, runX,     y + o, outlineCol, 0, 0)
+            draw.SimpleText(char, font, runX - o, y,     outlineCol, 0, 0)
+            draw.SimpleText(char, font, runX + o, y,     outlineCol, 0, 0)
+            draw.SimpleText(char, font, runX,     y - o, outlineCol, 0, 0)
+            draw.SimpleText(char, font, runX,     y + o, outlineCol, 0, 0)
         end
 
-        -- draw.SimpleText(char, font, runX, y, color, 0, 0)
-		
-		draw.SimpleTextOutlined(char, font, runX, y, color, 0, 0, 1.5, outlineCol)
+        draw.SimpleText(char, font, runX, y, color, 0, 0)
 
         local w = surface.GetTextSize(char)
         if i < #str then
@@ -272,13 +281,16 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
 end
 
 hook.Add("HUDPaint", "MW2_ScoreBar", function()
+    if not GetConVar("mw2_enable_scorebar"):GetBool() then return end
+	if not GetConVar("cl_drawhud"):GetBool() then return end
+
     local ply = LocalPlayer()
     if not IsValid(ply) or not ply:Alive() then return end
 
     local currentFaction = ply:GetNW2String("MW2_Faction", "")
     if currentFaction == "" then
         currentFaction = cookie.GetString("MW2_SelectedFaction", "rangers")
-        if not FACTIONS[currentFaction] then currentFaction = "rangers" end
+        if not MW2Factions[currentFaction] then currentFaction = "rangers" end
         ply:SetNW2String("MW2_Faction", currentFaction)
     end
 
@@ -335,12 +347,13 @@ hook.Add("HUDPaint", "MW2_ScoreBar", function()
         statusCol  = COL_LOSING
     end
 
-    -- draw.SimpleText(statusText, "MW2_Status", barX + SX(CFG.STATUS_X), barY + SY(CFG.STATUS_Y), statusCol, TEXT_ALIGN_LEFT)
-	
-	draw.SimpleTextOutlined(statusText, "MW2_Status", barX + SX(CFG.STATUS_X), barY + SY(CFG.STATUS_Y), statusCol, 0, 0, 1.5, Color(0,0,0))
+    draw.SimpleText(statusText, "MW2_Status", barX + SX(CFG.STATUS_X), barY + SY(CFG.STATUS_Y), statusCol, TEXT_ALIGN_LEFT)
 end)
 
 hook.Add("HUDPaint", "MW2_Scorebar_Merged", function()
+    if not GetConVar("mw2_enable_scorebar"):GetBool() then return end
+	if not GetConVar("cl_drawhud"):GetBool() then return end
+
     if not IsValid(LocalPlayer()) then return end
 
     local client = LocalPlayer()
@@ -537,9 +550,13 @@ hook.Add("HUDPaint", "MW2_Scorebar_Merged", function()
     local textGap = S(S_CFG.GAP_OFFSET)
 
     DrawSqueezedText(clientKills,   "MW2_Font", textX, textY,          white, S_CFG.SQUEEZE, S_CFG.SQUEEZE_ONE, 2, S_CFG.SQUEEZE_ONE_BEFORE, S_CFG.OUTLINE_W)
-    DrawSqueezedText(topEnemyKills, "MW2_Font", textX, textY + textGap, white, S_CFG.SQUEEZE, S_CFG.SQUEEZE_ONE, 2, S_CFG.SQUEEZE_ONE_BEFORE, S_CFG.OUTLINE_W)end)
+    DrawSqueezedText(topEnemyKills, "MW2_Font", textX, textY + textGap, white, S_CFG.SQUEEZE, S_CFG.SQUEEZE_ONE, 2, S_CFG.SQUEEZE_ONE_BEFORE, S_CFG.OUTLINE_W)
+end)
 
 hook.Add("HUDPaint", "DrawMyCustomArrow", function()
+    if not GetConVar("mw2_enable_scorebar"):GetBool() then return end
+	if not GetConVar("cl_drawhud"):GetBool() then return end
+
     local scrW, scrH = ScrW(), ScrH()
     local ax = S(ARROW_CFG.x)
     local ay = scrH - S(BASE_H - ARROW_CFG.y)

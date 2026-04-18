@@ -83,6 +83,9 @@ end)
 
 -- [[ RENDERING ENGINE ]]
 hook.Add("HUDPaint", "MW2_DrawChallenges", function()
+	-- if not GetConVar("cl_drawhud"):GetBool() then return end
+	if not GetConVar("cl_drawhud"):GetBool() then return end
+	
     if _G.MW2_MedalsActive then return end
     if not activeNotif then
         if #notificationQueue > 0 then

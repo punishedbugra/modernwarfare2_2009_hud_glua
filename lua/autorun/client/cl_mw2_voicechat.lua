@@ -28,6 +28,7 @@ hook.Add("PlayerEndVoice", "MW2_VoiceEnd", function(ply)
 end)
 
 hook.Add("HUDPaint", "MW2_DrawVoiceChat", function()
+	if not GetConVar("cl_drawhud"):GetBool() then return end
     local yOffset = 0
 
     for ply, _ in pairs(activeSpeakers) do

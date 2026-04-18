@@ -44,6 +44,9 @@ MW2_VisCache = MW2_VisCache or {}
 hook.Add("HUDPaint", "MW2_Minimap_UAV", function()
     local ply = LocalPlayer()
     if not IsValid(ply) or not ply:Alive() then return end
+    
+    if not GetConVar("mw2_enable_minimap"):GetBool() then return end
+	if not GetConVar("cl_drawhud"):GetBool() then return end
 
     local x, y = SX(MAP_CFG.X), SY(MAP_CFG.Y)
     local w, h = S(MAP_CFG.W), S(MAP_CFG.H)
