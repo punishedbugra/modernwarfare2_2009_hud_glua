@@ -9,7 +9,18 @@ local function GetUIScale()
     return math.max(math.min(scaleX, scaleY), 0.5)
 end
 
-local function S(x) return math.Round(x * GetUIScale()) end
+local function S(x)  return math.Round(x * GetUIScale()) end
+local function SX(x) return math.Round(x * GetUIScale()) end
+local function SY(y) return math.Round(y * GetUIScale()) end
+
+local CFG = {
+    TITLE_X         = 960,
+    TITLE_Y         = 205,
+    TITLE_FONT_SIZE = 46,
+    TITLE_WRITE     = 2.1,
+    TITLE_HANG      = 3.0,
+    TITLE_ERASE     = 0.7,
+}
 
 -- [[ TINKERING MENU ]]
 local CHAL_CFG = {
@@ -18,10 +29,23 @@ local CHAL_CFG = {
 }
 
 -- [[ TIMING ]]
-local MEDAL_DURATION = 3.6
+local MEDAL_DURATION = 4
+local HANGTIME = 2
 local FADE_IN_TIME   = 0.1
 local EXIT_DURATION  = 0.4
 local FADE_OUT_START = MEDAL_DURATION - EXIT_DURATION
+
+local headertext_text    = ""
+local headertext_written = 0
+local headertext_nxt_w   = 0
+local headertext_done    = false
+local headertext_hang_st = 0
+local headertext_erasing = false
+local headertext_blanks  = {}
+local headertext_nxt_e   = 0
+local headertext_edone   = false
+local headertext_erase_sound_played = false
+
 
 -- [[ TRACKING DATA & PERSISTENCE ]]
 local STATS_FILE = "mw2_client_progression.json"
@@ -39,6 +63,62 @@ end
 
 local function SaveMW2Stats()
     file.Write(STATS_FILE, util.TableToJSON(MW2_Stats, true))
+end
+
+-- [[ Copied from Round Start ]]
+
+local function utf8_sub(str, startChar, endChar)
+    startChar = startChar or 1
+    endChar = endChar or -1
+
+    local startByte = utf8.offset(str, startChar)
+    local endByte = utf8.offset(str, endChar + 1)
+
+    if startByte then
+        if endByte then
+            return string.sub(str, startByte, endByte - 1)
+        else
+            return string.sub(str, startByte)
+        end
+    end
+
+    return ""
+end
+
+local function BlankStep(blanks, text, n)
+    local avail = {}
+    for i = 1, utf8.len(text) do
+        local found = false
+        for _, b in ipairs(blanks) do
+            if b == i then found = true; break end
+        end
+        if not found then avail[#avail + 1] = i end
+    end
+    for i = 1, math.min(n, #avail) do
+        local idx = math.random(1, #avail)
+        blanks[#blanks + 1] = avail[idx]
+        table.remove(avail, idx)
+    end
+end
+
+local function ApplyBlanks(text, blanks)
+    local chars = {}
+    for i = 1, utf8.len(text) do chars[i] = utf8.sub(text, i, i) end
+    for _, b in ipairs(blanks) do
+        if chars[b] then chars[b] = " " end
+    end
+    return table.concat(chars)
+end
+
+local function DrawCODText(text, fullText, pri, sec, shd, x, y, glow)
+    surface.SetFont(pri)
+    local fullW = surface.GetTextSize(fullText)
+
+    local startX = x - fullW / 2
+
+    draw.SimpleText(text, sec, startX + 2, y + 1, glow, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    draw.SimpleText(text, shd, startX + 2, y + 1, Color(0,0,0,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    draw.SimpleText(text, pri, startX,     y,     Color(255,255,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
 end
 
 -- [[ QUEUE SYSTEM ]]
@@ -70,6 +150,10 @@ end)
 
 -- [[ FONT INIT ]]
 local function MW2_InitChallengeFonts()
+    surface.CreateFont("MW2_ChalHeader_Pri", { font = "Carbon Regular", size = S(CFG.TITLE_FONT_SIZE), weight = 10,  blursize = 0, antialias = true,  outline = false })
+    surface.CreateFont("MW2_ChalHeader_Sec", { font = "Carbon Regular", size = S(CFG.TITLE_FONT_SIZE), weight = 10,  blursize = 5, antialias = true,  outline = false })
+    surface.CreateFont("MW2_ChalHeader_Shd", { font = "Carbon Regular", size = S(CFG.TITLE_FONT_SIZE), weight = 400, blursize = 2, antialias = false, outline = true  })
+
     surface.CreateFont("MW2_ChalHeader",      { font = "Conduit ITC", size = S(50), weight = 800,  antialias = true })
     surface.CreateFont("MW2_ChalHeader_Glow", { font = "Conduit ITC", size = S(52), weight = 1000, blursize = S(12), antialias = true })
     surface.CreateFont("MW2_ChalSub",         { font = "Conduit ITC", size = S(28), weight = 400,  antialias = true })
@@ -82,54 +166,164 @@ hook.Add("OnScreenSizeChanged", "MW2_ReinitChallengeFonts", function()
 end)
 
 -- [[ RENDERING ENGINE ]]
+local MW2_RS_GLITCH = { "a", "¶", "Ð", "ق", "§", "ð", "œ", "ش", "Ф" }
+
+hook.Add("Think", "MW2_Challenge_TextThink", function()
+    if not activeNotif then return end
+
+    local now = CurTime()
+
+    if not headertext_done then
+        local CHARS_PER_SEC = 12
+        local interval = 1 / CHARS_PER_SEC
+
+        if now >= headertext_nxt_w and headertext_written < utf8.len(activeNotif.header) then
+            headertext_written = headertext_written + 1
+            headertext_nxt_w = now + interval
+        end
+
+        if headertext_written >= utf8.len(activeNotif.header) then
+            headertext_done = true
+            headertext_hang_st = now
+        end
+    end
+end)
+
 hook.Add("HUDPaint", "MW2_DrawChallenges", function()
-	-- if not GetConVar("cl_drawhud"):GetBool() then return end
-	if not GetConVar("cl_drawhud"):GetBool() then return end
-	
+    if not GetConVar("cl_drawhud"):GetBool() then return end
     if _G.MW2_MedalsActive then return end
+
     if not activeNotif then
         if #notificationQueue > 0 then
-             activeNotif = table.remove(notificationQueue, 1)
+            activeNotif = table.remove(notificationQueue, 1)
             activeNotif.start = CurTime()
+
+            -- reset animation state
+            headertext_text    = activeNotif.header
+            headertext_written = 0
+            headertext_nxt_w   = CurTime()
+            headertext_done    = false
+            headertext_hang_st = 0
+            headertext_erasing = false
+            headertext_blanks  = {}
+            headertext_nxt_e   = 0
+            headertext_edone   = false
+			headertext_erase_sound_played = false
+
             surface.PlaySound("hud/mp_challengecomplete_metal_2.mp3")
-        else return end
+        else
+            return
+        end
     end
 
-    local age = CurTime() - activeNotif.start
-    if age > MEDAL_DURATION then activeNotif = nil return end
+    local now = CurTime()
+    local age = now - activeNotif.start
 
-    local alpha, scale = 255, 1
-    if age < FADE_IN_TIME then
-        local progress = age / FADE_IN_TIME
-        alpha = progress * 255
-        scale = Lerp(progress, 3.5, 1.0)
-    elseif age > FADE_OUT_START then
-        local progress = (age - FADE_OUT_START) / EXIT_DURATION
-        alpha = math.Clamp((1 - progress) * 255, 0, 255)
-        scale = Lerp(progress, 1.0, 6.0)
+    local ox = SX(CFG.TITLE_X)
+    local oy = SY(CFG.TITLE_Y)
+
+    -- =========================
+    -- WRITE PHASE (type-in)
+    -- =========================
+    if not headertext_done then
+        local CHARS_PER_SEC = 16
+        local interval = 1 / CHARS_PER_SEC
+
+        if now >= headertext_nxt_w and headertext_written < utf8.len(headertext_text) then
+            headertext_written = headertext_written + 1
+            headertext_nxt_w = now + interval
+
+            surface.PlaySound("hud/cod_write.mp3")
+
+            if headertext_written >= utf8.len(headertext_text) then
+                headertext_done = true
+                headertext_hang_st = now
+            end
+        end
     end
 
-    local cx = (ScrW() / 2) + S(CHAL_CFG.X_OFFSET)
-    local cy = (ScrH() / 2) + S(CHAL_CFG.Y_OFFSET)
+    -- =========================
+    -- HOLD PHASE
+    -- =========================
+    if headertext_done and not headertext_erasing then
+        if now >= headertext_hang_st + HANGTIME then
+            headertext_erasing = true
+            headertext_nxt_e = now
+        end
+    end
 
-    local colRed   = Color(200, 30, 30,  alpha)
-    local colWhite = Color(255, 255, 255, alpha)
+    -- =========================
+    -- ERASE PHASE
+    -- =========================
+    if headertext_erasing and not headertext_edone then
+        local erase_time = 0.7
+        local step_iv = erase_time / math.max(1, math.ceil(utf8.len(headertext_text) / 5))
 
-    local mat = Matrix()
-    mat:Translate(Vector(cx, cy, 0))
-    mat:Scale(Vector(scale, scale, 1))
-    mat:Translate(Vector(-cx, -cy, 0))
+        if now >= headertext_nxt_e then
+            headertext_nxt_e = now + step_iv
+            BlankStep(headertext_blanks, headertext_text, 5)
 
-    cam.PushModelMatrix(mat)
-        draw.SimpleText(activeNotif.header, "MW2_ChalHeader_Glow", cx, cy,          colRed,   1, 1)
-        draw.SimpleText(activeNotif.header, "MW2_ChalHeader",       cx, cy,          colWhite, 1, 1)
-        draw.SimpleText(activeNotif.sub,    "MW2_ChalSub",          cx, cy + S(40),  colWhite, 1, 1)
-    cam.PopModelMatrix()
+			if not headertext_erase_sound_played then
+				surface.PlaySound("hud/cod_dissapear.mp3")
+				headertext_erase_sound_played = true
+			end
+
+            if #headertext_blanks >= utf8.len(headertext_text) then
+                headertext_edone = true
+            end
+        end
+    end
+
+    -- =========================
+    -- RENDER TEXT
+    -- =========================
+    local disp
+
+    if not headertext_done then
+        disp = utf8_sub(headertext_text, 0
+		, headertext_written)
+
+        -- glitch effect
+        if headertext_written < utf8.len(headertext_text) then
+            disp = disp .. MW2_RS_GLITCH[math.random(#MW2_RS_GLITCH)]
+        end
+
+    elseif headertext_erasing then
+        disp = ApplyBlanks(headertext_text, headertext_blanks)
+
+    else
+        disp = headertext_text
+    end
+
+    if disp ~= "" then
+        DrawCODText( disp, headertext_text, "MW2_ChalHeader_Pri", "MW2_ChalHeader_Sec", "MW2_ChalHeader_Shd", ox, oy, Color(0,220,80) )
+    end
+
+	-- Subtitle
+	local sub = activeNotif.sub or ""
+
+	local SUB_FADE_TIME = 0.15
+	local subAlpha = 1
+
+	if headertext_erasing then
+		local t = CurTime() - headertext_nxt_e -- reuse erase start moment
+		subAlpha = 1 - math.Clamp(t / SUB_FADE_TIME, 0, 1)
+	end
+
+	if sub ~= "" and subAlpha > 0 then
+		draw.SimpleText( sub, "MW2_ChalSub", ox, oy + S(30), Color(255, 255, 255, math.floor(255 * subAlpha)), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+	end
+
+    -- end notification
+    if age > MEDAL_DURATION then
+        activeNotif = nil
+    end
 end)
 
 -- [[ DEBUG COMMANDS ]]
 concommand.Add("challengeplay", function(ply, cmd, args)
     local key = args[1]
+	local randomchal = ""
     local challenges = {
         ["ghillie1"]   = {"Ghillie in the Mist I", "Get 50 one-shot kills"},
         ["ghillie2"]   = {"Ghillie in the Mist II", "Get 100 one-shot kills"},
@@ -181,6 +375,19 @@ concommand.Add("challengeplay", function(ply, cmd, args)
         ["airborne"]  = {"Airborne", "2 kill streak while in mid-air"}
     }
     if challenges[key] then QueueNotification("debug", challenges[key][1], challenges[key][2]) end
+	
+	if key == "random" then
+		local keys = {}
+
+		for k, _ in pairs(challenges) do
+			table.insert(keys, k)
+		end
+
+		local randomKey = keys[math.random(#keys)]
+		local randomchal = challenges[randomKey]
+
+		QueueNotification("debug", randomchal[1], randomchal[2])
+	end
 end)
 
 concommand.Add("challenge_reset_progress", function()

@@ -126,7 +126,7 @@ local MW2_RS_SPAWN_MUSIC = {
 }
 
 local OBJ_GLOW           = Color(0, 220, 80)
-local COUNTDOWN_DURATION = 3
+local COUNTDOWN_DURATION = 5
 
 local rs_active      = false
 local rs_movement_locked = false
@@ -675,7 +675,14 @@ hook.Add("PopulateToolMenu", "MW2_RS_PopMenu", function()
             MW2_RS_OpenConfirm()
         end
         panel:AddItem(start_btn)
-		
-        panel:ControlHelp("#MW2HUD.RoundStart.Admin")
+
+		-- local matchTimer = panel:NumSlider("#MW2HUD.Admin.MatchTimer", "mw2_matchstart_timer", 3, 15, 0)
+		-- panel:ControlHelp("#MW2HUD.Admin.MatchTimer.desc")
+		-- matchTimer.OnValueChanged = function(self, val)
+			-- local snapped = math.Round(val / 100) * 100
+			-- if snapped ~= val then
+				-- self:SetValue(val)
+			-- end
+		-- end
     end)
 end)
