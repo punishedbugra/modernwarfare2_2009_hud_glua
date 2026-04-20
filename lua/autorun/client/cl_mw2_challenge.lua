@@ -137,7 +137,12 @@ local activeNotif = nil
 local function QueueNotification(id, header, level, sub, subval, pts)
     if id ~= "debug" and MW2_Stats.completed[id] then return end
 
-	if _G.MW2_AddScore and pts > 0 then _G.MW2_AddScore(pts) end
+	if _G.MW2_AddScore and pts > 0 then 
+		timer.Simple( 0.25, function()
+			_G.MW2_AddScore(pts)
+		end)
+	end
+	
 
     table.insert(notificationQueue, {
 		header = header,
@@ -377,15 +382,10 @@ hook.Add("HUDPaint", "MW2_DrawChallenges", function()
 		local lines = string.Split(sub, "\n")
 
 		for i, line in ipairs(lines) do
-			draw.SimpleText(
-				line,
-				"MW2_ChalSub",
-				ox,
-				oy + S(30) + (i - 1) * S(24),
-				Color(255,255,255, math.floor(255 * subAlpha)),
-				TEXT_ALIGN_CENTER,
-				TEXT_ALIGN_TOP
-			)
+			draw.SimpleText( line, "MW2_ChalSub", ox, oy + S(30) + (i - 1) * S(24), Color(255,255,255, math.floor(255 * subAlpha)), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+			
+			-- Outlined recommended, but commented out.
+			-- draw.SimpleTextOutlined( line, "MW2_ChalSub", ox, oy + S(30) + (i - 1) * S(24), Color(255,255,255, math.floor(255 * subAlpha)), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, 1, Color(0,0,0, math.floor(255 * subAlpha)) )
 		end
 	end
 
