@@ -35,6 +35,14 @@ local FADE_IN_TIME   = 0.1
 local EXIT_DURATION  = 0.4
 local FADE_OUT_START = MEDAL_DURATION - EXIT_DURATION
 
+local function GetHeaderDuration(text)
+    local chars = utf8.len(text) or 0
+    local writeTime = chars / 16
+    local hangTime = HANGTIME
+    local eraseTime = 0.7
+    return writeTime + hangTime + eraseTime + 0.5
+end
+
 local headertext_text    = ""
 local headertext_written = 0
 local headertext_nxt_w   = 0
@@ -68,21 +76,22 @@ end
 -- [[ Copied from Round Start ]]
 
 local function utf8_sub(str, startChar, endChar)
-    startChar = startChar or 1
-    endChar = endChar or -1
+    local chars = {}
+    local i = 1
 
-    local startByte = utf8.offset(str, startChar)
-    local endByte = utf8.offset(str, endChar + 1)
-
-    if startByte then
-        if endByte then
-            return string.sub(str, startByte, endByte - 1)
-        else
-            return string.sub(str, startByte)
-        end
+    for p, c in utf8.codes(str) do
+        chars[i] = utf8.char(c)
+        i = i + 1
     end
 
-    return ""
+    endChar = endChar or #chars
+    local out = {}
+
+    for i = startChar, math.min(endChar, #chars) do
+        out[#out + 1] = chars[i]
+    end
+
+    return table.concat(out)
 end
 
 local function BlankStep(blanks, text, n)
@@ -125,10 +134,19 @@ end
 local notificationQueue = {}
 local activeNotif = nil
 
-local function QueueNotification(id, header, sub)
+local function QueueNotification(id, header, level, sub, subval, pts)
     if id ~= "debug" and MW2_Stats.completed[id] then return end
 
-    table.insert(notificationQueue, { header = header, sub = sub, start = 0 })
+	if _G.MW2_AddScore and pts > 0 then _G.MW2_AddScore(pts) end
+
+    table.insert(notificationQueue, {
+		header = header,
+		level  = level,
+		sub    = sub,
+		subval = subval,
+		start  = 0,
+		points = pts
+	})
 
     if id ~= "debug" then
         MW2_Stats.completed[id] = true
@@ -138,14 +156,18 @@ end
 
 -- [[ NETWORK RECEIVERS ]]
 net.Receive("MW2_Challenge_Generic", function()
-    local id = net.ReadString()
+    local id     = net.ReadString()
     local header = net.ReadString()
-    local sub = net.ReadString()
-    QueueNotification(id, header, sub)
+    local level  = net.ReadInt(5)
+    local sub    = net.ReadString()
+    local subval = net.ReadInt(32)
+	local pts    = net.ReadInt(32)
+
+    QueueNotification(id, header, level, sub, subval, pts)
 end)
 
 net.Receive("MW2_Challenge_Flyswatter", function()
-    QueueNotification("flyswatter", "Flyswatter", "Shoot down an enemy helicopter")
+    QueueNotification("flyswatter", "FLYSWATTER", nil, "SHOOT_DOWN_AN_ENEMY_HELICOPTER", nil)
 end)
 
 -- [[ FONT INIT ]]
@@ -177,17 +199,48 @@ hook.Add("Think", "MW2_Challenge_TextThink", function()
         local CHARS_PER_SEC = 12
         local interval = 1 / CHARS_PER_SEC
 
-        if now >= headertext_nxt_w and headertext_written < utf8.len(activeNotif.header) then
+        if now >= headertext_nxt_w and headertext_written < utf8.len(headertext_text) then
             headertext_written = headertext_written + 1
             headertext_nxt_w = now + interval
         end
 
-        if headertext_written >= utf8.len(activeNotif.header) then
+        if headertext_written >= utf8.len(headertext_text) then
             headertext_done = true
             headertext_hang_st = now
         end
     end
 end)
+
+local function BuildChallengeTitle(header, level)
+    local name = header
+
+    local mode = nil
+
+    -- Detect prefixes
+    if string.find(header, "%[KILLS%]") then
+        mode = "MARKSMAN"
+        name = string.Trim(string.Replace(header, "[KILLS] ", ""))
+    elseif string.find(header, "%[HS%]") then
+        mode = "EXPERT"
+        name = string.Trim(string.Replace(header, "[HS] ", ""))
+	else
+		mode = "LEVEL"
+		name = language.GetPhrase("MW2_CHALLENGE_" .. header)
+    end
+
+    -- Build rank name
+    local rank = ""
+    if level and level > 0 then
+        rank = language.GetPhrase("MW2_CHALLENGE_" .. mode .. "_" .. level)
+    end
+
+    if rank == "LEVEL" then
+        rank = mode
+    end
+
+    -- Format: "AK-47: Marksman II"
+    return name .. rank
+end
 
 hook.Add("HUDPaint", "MW2_DrawChallenges", function()
     if not GetConVar("cl_drawhud"):GetBool() then return end
@@ -199,7 +252,7 @@ hook.Add("HUDPaint", "MW2_DrawChallenges", function()
             activeNotif.start = CurTime()
 
             -- reset animation state
-            headertext_text    = activeNotif.header
+            headertext_text    = BuildChallengeTitle(activeNotif.header, activeNotif.level)
             headertext_written = 0
             headertext_nxt_w   = CurTime()
             headertext_done    = false
@@ -209,6 +262,7 @@ hook.Add("HUDPaint", "MW2_DrawChallenges", function()
             headertext_nxt_e   = 0
             headertext_edone   = false
 			headertext_erase_sound_played = false
+			activeNotif.duration = GetHeaderDuration(headertext_text)
 
             surface.PlaySound("hud/mp_challengecomplete_metal_2.mp3")
         else
@@ -300,7 +354,16 @@ hook.Add("HUDPaint", "MW2_DrawChallenges", function()
     end
 
 	-- Subtitle
-	local sub = activeNotif.sub or ""
+	local subKey = language.GetPhrase("MW2_CHALLENGE_" .. (activeNotif.sub or ""))
+	local subVal = activeNotif.subval or 0
+
+	local sub
+
+	if (subVal and subVal > 0) and string.find(subKey, "%%s") then
+		sub = string.format(subKey, subVal)
+	else
+		sub = subKey
+	end
 
 	local SUB_FADE_TIME = 0.15
 	local subAlpha = 1
@@ -311,13 +374,25 @@ hook.Add("HUDPaint", "MW2_DrawChallenges", function()
 	end
 
 	if sub ~= "" and subAlpha > 0 then
-		draw.SimpleText( sub, "MW2_ChalSub", ox, oy + S(30), Color(255, 255, 255, math.floor(255 * subAlpha)), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+		local lines = string.Split(sub, "\n")
+
+		for i, line in ipairs(lines) do
+			draw.SimpleText(
+				line,
+				"MW2_ChalSub",
+				ox,
+				oy + S(30) + (i - 1) * S(24),
+				Color(255,255,255, math.floor(255 * subAlpha)),
+				TEXT_ALIGN_CENTER,
+				TEXT_ALIGN_TOP
+			)
+		end
 	end
 
     -- end notification
-    if age > MEDAL_DURATION then
-        activeNotif = nil
-    end
+	if age > (activeNotif.duration or 4) then
+		activeNotif = nil
+	end
 end)
 
 -- [[ DEBUG COMMANDS ]]
@@ -325,56 +400,13 @@ concommand.Add("challengeplay", function(ply, cmd, args)
     local key = args[1]
 	local randomchal = ""
     local challenges = {
-        ["ghillie1"]   = {"Ghillie in the Mist I", "Get 50 one-shot kills"},
-        ["ghillie2"]   = {"Ghillie in the Mist II", "Get 100 one-shot kills"},
-        ["ghillie3"]   = {"Ghillie in the Mist III", "Get 200 one-shot kills"},
-        ["rpg1"]       = {"Multi-RPG I", "Kill 2 or more enemies with one RPG 5 times"},
-        ["rpg2"]       = {"Multi-RPG II", "Kill 2 or more enemies with one RPG 25 times"},
-        ["rpg3"]       = {"Multi-RPG III", "Kill 2 or more enemies with one RPG 50 times"},
-        ["frag1"]      = {"Multi-Frag I", "Kill 2 or more enemies with one Frag 5 times"},
-        ["frag2"]      = {"Multi-Frag II", "Kill 2 or more enemies with one Frag 25 times"},
-        ["frag3"]      = {"Multi-Frag III", "Kill 2 or more enemies with one Frag 50 times"},
-        ["collateral"] = {"Collateral Damage", "Kill 2 or more enemies with one sniper bullet"},
-        ["fearless"]   = {"Fearless", "Kill 10 enemies in a single match without dying"},
-        ["potato1"]    = {"Hot Potato I", "Kill 5 enemies with thrown back grenades"},
-        ["potato2"]    = {"Hot Potato II", "Kill 10 enemies with thrown back grenades"},
-        ["backstabber"]= {"Backstabber", "Stab an enemy in the back"},
-        ["hardlanding"]= {"Hard Landing", "Kill an enemy that is in mid-air"},
-        ["marksman1"] = {"Marksman I", "Get 100 kills"},
-        ["marksman2"] = {"Marksman II", "Get 250 kills"},
-        ["marksman3"] = {"Marksman III", "Get 500 kills"},
-        ["marksman4"] = {"Marksman IV", "Get 750 kills"},
-        ["marksman5"] = {"Marksman V", "Get 1000 kills"},
-        ["marksman6"] = {"Marksman VI", "Get 3000 kills"},
-        ["marksman7"] = {"Marksman VII", "Get 5000 kills"},
-        ["marksman8"] = {"Marksman VIII", "Get 10000 kills"},
-        ["expert1"]   = {"Expert I", "Get 50 headshot kills"},
-        ["expert2"]   = {"Expert II", "Get 150 headshot kills"},
-        ["expert3"]   = {"Expert III", "Get 300 headshot kills"},
-        ["expert4"]   = {"Expert IV", "Get 750 headshot kills"},
-        ["expert5"]   = {"Expert V", "Get 1500 headshot kills"},
-        ["expert6"]   = {"Expert VI", "Get 2500 headshot kills"},
-        ["expert7"]   = {"Expert VII", "Get 3500 headshot kills"},
-        ["expert8"]   = {"Expert VIII", "Get 5000 headshot kills"},
-        ["grenade1"]  = {"Grenade Kill I", "Kill 100 enemies with grenades"},
-        ["grenade2"]  = {"Grenade Kill II", "Kill 250 enemies with grenades"},
-        ["grenade3"]  = {"Grenade Kill III", "Kill 500 enemies with grenades"},
-        ["crouch1"]   = {"Crouch Shot I", "Kill 50 enemies while crouching"},
-        ["crouch2"]   = {"Crouch Shot II", "Kill 150 enemies while crouching"},
-        ["crouch3"]   = {"Crouch Shot III", "Kill 300 enemies while crouching"},
-        ["flyswatter"]= {"Flyswatter", "Shoot down an enemy helicopter"},
-        ["goodbye"]   = {"Goodbye", "Fall 30 feet or more to your death"},
-        ["basejump"]  = {"Base Jump", "Fall 15 feet or more and survive"},
-        ["renaissance"]={"Renaissance Man", "Kill 3 enemies with 3 different weapons"},
-        ["survivalist"]={"Survivalist", "Survive for 5 minutes straight"},
-        ["thebrink"]  = {"The Brink", "Get 3 kills while near death"},
-        ["thinkfast"] = {"Think Fast", "Kill an enemy with a grenade impact"},
-        ["rival"]     = {"Rival", "Kill the same enemy 5 times"},
-        ["nbk"]       = {"NBK", "Get 3 longshot kills in one life"},
-        ["allpro"]    = {"All Pro", "2 headshots with 1 bullet"},
-        ["airborne"]  = {"Airborne", "2 kill streak while in mid-air"}
+		["ghillie1"] = { "GHILLIE", 1, "DESC_GHILLIE", 50, 1000},
+		["ghillie2"] = { "GHILLIE", 2, "DESC_GHILLIE", 100, 2500},
+		["ghillie3"] = { "GHILLIE", 3, "DESC_GHILLIE", 200, 5000},
+		["flyswatter"] = { "FLYSWATTER", nil, "SHOOT_DOWN_AN_ENEMY_HELICOPTER", nil, 5000},
     }
-    if challenges[key] then QueueNotification("debug", challenges[key][1], challenges[key][2]) end
+	
+    if challenges[key] then QueueNotification("debug", challenges[key][1], challenges[key][2], challenges[key][3], challenges[key][4], challenges[key][5]) end
 	
 	if key == "random" then
 		local keys = {}
@@ -386,7 +418,7 @@ concommand.Add("challengeplay", function(ply, cmd, args)
 		local randomKey = keys[math.random(#keys)]
 		local randomchal = challenges[randomKey]
 
-		QueueNotification("debug", randomchal[1], randomchal[2])
+		QueueNotification("debug", randomchal[1], randomchal[2], randomchal[3], randomchal[4], randomchal[5])
 	end
 end)
 
