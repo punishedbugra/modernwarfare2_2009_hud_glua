@@ -126,7 +126,7 @@ local MW2_RS_SPAWN_MUSIC = {
 }
 
 local OBJ_GLOW           = Color(0, 220, 80)
-local COUNTDOWN_DURATION = 5
+local COUNTDOWN_DURATION = 10
 
 local rs_active      = false
 local rs_movement_locked = false

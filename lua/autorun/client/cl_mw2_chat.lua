@@ -103,7 +103,6 @@ local function OpenMW2Chat(isTeam)
 end
 
 hook.Add("PlayerBindPress", "MW2_Chat_BindPress", function(ply, bind, pressed)
-    if not GetConVar("mw2_enable_chat"):GetBool() then return end
     if not pressed then return end
     if bind == "messagemode" then OpenMW2Chat(false) return true
     elseif bind == "messagemode2" then OpenMW2Chat(true) return true end
@@ -111,10 +110,7 @@ end)
 
 -- [[ RENDERING ]]
 hook.Add("HUDPaint", "MW2_DrawChat", function()
-    if not GetConVar("mw2_enable_chat"):GetBool() then return end
-    if not GetConVar("cl_drawhud"):GetBool() then return end
     local curTime = CurTime()
-	local outlined = GetConVar("mw2_enable_outlinedtext"):GetBool()
 
     -- We calculate these inside the hook using S(x) so they update instantly if resolution changes
     local chatInputY = ScrH() * CHAT_INPUT_Y_RATIO
@@ -209,6 +205,5 @@ net.Receive("MW2_ChatMessage", function()
 end)
 
 hook.Add("HUDShouldDraw", "MW2_HideDefaultChat", function(name)
-    if not GetConVar("mw2_enable_chat"):GetBool() then return end
     if name == "CHudChat" then return false end
 end)

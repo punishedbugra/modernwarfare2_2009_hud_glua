@@ -28,7 +28,7 @@ local CFG = {
     TIMER_Y          = -32,
     TIMER_SHIFT_2DIG = -10,
     TIMER_SHIFT_3DIG = -12,
-    TIMER_OUTLINE_W  = 1.5,
+    TIMER_OUTLINE_W  = 2,
 
     -- Winning / Losing / Tie Text Position
     STATUS_X = 150,
@@ -49,7 +49,7 @@ local SCORES_CFG = {
     SQUEEZE = -4,
     SQUEEZE_ONE = -10,
     SQUEEZE_ONE_BEFORE = -10,
-    OUTLINE_W = 1.5,
+    OUTLINE_W = 2,
 
     -- Score Limit for Bar Scaling
     SCORE_LIMIT = 7500,
@@ -263,17 +263,14 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
         local o        = outlineW or 0
         local outlineCol = Color(0, 0, 0, color.a)
 
-        -- if o > 0 then
-            -- draw.SimpleText(char, font, runX - o, y,     outlineCol, 0, 0)
-            -- draw.SimpleText(char, font, runX + o, y,     outlineCol, 0, 0)
-            -- draw.SimpleText(char, font, runX,     y - o, outlineCol, 0, 0)
-            -- draw.SimpleText(char, font, runX,     y + o, outlineCol, 0, 0)
-			
-        -- end
+        if o > 0 then
+            draw.SimpleText(char, font, runX - o, y,     outlineCol, 0, 0)
+            draw.SimpleText(char, font, runX + o, y,     outlineCol, 0, 0)
+            draw.SimpleText(char, font, runX,     y - o, outlineCol, 0, 0)
+            draw.SimpleText(char, font, runX,     y + o, outlineCol, 0, 0)
+        end
 
-        -- draw.SimpleText(char, font, runX, y, color, 0, 0)
-		
-		draw.SimpleTextOutlined( char, font, runX, y, color, 0, 0, o, outlineCol )
+        draw.SimpleText(char, font, runX, y, color, 0, 0)
 
         local w = surface.GetTextSize(char)
         if i < #str then
@@ -286,7 +283,6 @@ end
 hook.Add("HUDPaint", "MW2_ScoreBar", function()
     if not GetConVar("mw2_enable_scorebar"):GetBool() then return end
 	if not GetConVar("cl_drawhud"):GetBool() then return end
-	local outlined = GetConVar("mw2_enable_outlinedtext"):GetBool()
 
     local ply = LocalPlayer()
     if not IsValid(ply) or not ply:Alive() then return end
@@ -351,7 +347,7 @@ hook.Add("HUDPaint", "MW2_ScoreBar", function()
         statusCol  = COL_LOSING
     end
 
-	draw.SimpleTextOutlined( statusText, "MW2_Status", barX + SX(CFG.STATUS_X), barY + SY(CFG.STATUS_Y), statusCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP, outlined and 1 or 0, Color(0,0,0) )
+    draw.SimpleText(statusText, "MW2_Status", barX + SX(CFG.STATUS_X), barY + SY(CFG.STATUS_Y), statusCol, TEXT_ALIGN_LEFT)
 end)
 
 hook.Add("HUDPaint", "MW2_Scorebar_Merged", function()
