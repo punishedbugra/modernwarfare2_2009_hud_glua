@@ -17,35 +17,22 @@ local function S(x) return math.Round(x * GetUIScale()) end
 local CFG = {
     X_POS = 10,
     Y_POS = 210,
-    SPACING = 26, 
+    SPACING = 26,
     MAX_MESSAGES = 6,
-    LIFETIME = 8,
+    LIFETIME = 6,
 
-    -- 1. CUSTOM ICONS (Headshot, Suicide, Blast, Fall, etc.)
-    ICON_W       = 32,  
-    ICON_H       = 32,  
-    ICON_ALPHA   = 165,
-    ICON_X_MOD   = 20,   -- Manual shift for custom icons
-    ICON_Y_MOD   = 0,   -- Manual shift for custom icons
-
-    -- 2. WEAPON ICONS (Standard Killicons)
-    WEP_ICON_ALPHA = 165,
-    WEP_ICON_X_MOD = 50,
-    WEP_ICON_Y_MOD = 10,
-
-    -- GAP TINKERING
-    GAP_LARGE_L = 10,
-    GAP_LARGE_R = 10,
-    GAP_SMALL_L = -15, 
-    GAP_SMALL_R = 30,
-    SMALL_ICON_THRESHOLD = 52, 
+    ICON_W = 32,
+    ICON_H = 32,
+    ICON_ALPHA = 165,
+    ICON_OFFSET_Y = 0,
 
     TEXT_ALPHA = 155,
-    FONT_SIZE = 30,
+
+    FONT_SIZE = 34,
     
     -- Animation Settings
-    ANIM_TIME = 0.25, 
-    ANIM_RISE = 15,   
+    ANIM_TIME = 0.25, -- How long the fade-in lasts
+    ANIM_RISE = 15,   -- How many pixels it rises from below
 }
 
 -- [[ FONT ]]
@@ -84,70 +71,87 @@ local function GetFactionColor(ent)
     return COL_WHITE
 end
 
--- [[ SPECIAL ICONS REGISTRATION ]]
-local CustomIconMats = {
-    ["MW2_Suicide"]  = Material("killfeed/death_suicide.png", "smooth"),
-    ["MW2_Headshot"] = Material("killfeed/death_headshot.png", "smooth"),
-    ["MW2_Blast"]    = Material("killfeed/death_explosion.png", "smooth"),
-    ["MW2_Fall"]     = Material("killfeed/death_falling.png", "smooth"),
-    ["MW2_Crush"]    = Material("killfeed/death_crush.png", "smooth"),
-    ["MW2_Impale"]   = Material("killfeed/death_impale.png", "smooth")
-}
+-- [[ SPECIAL ICONS ]]
+killicon.Add("MW2_Suicide", "killfeed/death_suicide.png", Color(255, 255, 255, 0))
+killicon.Add("MW2_Headshot", "killfeed/death_headshot.png", Color(255, 255, 255, 0))
 
--- Registry for GMod's system
-for k, _ in pairs(CustomIconMats) do
-    killicon.Add(k, "killfeed/" .. string.lower(string.Replace(k, "MW2_", "death_")) .. ".png", Color(255, 255, 255, 0))
-end
-
--- no default hud
+-- [[ SUPPRESSION OF DEFAULT HUD ]]
 hook.Add("HUDShouldDraw", "MW2_Killfeed_HideDefault", function(name)
+	if not GetConVar("mw2_enable_killfeed"):GetBool() then return end
     if name == "CHudDeathNotice" then return false end
 end)
 
 hook.Add("DrawDeathNotice", "MW2_Killfeed_ForceSuppression", function()
+	if not GetConVar("mw2_enable_killfeed"):GetBool() then return end
     return false
 end)
 
 -- [[ NETWORKING ]]
-net.Receive("MW2_Killfeed_Death", function()
+hook.Add("AddDeathNotice", "MW2_Killfeed_Core", function(attacker, team1, inflictor, victim, team2, flags)
+
     local ct = CurTime()
-    local vEnt = net.ReadEntity()
-    local aEnt = net.ReadEntity()
-    local weaponClass = net.ReadString()
 
-    local isHeadshot = (weaponClass == "MW2_Headshot")
+    local aEnt = IsValid(attacker) and attacker or nil
+    local vEnt = IsValid(victim) and victim or nil
+	local suicided = nil
+	
+	local isHeadshot = vEnt and vEnt.MW2_WasHeadshot == true or false -- Doesn't work atm
 
-    local attackerName = "World"
-    if IsValid(aEnt) then
-        if aEnt:IsPlayer() then attackerName = aEnt:Nick()
-        elseif aEnt:IsNPC() then attackerName = language.GetPhrase(aEnt:GetClass()) or aEnt:GetClass()
-        else attackerName = aEnt:GetClass() end
+    -- fallback: try resolving players by name (IMPORTANT)
+    if not aEnt and isstring(attacker) then
+        for _, ply in ipairs(player.GetAll()) do
+            if ply:Nick() == attacker then
+                aEnt = ply
+                break
+            end
+        end
     end
 
-    local victimName = "Unknown"
-    if IsValid(vEnt) then
-        if vEnt:IsPlayer() then victimName = vEnt:Nick()
-        elseif vEnt:IsNPC() then victimName = language.GetPhrase(vEnt:GetClass()) or vEnt:GetClass()
-        else victimName = vEnt:GetClass() end
+    if not vEnt and isstring(victim) then
+        for _, ply in ipairs(player.GetAll()) do
+            if ply:Nick() == victim then
+                vEnt = ply
+                break
+            end
+        end
     end
 
-    if aEnt == vEnt or not IsValid(aEnt) or aEnt:IsWorld() then
-        attackerName = ""
-    end
+	if ( inflictor == "suicide" ) then
+		attacker = ""
+		suicided = true
+	end
 
     table.insert(KillFeed, {
         type = "kill",
-        attackerName = attackerName,
-        victimName   = victimName,
-        attackerEnt  = aEnt,
-        victimEnt    = vEnt,
-        weaponClass  = weaponClass,
-        spawnTime    = ct,
-        dieTime      = ct + CFG.LIFETIME,
-        isHeadshot   = isHeadshot
+
+        attackerName = isstring(attacker) and attacker or (IsValid(aEnt) and aEnt:Nick() or "World"),
+        victimName   = isstring(victim) and victim or (IsValid(vEnt) and vEnt:Nick() or "Unknown"),
+
+        attackerEnt = aEnt,
+        victimEnt = vEnt,
+
+        weaponClass = suicided and "MW2_Suicide" or inflictor,
+
+        spawnTime = ct,
+        dieTime = ct + CFG.LIFETIME,
+		isHeadshot = isHeadshot
     })
 
-    if #KillFeed > CFG.MAX_MESSAGES then table.remove(KillFeed, 1) end
+    if #KillFeed > CFG.MAX_MESSAGES then
+        table.remove(KillFeed, 1)
+    end
+
+end)
+
+-- Meta Events
+gameevent.Listen("player_connect_client")
+hook.Add("player_connect_client", "MW2_Feed_Join", function(data)
+    table.insert(KillFeed, { type = "meta", msg = string.format( language.GetPhrase("MW2_MP_CONNECTED"), data.name ), spawnTime = CurTime(), dieTime = CurTime() + CFG.LIFETIME })
+end)
+
+gameevent.Listen("player_disconnect")
+hook.Add("player_disconnect", "MW2_Feed_Leave", function(data)
+    table.insert(KillFeed, { type = "meta", msg = string.format( language.GetPhrase("MW2_EXE_LEFTGAME"), data.name ), spawnTime = CurTime(), dieTime = CurTime() + CFG.LIFETIME })
 end)
 
 -- [[ RENDERING ]]
@@ -155,9 +159,18 @@ hook.Add("HUDPaint", "MW2_Killfeed_Draw", function()
     if not GetConVar("mw2_enable_killfeed"):GetBool() then return end
 
     local ct = CurTime()
+
+    -- Scale all layout values uniformly at draw time.
     local xPos = S(CFG.X_POS)
     local yPos = S(CFG.Y_POS)
     local spacing = S(CFG.SPACING)
+    local iconW = S(CFG.ICON_W)
+    local iconH = S(CFG.ICON_H)
+    local iconOffY = S(CFG.ICON_OFFSET_Y)
+    local gap_name = S(10)
+    local gap_icon = S(5)
+    local gap_extra = S(25)
+
     local baseY = ScrH() - yPos
 
     for i = #KillFeed, 1, -1 do
@@ -165,71 +178,80 @@ hook.Add("HUDPaint", "MW2_Killfeed_Draw", function()
         local age = ct - data.spawnTime
         local timeLeft = data.dieTime - ct
 
+		local ICON_BOX_W = iconW
+		local ICON_BOX_H = iconH
+
         if timeLeft <= 0 then
             table.remove(KillFeed, i)
             continue
         end
 
+        -- Calculate Animation and Fading
         local animProgress = math.Clamp(age / CFG.ANIM_TIME, 0, 1)
-        local fadeFactor = (age < CFG.ANIM_TIME) and animProgress or math.Clamp(timeLeft, 0, 1)
+        local fadeFactor = 1
 
-        local cls = data.weaponClass
-        local customMat = CustomIconMats[cls]
-        local isCustom = customMat ~= nil
-        
-        local w, h
-        if isCustom then
-            w, h = CFG.ICON_W, CFG.ICON_H
-        else
-            w, h = killicon.GetSize(cls)
-            w, h = w or 32, h or 32
+        if age < CFG.ANIM_TIME then
+            -- Fade in from below
+            fadeFactor = animProgress
+        elseif timeLeft < 1 then
+            -- Fade out (standard)
+            fadeFactor = math.Clamp(timeLeft, 0, 1)
         end
 
-        local sw, sh = S(w), S(h)
+		-- Check kill icon size
+		local cls = data.isHeadshot and "MW2_Headshot" or data.weaponClass
+		local w, h = killicon.GetSize(cls)
+
+        -- Vertical Offset Logic: Start lower and rise up
         local yOffset = (1 - animProgress) * S(CFG.ANIM_RISE)
-        local currentY = baseY - ((#KillFeed - i) * spacing) + yOffset
+        -- local currentY = baseY - ((#KillFeed - i) * spacing) + yOffset
+        local currentY = baseY - ((#KillFeed - i) * h) + yOffset
 
         local x = xPos
         local finalTxtAlpha = CFG.TEXT_ALPHA * fadeFactor
+
         surface.SetFont("MW2_KillfeedFont")
 
-        local aColBase = GetFactionColor(data.attackerEnt)
-        local vColBase = GetFactionColor(data.victimEnt)
-        local aCol = Color(aColBase.r, aColBase.g, aColBase.b, finalTxtAlpha)
-        local vCol = Color(vColBase.r, vColBase.g, vColBase.b, finalTxtAlpha)
+		local attackerEnt = data.attackerEnt
+		local victimEnt = data.victimEnt
+
+		local aColBase = GetFactionColor(attackerEnt)
+		local vColBase = GetFactionColor(victimEnt)
+
+		local aCol = Color(aColBase.r, aColBase.g, aColBase.b, finalTxtAlpha)
+		local vCol = Color(vColBase.r, vColBase.g, vColBase.b, finalTxtAlpha)
 
         if data.type == "kill" then
             -- 1. Attacker
             if data.attackerName != "" then
                 draw.SimpleText(data.attackerName, "MW2_KillfeedFont", x, currentY, aCol)
+                -- draw.SimpleTextOutlined( data.attackerName, "MW2_KillfeedFont", x, currentY, aCol, 0, 0, 1, Color(0, 0, 0, math.Clamp(finalTxtAlpha, 0, 50)) )
+
                 local tw, _ = surface.GetTextSize(data.attackerName)
-                x = x + tw
+                x = x + tw + gap_name
             end
 
-            -- 2. Gaps
-            local useSmall = sw < S(CFG.SMALL_ICON_THRESHOLD)
-            local gL = useSmall and S(CFG.GAP_SMALL_L) or S(CFG.GAP_LARGE_L)
-            local gR = useSmall and S(CFG.GAP_SMALL_R) or S(CFG.GAP_LARGE_R)
+            -- 2. Icon
+			local iconBoxX = x + gap_extra
+			local iconBoxY = currentY
 
-            -- 3. Icon Logic
-            x = x + gL
-            
-            if isCustom then
-                local drawX = x + S(CFG.ICON_X_MOD)
-                local drawY = currentY + S(CFG.ICON_Y_MOD)
-                surface.SetDrawColor(255, 255, 255, math.min(CFG.ICON_ALPHA * fadeFactor, 255))
-                surface.SetMaterial(customMat)
-                surface.DrawTexturedRect(drawX, drawY, sw, sh)
-            else
-                local drawX = x + S(CFG.WEP_ICON_X_MOD)
-                local drawY = currentY + S(CFG.WEP_ICON_Y_MOD)
-                killicon.Draw(drawX, drawY, cls, math.min(CFG.WEP_ICON_ALPHA * fadeFactor, 255))
-            end
+			local alpha = math.min(CFG.ICON_ALPHA * fadeFactor, 255)
 
-            x = x + sw + gR
+			w = w or ICON_BOX_W
+			h = h or ICON_BOX_H
 
-            -- 4. Victim
+			local drawX = iconBoxX + (ICON_BOX_W - w) * 0.5
+			local drawY = iconBoxY + (ICON_BOX_H - h) * 0.5
+
+			killicon.Draw(drawX, drawY, cls, alpha)
+
+			x = iconBoxX + ICON_BOX_W + gap_icon + gap_extra
+
+            -- 3. Victim
             draw.SimpleText(data.victimName, "MW2_KillfeedFont", x, currentY, vCol)
+            -- draw.SimpleTextOutlined( data.victimName, "MW2_KillfeedFont", x, currentY, vCol, 0, 0, 1, Color(0, 0, 0, math.Clamp(finalTxtAlpha, 0, 50)) )
+        else
+            draw.SimpleText(data.msg, "MW2_KillfeedFont", x, currentY, Color(255, 255, 255, finalTxtAlpha))
         end
     end
 end)

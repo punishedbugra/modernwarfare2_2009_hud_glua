@@ -3,7 +3,11 @@
 local RE_Triggered     = false
 local RE_ThinkThrottle = 0
 
+MW2_Enable_RoundEnd = CreateConVar("mw2_enable_roundend", "1", {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "Enable or disable the MW2 round end screen.")
+
 hook.Add("Think", "MW2_RoundEnd_ScoreCheck", function()
+	if not GetConVar("mw2_enable_roundend"):GetBool() then return end
+	
     if RE_Triggered then
         local allZero = true
         for _, ply in ipairs(player.GetAll()) do

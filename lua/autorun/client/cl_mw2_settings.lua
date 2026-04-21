@@ -17,8 +17,9 @@ CreateClientConVar("mw2_enable_xp", "1", true, false, "Enable or disable XP text
 CreateClientConVar("mw2_enable_killfeed", "1", true, false, "Enable or disable the Kill Feed.")
 CreateClientConVar("mw2_enable_weaponinfo", "1", true, false, "Enable or disable the Weapon Info and Compass.")
 CreateClientConVar("mw2_suspense_enabled", "1", true, false, "Enable or disable the ambient music.")
-CreateClientConVar("mw2_enable_roundend", "1", true, false, "Enable or disable the MW2 round end screen.")
+CreateClientConVar("mw2_enable_chat", "1", true, false, "Enable or disable the Chat.")
 
+CreateClientConVar("mw2_enable_outlinedtext", "0", true, false, "Enable or disable outlines on certain HUD texts.")
 
 -- [[ MENU POPULATION ]]
 local function AddCheckBoxWithTooltip(panel, label, convar, desc)
@@ -74,6 +75,7 @@ hook.Add("PopulateToolMenu", "MW2_SettingsMenu", function()
 		panel:Help("#MW2HUD.Audio")
 		AddCheckBoxWithTooltip(panel, "#MW2HUD.Audio.Announcer", "mw2_enable_announcer", "MW2HUD.Audio.Announcer.desc")
 		AddCheckBoxWithTooltip(panel, "#MW2HUD.Audio.Music", "mw2_enable_music", "MW2HUD.Audio.Music.desc")
+		AddCheckBoxWithTooltip(panel, "#MW2HUD.Audio.Ambient", "mw2_suspense_enabled", "MW2HUD.Audio.Ambient.desc")
 
 		-- HUD Elements
 		panel:Help("") -- Spacer
@@ -89,14 +91,20 @@ hook.Add("PopulateToolMenu", "MW2_SettingsMenu", function()
 		AddCheckBoxWithTooltip(panel, "#MW2HUD.Enable.XP", "mw2_enable_xp", "MW2HUD.Enable.XP.desc")
 		AddCheckBoxWithTooltip(panel, "#MW2HUD.Enable.Target", "mw2_targetid_label", "MW2HUD.Enable.Target.desc")
 		AddCheckBoxWithTooltip(panel, "#MW2HUD.Enable.DeathIcon", "mw2_targetid_death_icon", "MW2HUD.Enable.DeathIcon.desc")
-		AddCheckBoxWithTooltip(panel, "#MW2HUD.Enable.Ambient", "mw2_suspense_enabled", "MW2HUD.Enable.Ambient.desc")
-        AddCheckBoxWithTooltip(panel, "#MW2HUD.Enable.RoundEnd", "mw2_enable_roundend", "MW2HUD.Enable.RoundEnd.desc")	
+		AddCheckBoxWithTooltip(panel, "#MW2HUD.Enable.Chat", "mw2_enable_chat", "MW2HUD.Enable.Chat.desc")
+		
+		panel:Help("") -- Spacer
+		
+		AddCheckBoxWithTooltip(panel, "#MW2HUD.Enable.Outline", "mw2_enable_outlinedtext", "MW2HUD.Enable.Outline.desc")
+		
 		panel:Help("") -- Spacer
 		
         -- Admin-only Score Limit Slider
         if LocalPlayer():IsAdmin() then
 		
 			panel:Help("#MW2HUD.Server")
+
+			AddCheckBoxWithTooltip(panel, "#MW2HUD.Admin.EndScreen", "mw2_enable_roundend", "MW2HUD.Admin.EndScreen.desc")
 			
             local scoreSlider = panel:NumSlider("#MW2HUD.Admin.Score", "mw2_score_limit", 100, 7500, 0)
 

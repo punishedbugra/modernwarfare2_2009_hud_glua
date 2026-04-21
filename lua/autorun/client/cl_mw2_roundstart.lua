@@ -126,7 +126,7 @@ local MW2_RS_SPAWN_MUSIC = {
 }
 
 local OBJ_GLOW           = Color(0, 220, 80)
-local COUNTDOWN_DURATION = 10
+local COUNTDOWN_DURATION = 5
 
 local rs_active      = false
 local rs_movement_locked = false
@@ -251,14 +251,16 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
         local o        = outlineW or 0
         local outlineCol = Color(0, 0, 0, color.a)
 
-        if o > 0 then
-            draw.SimpleText(char, font, runX - o, y,     outlineCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-            draw.SimpleText(char, font, runX + o, y,     outlineCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-            draw.SimpleText(char, font, runX,     y - o, outlineCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-            draw.SimpleText(char, font, runX,     y + o, outlineCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        end
+        -- if o > 0 then
+            -- draw.SimpleText(char, font, runX - o, y,     outlineCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            -- draw.SimpleText(char, font, runX + o, y,     outlineCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            -- draw.SimpleText(char, font, runX,     y - o, outlineCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            -- draw.SimpleText(char, font, runX,     y + o, outlineCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        -- end
 
-        draw.SimpleText(char, font, runX, y, color, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        -- draw.SimpleText(char, font, runX, y, color, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+		
+		draw.SimpleTextOutlined( char, font, runX, y, color, 0, 1, o, outlineCol )
 
         local w = surface.GetTextSize(char)
         if i < #str then
@@ -460,6 +462,7 @@ hook.Add("HUDPaint", "MW2_RS_Draw", function()
     if not rs_active then return end
     if sb_open then return end
     if not IsValid(LocalPlayer()) then return end
+	local outlined = GetConVar("mw2_enable_outlinedtext"):GetBool()
 
     local hx  = SX(CFG.HEADER_X)
     local hy  = SY(CFG.HEADER_Y)
@@ -508,10 +511,12 @@ hook.Add("HUDPaint", "MW2_RS_Draw", function()
             tMat:Translate(Vector(-tx, -ty, 0))
 
             cam.PushModelMatrix(tMat)
-                DrawSqueezedText(disp, "MW2_RS_Timer", tx, ty, Color(205, 215, 95, 255), -2, -6, 1, -4, 0)
+                DrawSqueezedText(disp, "MW2_RS_Timer", tx, ty, Color(255,255,100), -2, -6, 1, -4, outlined and 1 or 0)
             cam.PopModelMatrix()
 
-            draw.SimpleText("#MW2_MP_MATCH_STARTING_IN", "MW2_RS_S_Pri", tx, ty + syo, Color(255, 255, 255, 200), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            -- draw.SimpleText("#MW2_MP_MATCH_STARTING_IN", "MW2_RS_S_Pri", tx, ty + syo, Color(255, 255, 255, 200), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+			
+			draw.SimpleTextOutlined( "#MW2_MP_MATCH_STARTING_IN", "MW2_RS_S_Pri", tx, ty + syo, Color(255,255,255), 1, 1, outlined and 1 or 0, Color(0,0,0) )
         end
     end
 

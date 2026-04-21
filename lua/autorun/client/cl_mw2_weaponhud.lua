@@ -188,7 +188,7 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
         local nextChar = str:sub(i + 1, i + 1)
         -- draw.SimpleText(char, font, runX + SX(2), y + SY(2), Color(0, 0, 0, color.a * 0.8), 0, 0)
         -- draw.SimpleText(char, font, runX,         y,         color,                          0, 0)
-		draw.SimpleTextOutlined(char, font, runX, y, color, 0, 0, 0, Color(0,0,0, color.a * 0.8))
+		draw.SimpleTextOutlined(char, font, runX, y, color, 0, 0, 1.5, Color(0,0,0, color.a * 0.8))
         local w = surface.GetTextSize(char)
         if i < #str then
             local gap
@@ -208,6 +208,7 @@ local wepSwitchTime = 0
 hook.Add("HUDPaint", "MW2_MergedHUD", function()
 	if not GetConVar("mw2_enable_weaponinfo"):GetBool() then return end
 	if not GetConVar("cl_drawhud"):GetBool() then return end
+	local outlined = GetConVar("mw2_enable_outlinedtext"):GetBool()
 	
     local ply = LocalPlayer()
     if not IsValid(ply) or not ply:Alive() then return end
@@ -344,7 +345,7 @@ hook.Add("HUDPaint", "MW2_MergedHUD", function()
         local name  = (wep:GetPrintName() or wep:GetClass()):upper()
         -- DrawSqueezedText(name, "MW2_Wep_Name", barX + barW + SX(CFG.WEP_NAME_X_OFF), barY + SY(CFG.WEP_NAME_Y_OFF), Color(255, 255, 255, 255 * alpha), CFG.WEP_NAME_SQ, CFG.WEP_NAME_SQ1, 0)
 
-        draw.SimpleTextOutlined(name, "MW2_Wep_Name", barX + barW + SX(CFG.WEP_NAME_X_OFF), barY + SY(CFG.WEP_NAME_Y_OFF), Color(255, 255, 255, 255 * alpha), 2, 0, 0, Color(0, 0, 0, 255 * alpha))
+        draw.SimpleTextOutlined(name, "MW2_Wep_Name", barX + barW + SX(CFG.WEP_NAME_X_OFF), barY + SY(CFG.WEP_NAME_Y_OFF), Color(255, 255, 255, 255 * alpha), 2, 0, outlined and 1.5 or 0, Color(0, 0, 0, 255 * alpha))
     end
 
     if clip >= 0 and maxClip > 0 then
@@ -442,7 +443,7 @@ hook.Add("HUDPaint", "MW2_MergedHUD", function()
             -- draw.SimpleText(statText, "MW2_Stat_Font", cx + SX(2), cy + SY(2), Color(0, 0, 0, finalCol.a * 0.8), 1, 1)
             -- draw.SimpleText(statText, "MW2_Stat_Font", cx,         cy,         finalCol,                          1, 1)
 			
-            draw.SimpleTextOutlined(statText, "MW2_Stat_Font", cx + SX(2), cy + SY(2), finalCol, 1, 1, 0, Color(0, 0, 0, finalCol.a * 0.8))
+            draw.SimpleTextOutlined(statText, "MW2_Stat_Font", cx + SX(2), cy + SY(2), finalCol, 1, 1, 1.5, Color(0, 0, 0, finalCol.a * 0.8))
         end
     end
 end)

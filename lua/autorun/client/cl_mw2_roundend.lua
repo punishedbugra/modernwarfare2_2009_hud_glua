@@ -1,7 +1,5 @@
 -- [[ cl_mw2_roundend.lua ]]
 
-CreateClientConVar("mw2_enable_roundend", "1", true, false, "Enable or disable the MW2 round end screen.")
-
 -- ============================================================
 --  Scale helpers
 -- ============================================================
@@ -26,6 +24,7 @@ local CFG = {
 
     MUSIC_DELAY      = 0.0,
     VOICE_DELAY      = 3.0,
+	POINTS_DELAY     = 4.0,
 
     ICON_SIZE        = 184,
     ICON_X           = 960,
@@ -42,19 +41,19 @@ local CFG = {
 
     LIMIT_X          = 960,
     LIMIT_Y          = 330,
-    LIMIT_FONT_SIZE  = 36,
+    LIMIT_FONT_SIZE  = 48,
 
     BONUS_X          = 960,
-    BONUS_Y          = 800,
-    BONUS_FONT_SIZE  = 32,
+    BONUS_Y          = 720,
+    BONUS_FONT_SIZE  = 48,
 
     ICON_FADE_TIME   = 1.0,
 }
 
 -- ============================================================
---  Glitch chars (Restricted to safe ASCII letters to prevent "00" overlays)
+--  Glitch chars
 -- ============================================================
-local GLITCH = { "A", "C", "G", "X", "V", "B", "N", "M", "K", "L", "P", "W" }
+local GLITCH = { "a", "¶", "Ð", "ق", "§", "ð", "œ", "ش", "Ф" }
 
 -- ============================================================
 --  Music / voices
@@ -69,17 +68,6 @@ local DEFEAT_MUSIC = {
     NS = "music/NS/hz_mp_nsdefeat_1.mp3",  RU = "music/RU/hz_mp_rudefeat_1.mp3",
     AB = "music/AB/hz_mp_abdefeat_1.mp3",  PG = "music/PG/hz_mp_pgdefeat_1.mp3",
 }
-
-local function GetMissionVoice(voiceTag, isSuccess)
-    local lang = GetConVar("gmod_language"):GetString() or "en"
-    local key  = isSuccess and "mission_success" or "mission_fail"
-    local suf  = string.format("%02d", math.random(1, 3))
-    local function try(l)
-        local p = "announcer/" .. l .. "/" .. voiceTag .. "/mp/" .. voiceTag .. "_1mc_" .. key .. "_" .. suf .. ".wav"
-        return file.Exists("sound/" .. p, "GAME") and p or nil
-    end
-    return try(lang) or try("en")
-end
 
 local function CalcMatchBonus(kills)
     kills = math.Clamp(kills, 0, 75)
@@ -145,6 +133,24 @@ end
 -- ============================================================
 --  Write-in helpers
 -- ============================================================
+local function utf8_sub(str, startChar, endChar)
+    startChar = startChar or 1
+    endChar = endChar or -1
+
+    local startByte = utf8.offset(str, startChar)
+    local endByte = utf8.offset(str, endChar + 1)
+
+    if startByte then
+        if endByte then
+            return string.sub(str, startByte, endByte - 1)
+        else
+            return string.sub(str, startByte)
+        end
+    end
+
+    return ""
+end
+
 local function AdvanceWrite(ws, interval, now, sound)
     if ws.done then return end
     local len = string.len(ws.str)
@@ -159,8 +165,8 @@ end
 
 local function WriteDisplay(ws)
     if ws.done then return ws.str end
-    local disp = string.sub(ws.str, 1, ws.written)
-    if string.len(ws.str) > 0 and ws.written < string.len(ws.str) then
+    local disp = utf8_sub(ws.str, 0, ws.written)
+    if string.len(ws.str) > 0 and ws.written < utf8.len(ws.str) then
         disp = disp .. GLITCH[math.random(1, #GLITCH)]
     end
     return disp
@@ -182,7 +188,7 @@ local re_match_bonus  = 0
 
 -- Write-in states
 local ws_result = { str = " ", written = 0, nxt = 0, done = false }
-local ws_limit  = { str = "SCORE LIMIT REACHED", written = 0, nxt = 0, done = false }
+local ws_limit  = { str = " ", written = 0, nxt = 0, done = false }
 local ws_left   = { str = " ", written = 0, nxt = 0, done = false }
 local ws_right  = { str = " ", written = 0, nxt = 0, done = false }
 
@@ -211,8 +217,6 @@ end
 --  Net receive (Timer removed as requested)
 -- ============================================================
 net.Receive("MW2_RoundEnd", function()
-    if not GetConVar("mw2_enable_roundend"):GetBool() then return end
-
     local winnerFac = net.ReadString()
     local loserFac  = net.ReadString()
     local winnerSc  = net.ReadInt(32)
@@ -252,19 +256,19 @@ net.Receive("MW2_RoundEnd", function()
 
     -- Result text + glow color
     if winnerFac == "" then
-        ws_result.str = " DRAW"
+        ws_result.str = "MW2_MP_DRAW"
         re_result_glow = Color(255, 255, 255)
     elseif isVictory then
-        ws_result.str = " VICTORY"
+        ws_result.str = "MW2_MP_VICTORY"
         re_result_glow = Color(0, 220, 80)
     else
-        ws_result.str = " DEFEAT"
+        ws_result.str = "MW2_MP_DEFEAT"
         re_result_glow = Color(220, 60, 60)
     end
 
     -- Write-in state reset
-    ws_result = { str = ws_result.str, written = 0, nxt = now,       done = false }
-    ws_limit  = { str = " SCORE LIMIT REACHED", written = 0, nxt = now + 1.0, done = false }
+    ws_result = { str = language.GetPhrase(ws_result.str), written = 0, nxt = now,       done = false }
+    ws_limit  = { str = language.GetPhrase("MW2_MP_SCORE_LIMIT_REACHED"), written = 0, nxt = now, done = false }
     ws_left   = { str = tostring(leftSc or 0),  written = 0, nxt = now,       done = false }
     ws_right  = { str = tostring(rightSc or 0), written = 0, nxt = now,       done = false }
 
@@ -272,7 +276,6 @@ net.Receive("MW2_RoundEnd", function()
     if voiceTag then
         timer.Create("MW2_RE_Music", CFG.MUSIC_DELAY, 1, function()
             if not re_active then return end
-            if not GetConVar("mw2_enable_music"):GetBool() then return end
             local tbl   = isVictory and VICTORY_MUSIC or DEFEAT_MUSIC
             local music = tbl[voiceTag]
             if music then MW2HUD_PlayAnnouncerSound(music, true) end
@@ -282,10 +285,10 @@ net.Receive("MW2_RoundEnd", function()
     -- Voiceline
     if voiceTag then
         timer.Create("MW2_RE_Voice", CFG.VOICE_DELAY, 1, function()
-            if not re_active then return end
-            if not GetConVar("mw2_enable_announcer"):GetBool() then return end
-            local path = GetMissionVoice(voiceTag, isVictory)
-            if path then MW2HUD_PlayAnnouncerSound(path, false) end
+			local victoryvoice = isVictory and "mission_success" or "mission_fail"
+
+			local sound = MW2HUD_GetAnnouncerSound(basePath, { victoryvoice })
+			if sound then MW2HUD_PlayAnnouncerSound(sound, false) end
         end)
     end
 
@@ -296,6 +299,10 @@ net.Receive("MW2_RoundEnd", function()
 
     -- Auto-end
     timer.Create("MW2_RE_Done", CFG.DURATION, 1, RE_End)
+	
+	timer.Simple( CFG.POINTS_DELAY, function() -- Redundant, as it's not visible anyway. But included just in case.
+		if _G.MW2_AddScore then _G.MW2_AddScore(re_match_bonus) end
+	end)
 end)
 
 -- ============================================================
@@ -316,9 +323,9 @@ hook.Add("Think", "MW2_RE_Think", function()
         AdvanceWrite(ws_right, 1.0 / math.max(1, string.len(ws_right.str)), now, false)
     end
 
-    if el >= 1.0 then
-        AdvanceWrite(ws_limit, 1.3 / math.max(1, string.len(ws_limit.str)), now, true)
-    end
+    -- if el >= 1.0 then
+        AdvanceWrite(ws_limit, 1.0 / math.max(1, string.len(ws_limit.str)), now, true)
+    -- end
 end)
 
 -- ============================================================
@@ -362,6 +369,7 @@ end)
 hook.Add("DrawOverlay", "MW2_RE_Draw", function()
     if not re_active then return end
     if not IsValid(LocalPlayer()) then return end
+	local outlined = GetConVar("mw2_enable_outlinedtext"):GetBool()
 
     local el = CurTime() - re_lock_time
     if el < 0 then return end
@@ -424,17 +432,11 @@ hook.Add("DrawOverlay", "MW2_RE_Draw", function()
         "MW2_RE_Re_Pri", "MW2_RE_Re_Sec", "MW2_RE_Re_Shd",
         SX(CFG.RESULT_X), SY(CFG.RESULT_Y), re_result_glow)
 
-    if el >= 1.0 then
+    -- if el >= 1.0 then
         DrawCODText(WriteDisplay(ws_limit), ws_limit.str,
             "MW2_RE_Li_Pri", "MW2_RE_Li_Sec", "MW2_RE_Li_Shd",
             SX(CFG.LIMIT_X), SY(CFG.LIMIT_Y), Color(135, 135, 180))
-    end
+    -- end
 
-    draw.SimpleText(
-        "MATCH BONUS: " .. tostring(re_match_bonus),
-        "MW2_RE_Bonus",
-        SX(CFG.BONUS_X), SY(CFG.BONUS_Y),
-        Color(240, 250, 110, iconAlpha),
-        TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER
-    )
+	draw.SimpleTextOutlined( string.format( language.GetPhrase("MW2_MP_MATCH_BONUS_IS"), tostring(re_match_bonus) ), "MW2_RE_Bonus", SX(CFG.BONUS_X), SY(CFG.BONUS_Y), Color(240, 250, 110, iconAlpha), 1, 1, outlined and 1 or 0, Color(0,0,0, iconAlpha) )
 end)
