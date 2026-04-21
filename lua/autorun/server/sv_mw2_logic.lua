@@ -56,12 +56,6 @@ hook.Add("PlayerSpawn", "MW2_InitStats", function(ply)
 		weaponKills = {},
 		weaponHeadshots = {}
     }
-	
-	print("Player Session Stats: ")
-	PrintTable(ply.MW2_Session)
-	
-	print("Player Life Stats: ")
-	PrintTable(ply.MW2_Life)
 end)
 
 local function GetWeaponClass(ply, inflictor)
@@ -164,8 +158,6 @@ hook.Add("PlayerDeath", "MW2_MainTracker", function(victim, inflictor, attacker)
     if not IsValid(attacker) or not attacker:IsPlayer() or attacker == victim then return end
 
 	local wepClass = GetWeaponClass(attacker, inflictor)
-	
-	print(wepClass)
 	
 	attacker.MW2_Session.weaponKills = attacker.MW2_Session.weaponKills or {}
 	attacker.MW2_Session.weaponHeadshots = attacker.MW2_Session.weaponHeadshots or {}
@@ -390,9 +382,6 @@ hook.Add("OnNPCKilled", "MW2_NPCChallenges", function(npc, attacker, inflictor)
 
         RegisterWeaponKill(attacker, wepClass, false)
 		ProcessWeaponProgress(attacker, wepClass, false)
-		
-		-- print("User " .. attacker .. " got a kill using " .. wepClass)
-		print("Total kills with " .. wepClass .. ": " .. attacker.MW2_Session.weaponKills[wepClass])
 
         local class = npc:GetClass()
 

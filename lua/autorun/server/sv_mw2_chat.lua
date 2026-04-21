@@ -74,5 +74,5 @@ hook.Add("PlayerSay", "MW2_Chat_Interceptor", function(ply, text, teamOnly)
     end
 
     -- Suppress the default Garry's Mod chat so we don't get double messages
-    return ""
+    -- return "" -- Unnecessary.
 end)

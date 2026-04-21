@@ -119,11 +119,13 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
         local o        = S(CFG.TIMER_OUTLINE_W)
         local outlineCol = Color(0, 0, 0, color.a)
 
-        draw.SimpleText(char, font, runX - o, y,     outlineCol, 0, 0)
-        draw.SimpleText(char, font, runX + o, y,     outlineCol, 0, 0)
-        draw.SimpleText(char, font, runX,     y - o, outlineCol, 0, 0)
-        draw.SimpleText(char, font, runX,     y + o, outlineCol, 0, 0)
-        draw.SimpleText(char, font, runX,     y,     color,      0, 0)
+        -- draw.SimpleText(char, font, runX - o, y,     outlineCol, 0, 0)
+        -- draw.SimpleText(char, font, runX + o, y,     outlineCol, 0, 0)
+        -- draw.SimpleText(char, font, runX,     y - o, outlineCol, 0, 0)
+        -- draw.SimpleText(char, font, runX,     y + o, outlineCol, 0, 0)
+        -- draw.SimpleText(char, font, runX,     y,     color,      0, 0)
+
+		draw.SimpleTextOutlined( char, font, runX, y, color, 0, 0, o, outlineCol )
 
         local w = surface.GetTextSize(char)
         if i < #str then
@@ -137,6 +139,7 @@ local function DrawPlayerRow(ply, lp, x, y, w, h, barRight, bgCol)
     -- Background
     surface.SetDrawColor(bgCol.r, bgCol.g, bgCol.b, CFG.BAR_ALPHA)
     surface.DrawRect(x, y, w, h)
+	local outlined = GetConVar("mw2_enable_outlinedtext"):GetBool()
 
     -- Status Icon (dead indicator) - Moved next to name
     if ply:IsValid() and not ply:Alive() then
@@ -153,11 +156,11 @@ local function DrawPlayerRow(ply, lp, x, y, w, h, barRight, bgCol)
     local pScore = math.max(0, ply:Frags() * 100)
 
     -- Text
-    draw.SimpleText(ply:Nick(), "MW2_Scoreboard_Text", x + S(110), y + (h / 2), tCol, TEXT_ALIGN_LEFT,  TEXT_ALIGN_CENTER)
-    draw.SimpleText(ply:Deaths(), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_DEATHS),  y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
-    draw.SimpleText(ply:GetNWInt("Assists", 0), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_ASSISTS), y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
-    draw.SimpleText(ply:Frags(), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_KILLS),   y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
-    draw.SimpleText(pScore, "MW2_Scoreboard_Text", barRight - S(CFG.OFF_SCORE),   y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+    draw.SimpleTextOutlined(ply:Nick(), "MW2_Scoreboard_Text", x + S(110), y + (h / 2), tCol, TEXT_ALIGN_LEFT,  TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
+    draw.SimpleTextOutlined(ply:Deaths(), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_DEATHS),  y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
+    draw.SimpleTextOutlined(ply:GetNWInt("Assists", 0), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_ASSISTS), y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
+    draw.SimpleTextOutlined(ply:Frags(), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_KILLS),   y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
+    draw.SimpleTextOutlined(pScore, "MW2_Scoreboard_Text", barRight - S(CFG.OFF_SCORE),   y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
 
     -- Ping Indicator
     local boxSize = S(CFG.PING_BOX_SIZE)
@@ -183,6 +186,7 @@ local showScoreboard = false
 
 hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
     if not showScoreboard then return end
+	local outlined = GetConVar("mw2_enable_outlinedtext"):GetBool()
 
     local scrW, scrH = ScrW(), ScrH()
     local lp = LocalPlayer()
@@ -267,7 +271,7 @@ hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
 
     -- Map name
     local mapName = string.upper(game.GetMap())
-    draw.SimpleText(mapName, "MW2_Scoreboard_Timer", scrW / 2, S(CFG.MAP_Y_OFF), Color(255, 255, 255, 255), TEXT_ALIGN_CENTER)
+	draw.SimpleTextOutlined( mapName, "MW2_Scoreboard_Timer", scrW/2, S(CFG.MAP_Y_OFF), Color(255, 255, 255), 1, 0, outlined and 1.5 or 0, Color(0,0,0) )
 
     -- Timer
     local totalSecs = math.floor(CurTime())
@@ -279,16 +283,16 @@ hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
     local fData = MW2Factions and MW2Factions[myFactionKey] or { name = "Friendly", color = Color(100, 100, 100) }
     local hy    = friendlyStartY + S(CFG.STATS_HEADER_Y)
 
-    draw.SimpleText(language.GetPhrase( "MW2_CGAME_SB_DEATHS" ), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_DEATHS),  hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
-    draw.SimpleText(language.GetPhrase( "MW2_CGAME_SB_ASSISTS" ), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_ASSISTS), hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
-    draw.SimpleText(language.GetPhrase( "MW2_CGAME_SB_KILLS" ), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_KILLS),   hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
-    draw.SimpleText(language.GetPhrase( "MW2_CGAME_SB_SCORE" ), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_SCORE),   hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT)
+    draw.SimpleTextOutlined(language.GetPhrase( "MW2_CGAME_SB_DEATHS" ), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_DEATHS),  hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
+    draw.SimpleTextOutlined(language.GetPhrase( "MW2_CGAME_SB_ASSISTS" ), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_ASSISTS), hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
+    draw.SimpleTextOutlined(language.GetPhrase( "MW2_CGAME_SB_KILLS" ), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_KILLS),   hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
+    draw.SimpleTextOutlined(language.GetPhrase( "MW2_CGAME_SB_SCORE" ), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_SCORE),   hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
 
     -- Friendly team section
     surface.SetMaterial(hMatIcon)
     surface.SetDrawColor(255, 255, 255, 255)
     surface.DrawTexturedRect(barX + S(CFG.ICON_X_OFF), friendlyStartY + S(CFG.ICON_Y_OFF), S(CFG.ICON_SIZE), S(CFG.ICON_SIZE))
-    draw.SimpleText( language.GetPhrase( fData.short ) .. " (" .. #friendlyPlayers .. ")", "MW2_Scoreboard_Text", barX + S(CFG.FAC_NAME_X), friendlyStartY + S(CFG.FAC_NAME_Y), Color(255, 255, 255, 255))
+    draw.SimpleTextOutlined( language.GetPhrase( fData.short ) .. " (" .. #friendlyPlayers .. ")", "MW2_Scoreboard_Text", barX + S(CFG.FAC_NAME_X), friendlyStartY + S(CFG.FAC_NAME_Y), Color(255, 255, 255), 0, 0, outlined and 1 or 0, Color(0,0,0) )
 
     for i, ply in ipairs(friendlyPlayers) do
         local rowY = friendlyStartY + (i - 1) * (barH + S(CFG.ROW_GAP))
@@ -304,7 +308,7 @@ hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
         surface.SetMaterial(eMatIcon)
         surface.SetDrawColor(255, 255, 255, 255)
         surface.DrawTexturedRect(barX + S(CFG.ICON_X_OFF), enemyStartY + S(CFG.ICON_Y_OFF), S(CFG.ICON_SIZE), S(CFG.ICON_SIZE))
-        draw.SimpleText( language.GetPhrase( eData.short ) .. " (" .. #enemyPlayers .. ")", "MW2_Scoreboard_Text", barX + S(CFG.FAC_NAME_X), enemyStartY + S(CFG.FAC_NAME_Y), Color(255, 255, 255, 255))
+        draw.SimpleTextOutlined( language.GetPhrase( eData.short ) .. " (" .. #enemyPlayers .. ")", "MW2_Scoreboard_Text", barX + S(CFG.FAC_NAME_X), enemyStartY + S(CFG.FAC_NAME_Y), Color(255, 255, 255), 0, 0, outlined and 1 or 0, Color(0,0,0) )
 
         for i, ply in ipairs(enemyPlayers) do
             local rowY = enemyStartY + (i - 1) * (barH + S(CFG.ROW_GAP))

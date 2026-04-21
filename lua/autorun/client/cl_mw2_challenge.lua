@@ -250,6 +250,7 @@ end
 hook.Add("HUDPaint", "MW2_DrawChallenges", function()
     if not GetConVar("cl_drawhud"):GetBool() then return end
     if _G.MW2_MedalsActive then return end
+	local outlined = GetConVar("mw2_enable_outlinedtext"):GetBool()
 
     if not activeNotif then
         if #notificationQueue > 0 then
@@ -382,10 +383,7 @@ hook.Add("HUDPaint", "MW2_DrawChallenges", function()
 		local lines = string.Split(sub, "\n")
 
 		for i, line in ipairs(lines) do
-			draw.SimpleText( line, "MW2_ChalSub", ox, oy + S(30) + (i - 1) * S(24), Color(255,255,255, math.floor(255 * subAlpha)), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
-			
-			-- Outlined recommended, but commented out.
-			-- draw.SimpleTextOutlined( line, "MW2_ChalSub", ox, oy + S(30) + (i - 1) * S(24), Color(255,255,255, math.floor(255 * subAlpha)), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, 1, Color(0,0,0, math.floor(255 * subAlpha)) )
+			draw.SimpleTextOutlined( line, "MW2_ChalSub", ox, oy + S(30) + (i - 1) * S(24), Color(255,255,255, math.floor(255 * subAlpha)), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, outlined and 1 or 0, Color(0,0,0, math.floor(255 * subAlpha)) )
 		end
 	end
 

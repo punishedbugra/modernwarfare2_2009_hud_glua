@@ -22,7 +22,6 @@ if CLIENT then
     local MEDAL_CFG = {
         X_OFFSET = 0,    -- Horizontal offset from center
         Y_OFFSET = -250, -- Vertical offset (Match this with cl_mw2_challenge.lua)
-        DRAW_OUTLINES = true, -- Set to false to remove black outlines/shadows
     }
 
     local medalQueue  = {}
@@ -97,6 +96,7 @@ if CLIENT then
     -- [[ RENDERING ]]
     hook.Add("HUDPaint", "MW2_DrawMedalsSystem", function()
         local ct = CurTime()
+		local outlined = GetConVar("mw2_enable_outlinedtext"):GetBool()
 
         -- UPDATE GLOBAL FLAG: Tell the Challenge system if we are busy
         if activeMedal ~= nil or #medalQueue > 0 then
@@ -154,19 +154,19 @@ if CLIENT then
 
                     -- 2. Draw Medal Text
                     local localizedText = language.GetPhrase("MW2_" .. activeMedal.text)
-                    draw.SimpleText(localizedText, "MW2_MedalGlow",    cx, cy, colRedGlow,    1, 1)
-                    draw.SimpleText(localizedText, "MW2_MedalOutline", cx, cy, colRedOutline, 1, 1)
-                    draw.SimpleText(localizedText, "MW2_MedalPrimary", cx, cy, colWhite,      1, 1)
+                    -- draw.SimpleText(localizedText, "MW2_MedalGlow",    cx, cy, colRedGlow,    1, 1)
+                    -- draw.SimpleText(localizedText, "MW2_MedalOutline", cx, cy, colRedOutline, 1, 1)
+                    -- draw.SimpleText(localizedText, "MW2_MedalPrimary", cx, cy, colWhite,      1, 1)
+					
+					draw.SimpleTextOutlined( localizedText, "MW2_MedalGlow", cx, cy, Color(0,0,0,0), 1, 1, 0.75, colRedGlow )
+					draw.SimpleTextOutlined( localizedText, "MW2_MedalPrimary", cx, cy, colWhite, 1, 1, 0, colRedOutline )
 
                     -- 3. Draw Description or Points
                     if activeMedal.desc then
                         local localizedDesc = language.GetPhrase("MW2_" .. activeMedal.desc)
                         
                         if activeMedal.isSpecial then
-                            if MEDAL_CFG.DRAW_OUTLINES then
-                                draw.SimpleText(localizedDesc, "MW2_MedalDesc", cx + 1, cy + S(35) + 1, colBlack, 1, 1)
-                            end
-                            draw.SimpleText(localizedDesc, "MW2_MedalDesc", cx, cy + S(35), colWhite, 1, 1)
+							draw.SimpleTextOutlined( localizedDesc, "MW2_MedalDesc", cx, cy + S(35), colWhite, 1, 1, outlined and 1 or 0, colBlack )
                         else
                             local descText     = localizedDesc .. " ("
                             local pointsText   = "+" .. activeMedal.points
@@ -179,21 +179,12 @@ if CLIENT then
 
                             local startX = cx - (totalW / 2)
                             
-                            if MEDAL_CFG.DRAW_OUTLINES then
-                                draw.SimpleText(descText,     "MW2_MedalDesc", startX + 1,        cy + S(35) + 1, colBlack, 0, 1)
-                                draw.SimpleText(pointsText,   "MW2_MedalDesc", startX + w1 + 1,   cy + S(35) + 1, colBlack, 0, 1)
-                                draw.SimpleText(bracketClose, "MW2_MedalDesc", startX + w1 + w2 + 1, cy + S(35) + 1, colBlack, 0, 1)
-                            end
-
-                            draw.SimpleText(descText,     "MW2_MedalDesc", startX,           cy + S(35), colWhite,  0, 1)
-                            draw.SimpleText(pointsText,   "MW2_MedalDesc", startX + w1,      cy + S(35), colYellow, 0, 1)
-                            draw.SimpleText(bracketClose, "MW2_MedalDesc", startX + w1 + w2, cy + S(35), colWhite,  0, 1)
+							draw.SimpleTextOutlined( descText, "MW2_MedalDesc", startX, cy + S(35), colWhite, 0, 1, outlined and 1 or 0, colBlack )
+							draw.SimpleTextOutlined( pointsText, "MW2_MedalDesc", startX + w1, cy + S(35), colYellow, 0, 1, outlined and 1 or 0, colBlack )
+							draw.SimpleTextOutlined( bracketClose, "MW2_MedalDesc", startX + w1 + w2, cy + S(35), colWhite, 0, 1, outlined and 1 or 0, colBlack )
                         end
                     else
-                        if MEDAL_CFG.DRAW_OUTLINES then
-                            draw.SimpleText("+" .. activeMedal.points, "MW2_MedalPoints", cx + S(2), cy + S(37), colBlack, 1, 1)
-                        end
-                        draw.SimpleText("+" .. activeMedal.points, "MW2_MedalPoints", cx,         cy + S(35), colYellow, 1, 1)
+						draw.SimpleTextOutlined( "+" .. activeMedal.points, "MW2_MedalDesc", cx, cy + S(35), colYellow, 1, 1, outlined and 1 or 0, colBlack )
                     end
                 cam.PopModelMatrix()
             end
