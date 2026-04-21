@@ -4,6 +4,7 @@ local RE_Triggered     = false
 local RE_ThinkThrottle = 0
 
 MW2_Enable_RoundEnd = CreateConVar("mw2_enable_roundend", "1", {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "Enable or disable the MW2 round end screen.")
+MW2_Enable_RoundEnd_StartNext = CreateConVar("mw2_enable_roundend_startnext", "1", {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "Immediately starts a new 'Round' once the current one ends.")
 
 hook.Add("Think", "MW2_RoundEnd_ScoreCheck", function()
 	if not GetConVar("mw2_enable_roundend"):GetBool() then return end
@@ -122,13 +123,29 @@ hook.Add("Think", "MW2_RoundEnd_ScoreCheck", function()
 
     -- Respawn all players 10 seconds after the client screen triggers
     timer.Simple(15, function()
-        for _, ply in ipairs(player.GetAll()) do
-            if IsValid(ply) then
-                ply:SetFrags(0)
-                ply:UnSpectate()
-                ply:Spawn()
-            end
-        end
+		if GetConVar("mw2_enable_roundend_startnext"):GetBool() then
+			local gamemode = GetConVar("mw2_selected_gamemode"):GetString()
+
+			for _, p in ipairs(player.GetAll()) do
+				if IsValid(p) then
+					p:SetFrags(0)
+					p:SetDeaths(0)
+					p:Spawn()
+				end
+			end
+
+			net.Start("MW2_RoundStart")
+				net.WriteString(gamemode)
+			net.Broadcast()
+		else
+			for _, ply in ipairs(player.GetAll()) do
+				if IsValid(ply) then
+					ply:SetFrags(0)
+					ply:UnSpectate()
+					ply:Spawn()
+				end
+			end
+		end
         RE_Triggered = false
     end)
 end)

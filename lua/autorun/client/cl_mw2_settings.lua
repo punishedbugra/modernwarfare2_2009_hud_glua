@@ -71,6 +71,27 @@ hook.Add("PopulateToolMenu", "MW2_SettingsMenu", function()
 
         panel:AddItem(grid)
 		
+        -- Admin-only Score Limit Slider
+        if LocalPlayer():IsAdmin() then
+		
+			panel:Help("#MW2HUD.Server")
+
+			AddCheckBoxWithTooltip(panel, "#MW2HUD.Admin.EndScreen", "mw2_enable_roundend", "MW2HUD.Admin.EndScreen.desc")
+			AddCheckBoxWithTooltip(panel, "#MW2HUD.Admin.EndScreen.StartNext", "mw2_enable_roundend_startnext", "MW2HUD.Admin.EndScreen.StartNext.desc")
+			
+            local scoreSlider = panel:NumSlider("#MW2HUD.Admin.Score", "mw2_score_limit", 100, 7500, 0)
+
+            panel:ControlHelp("#MW2HUD.Admin.Score.desc")
+            scoreSlider.OnValueChanged = function(self, val)
+                local snapped = math.Round(val / 100) * 100
+                if snapped ~= val then
+                    self:SetValue(snapped)
+                end
+            end
+			
+			panel:Help("") -- Spacer
+        end
+
 		-- Audio Toggles
 		panel:Help("#MW2HUD.Audio")
 		AddCheckBoxWithTooltip(panel, "#MW2HUD.Audio.Announcer", "mw2_enable_announcer", "MW2HUD.Audio.Announcer.desc")
@@ -97,25 +118,6 @@ hook.Add("PopulateToolMenu", "MW2_SettingsMenu", function()
 		
 		AddCheckBoxWithTooltip(panel, "#MW2HUD.Enable.Outline", "mw2_enable_outlinedtext", "MW2HUD.Enable.Outline.desc")
 		
-		panel:Help("") -- Spacer
-		
-        -- Admin-only Score Limit Slider
-        if LocalPlayer():IsAdmin() then
-		
-			panel:Help("#MW2HUD.Server")
-
-			AddCheckBoxWithTooltip(panel, "#MW2HUD.Admin.EndScreen", "mw2_enable_roundend", "MW2HUD.Admin.EndScreen.desc")
-			
-            local scoreSlider = panel:NumSlider("#MW2HUD.Admin.Score", "mw2_score_limit", 100, 7500, 0)
-
-            panel:ControlHelp("#MW2HUD.Admin.Score.desc")
-            scoreSlider.OnValueChanged = function(self, val)
-                local snapped = math.Round(val / 100) * 100
-                if snapped ~= val then
-                    self:SetValue(snapped)
-                end
-            end
-        end
     end)
 
 end)

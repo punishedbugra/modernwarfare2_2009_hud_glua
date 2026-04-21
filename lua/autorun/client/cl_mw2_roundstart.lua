@@ -318,15 +318,14 @@ local function MW2_RS_Start(gamemode)
 
     rs_bw = 1
 
-    if GetConVar("mw2_enable_music"):GetBool() and MW2_RS_SPAWN_MUSIC[rs_short] then
-        surface.PlaySound(MW2_RS_SPAWN_MUSIC[rs_short])
-    end
-
-    -- local vo_tag = MW2_RS_ANNOUNCER_TAG[gamemode] or "team_deathmtch"
-    -- surface.PlaySound("announcer/" .. rs_short .. "/" .. rs_short .. "_1mc_" .. vo_tag .. "_01.mp3")
-	
-	local sound = MW2HUD_GetAnnouncerSound(basePath, { MW2_RS_ANNOUNCER_TAG[gamemode] or "team_deathmtch" })
-	if sound then MW2HUD_PlayAnnouncerSound(sound, false) end
+	timer.Simple( 0.1, function() -- Tiny delay for round restart
+		if GetConVar("mw2_enable_music"):GetBool() and MW2_RS_SPAWN_MUSIC[rs_short] then
+			surface.PlaySound(MW2_RS_SPAWN_MUSIC[rs_short])
+		end
+		
+		local sound = MW2HUD_GetAnnouncerSound(basePath, { MW2_RS_ANNOUNCER_TAG[gamemode] or "team_deathmtch" })
+		if sound then MW2HUD_PlayAnnouncerSound(sound, false) end
+	end)
 end
 
 local function MW2_RS_End()
@@ -611,9 +610,8 @@ local function MW2_RS_OpenConfirm()
 
         local gm = GetConVar("mw2_selected_gamemode"):GetString()
 
-        net.Start("MW2_StartRound")
-            net.WriteString(gm)
-        net.SendToServer()
+		net.Start("MW2_StartRound")
+		net.SendToServer()
     end
 end
 
@@ -667,7 +665,9 @@ hook.Add("PopulateToolMenu", "MW2_RS_PopMenu", function()
 		end
 
 		gm_combo.OnSelect = function(_, _, text, data)
-			RunConsoleCommand("mw2_selected_gamemode", data)
+			net.Start("MW2_SetGamemode")
+				net.WriteString(data)
+			net.SendToServer()
 		end
 
 		panel:AddItem(gm_combo)
