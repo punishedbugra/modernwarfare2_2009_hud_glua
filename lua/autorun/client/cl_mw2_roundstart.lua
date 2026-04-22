@@ -575,119 +575,51 @@ net.Receive("MW2_RoundStart", function()
     end)
 end)
 
-local rs_confirm = nil
+-- local rs_confirm = nil
 
-local function MW2_RS_OpenConfirm()
-    if IsValid(rs_confirm) then rs_confirm:Remove() end
+-- local function MW2_RS_OpenConfirm()
+    -- if IsValid(rs_confirm) then rs_confirm:Remove() end
 
-    rs_confirm = vgui.Create("DFrame")
-    rs_confirm:SetSize(420, 160)
-    rs_confirm:Center()
-    rs_confirm:SetTitle("#MW2HUD.RoundStart")
-    rs_confirm:MakePopup()
+    -- rs_confirm = vgui.Create("DFrame")
+    -- rs_confirm:SetSize(420, 160)
+    -- rs_confirm:Center()
+    -- rs_confirm:SetTitle("#MW2HUD.RoundStart")
+    -- rs_confirm:MakePopup()
 
-    local lbl = vgui.Create("DLabel", rs_confirm)
-    lbl:SetPos(10, 30)
-    lbl:SetSize(400, 60)
-    lbl:SetText("#MW2HUD.RoundStart.Notice")
-    lbl:SetWrap(true)
-    lbl:SetDark(true)
+    -- local lbl = vgui.Create("DLabel", rs_confirm)
+    -- lbl:SetPos(10, 30)
+    -- lbl:SetSize(400, 60)
+    -- lbl:SetText("#MW2HUD.RoundStart.Notice")
+    -- lbl:SetWrap(true)
+    -- lbl:SetDark(true)
 
-    local btn_nah = vgui.Create("DButton", rs_confirm)
-    btn_nah:SetPos(20, 110)
-    btn_nah:SetSize(100, 35)
-    btn_nah:SetText("#MW2HUD.RoundStart.No")
-    btn_nah.DoClick = function()
-        rs_confirm:Remove()
-    end
+    -- local btn_nah = vgui.Create("DButton", rs_confirm)
+    -- btn_nah:SetPos(20, 110)
+    -- btn_nah:SetSize(100, 35)
+    -- btn_nah:SetText("#MW2HUD.RoundStart.No")
+    -- btn_nah.DoClick = function()
+        -- rs_confirm:Remove()
+    -- end
 
-    local btn_go = vgui.Create("DButton", rs_confirm)
-    btn_go:SetPos(300, 110)
-    btn_go:SetSize(100, 35)
-    btn_go:SetText("#MW2HUD.RoundStart.Yes")
-    btn_go.DoClick = function()
-        rs_confirm:Remove()
+    -- local btn_go = vgui.Create("DButton", rs_confirm)
+    -- btn_go:SetPos(300, 110)
+    -- btn_go:SetSize(100, 35)
+    -- btn_go:SetText("#MW2HUD.RoundStart.Yes")
+    -- btn_go.DoClick = function()
+        -- rs_confirm:Remove()
 
-        local gm = GetConVar("mw2_selected_gamemode"):GetString()
+        -- local gm = GetConVar("mw2_selected_gamemode"):GetString()
 
-		net.Start("MW2_StartRound")
-		net.SendToServer()
-    end
-end
+		-- net.Start("MW2_StartRound")
+		-- net.SendToServer()
+    -- end
+-- end
 
-concommand.Add("mw2_roundstart", function()
-    local lp = LocalPlayer()
-    if not IsValid(lp) or not lp:IsAdmin() then
-        print("[MW2] Admin only.")
-        return
-    end
-    MW2_RS_OpenConfirm()
-end)
-
-hook.Add("AddToolMenuCategories", "MW2_RS_AddCat", function()
-    spawnmenu.AddToolCategory("Options", "MW2", "#MW2")
-end)
-
-hook.Add("PopulateToolMenu", "MW2_RS_PopMenu", function()
-	
-	-- if not LocalPlayer():IsAdmin() then return end
-
-    spawnmenu.AddToolMenuOption("Options", "MW2", "MW2_RoundStart", "#MW2HUD.RoundStart", "", "", function(panel)
-        panel:ClearControls()
-
-		local gm_combo = vgui.Create("DComboBox")
-
-		local choices = {
-			{ "#MW2_MPUI_WAR", "war" },
-			{ "#MW2_MPUI_DEATHMATCH", "dm" },
-			{ "#MW2_MPUI_DOMINATION", "dom" },
-			{ "#MW2_MPUI_SEARCH_AND_DESTROY", "sd" },
-			{ "#MW2_MPUI_SABOTAGE", "sab" },
-			{ "#MW2_MPUI_CAPTURE_THE_FLAG", "ctf" },
-			{ "#MW2_MPUI_HEADQUARTERS", "hq" },
-			{ "#MW2_MPUI_ONE_FLAG", "oneflag" },
-			{ "#MW2_MPUI_ARENA", "arena" },
-			{ "#MW2_MPUI_DD", "dd" },
-			{ "#MW2_MPUI_GTNW", "gtnw" },
-		}
-
-		for _, v in ipairs(choices) do
-			gm_combo:AddChoice(v[1], v[2])
-		end
-
-		local cur_mode = GetConVar("mw2_selected_gamemode"):GetString()
-
-		for _, v in ipairs(choices) do
-			if v[2] == cur_mode then
-				gm_combo:SetValue(v[1])
-				break
-			end
-		end
-
-		gm_combo.OnSelect = function(_, _, text, data)
-			net.Start("MW2_SetGamemode")
-				net.WriteString(data)
-			net.SendToServer()
-		end
-
-		panel:AddItem(gm_combo)
-
-        local start_btn = vgui.Create("DButton")
-        start_btn:SetText("#MW2HUD.RoundStart.Start")
-        start_btn.DoClick = function()
-            local lp = LocalPlayer()
-            if not IsValid(lp) or not lp:IsAdmin() then return end
-            MW2_RS_OpenConfirm()
-        end
-        panel:AddItem(start_btn)
-
-		-- local matchTimer = panel:NumSlider("#MW2HUD.Admin.MatchTimer", "mw2_matchstart_timer", 3, 15, 0)
-		-- panel:ControlHelp("#MW2HUD.Admin.MatchTimer.desc")
-		-- matchTimer.OnValueChanged = function(self, val)
-			-- local snapped = math.Round(val / 100) * 100
-			-- if snapped ~= val then
-				-- self:SetValue(val)
-			-- end
-		-- end
-    end)
-end)
+-- concommand.Add("mw2_roundstart", function()
+    -- local lp = LocalPlayer()
+    -- if not IsValid(lp) or not lp:IsAdmin() then
+        -- print("[MW2] Admin only.")
+        -- return
+    -- end
+    -- MW2_RS_OpenConfirm()
+-- end)

@@ -32,14 +32,12 @@ CreateClientConVar("mw2hud_fullscreen", "0", true, false, "MW2 HUD Settings open
 -- [[ MENU POPULATION ]] -- Only done to present button to open proper menu
 hook.Add("PopulateToolMenu", "MW2_SettingsMenu", function()
 
-    spawnmenu.AddToolMenuOption("Options", "MW2", "MW2_ClientSettings", "#MW2HUD.Enable.Options", "", "", function(panel)
+    spawnmenu.AddToolMenuOption("Options", "MW2HUD.Title", "MW2_ClientSettings", "#MW2HUD.Title", "", "", function(panel)
         panel:ClearControls()
-        panel:Help("#MW2HUD.Client")
 		panel:Button("Open MW2 Menu", "mw2hud_openmenu")
     end)
 
 end)
-
 
 local mw2_menu_frame = nil
 local rs_confirm = nil
@@ -134,7 +132,6 @@ local function MW2_RS_OpenConfirm()
 
         if IsValid(mw2_menu_frame) then
             mw2_menu_frame:SetVisible(false)
-            -- mw2_menu_frame = nil
         end
 
         net.Start("MW2_StartRound")
