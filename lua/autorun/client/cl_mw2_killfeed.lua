@@ -77,12 +77,12 @@ killicon.Add("MW2_Headshot", "killfeed/death_headshot.png", Color(255, 255, 255,
 
 -- [[ SUPPRESSION OF DEFAULT HUD ]]
 hook.Add("HUDShouldDraw", "MW2_Killfeed_HideDefault", function(name)
-	if not GetConVar("mw2_enable_killfeed"):GetBool() then return end
+	if (not GetConVar("mw2_enable_killfeed"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
     if name == "CHudDeathNotice" then return false end
 end)
 
 hook.Add("DrawDeathNotice", "MW2_Killfeed_ForceSuppression", function()
-	if not GetConVar("mw2_enable_killfeed"):GetBool() then return end
+	if (not GetConVar("mw2_enable_killfeed"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
     return false
 end)
 
@@ -156,7 +156,7 @@ end)
 
 -- [[ RENDERING ]]
 hook.Add("HUDPaint", "MW2_Killfeed_Draw", function()
-    if not GetConVar("mw2_enable_killfeed"):GetBool() then return end
+    if (not GetConVar("mw2_enable_killfeed"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
 
     local ct = CurTime()
 

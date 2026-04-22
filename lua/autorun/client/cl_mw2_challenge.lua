@@ -142,7 +142,13 @@ local function QueueNotification(id, header, level, sub, subval, pts)
 			_G.MW2_AddScore(pts)
 		end)
 	end
+
+    if id ~= "debug" then
+        MW2_Stats.completed[id] = true
+        SaveMW2Stats()
+    end
 	
+	if (not GetConVar("mw2_enable_challenges"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
 
     table.insert(notificationQueue, {
 		header = header,
@@ -152,11 +158,6 @@ local function QueueNotification(id, header, level, sub, subval, pts)
 		start  = 0,
 		points = pts
 	})
-
-    if id ~= "debug" then
-        MW2_Stats.completed[id] = true
-        SaveMW2Stats()
-    end
 end
 
 -- [[ NETWORK RECEIVERS ]]
@@ -250,6 +251,7 @@ end
 hook.Add("HUDPaint", "MW2_DrawChallenges", function()
     if not GetConVar("cl_drawhud"):GetBool() then return end
     if _G.MW2_MedalsActive then return end
+	
 	local outlined = GetConVar("mw2_enable_outlinedtext"):GetBool()
 
     if not activeNotif then

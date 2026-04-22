@@ -186,6 +186,7 @@ local showScoreboard = false
 
 hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
     if not showScoreboard then return end
+	if (not GetConVar("mw2_enable_scoreboard"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
 	local outlined = GetConVar("mw2_enable_outlinedtext"):GetBool()
 
     local scrW, scrH = ScrW(), ScrH()
@@ -323,11 +324,20 @@ hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
     end
 end)
 
-hook.Add("ScoreboardShow", "MW2_Scoreboard_Open",  function() showScoreboard = true  return true end)
-hook.Add("ScoreboardHide", "MW2_Scoreboard_Close", function() showScoreboard = false end)
+hook.Add("ScoreboardShow", "MW2_Scoreboard_Open",  function() 
+	if (not GetConVar("mw2_enable_scoreboard"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
+	showScoreboard = true 
+	return true
+end)
+
+hook.Add("ScoreboardHide", "MW2_Scoreboard_Close", function() 
+	if (not GetConVar("mw2_enable_scoreboard"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
+	showScoreboard = false
+end)
 
 hook.Add("HUDShouldDraw", "MW2_Scoreboard_HideHUD", function(name)
     -- Suppress the entire HUD when scoreboard is open (except crosshair)
+	if (not GetConVar("mw2_enable_scoreboard"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
     if showScoreboard then
         if name == "CHudCrosshair" then return true end
         return false

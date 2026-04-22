@@ -28,7 +28,7 @@ hook.Add("PlayerEndVoice", "MW2_VoiceEnd", function(ply)
 end)
 
 hook.Add("HUDPaint", "MW2_DrawVoiceChat", function()
-	if not GetConVar("cl_drawhud"):GetBool() then return end
+	if (not GetConVar("mw2_enable_minimap"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
     local yOffset = 0
 
     for ply, _ in pairs(activeSpeakers) do
@@ -49,7 +49,7 @@ hook.Add("HUDPaint", "MW2_DrawVoiceChat", function()
         surface.DrawTexturedRect(VOICE_X, drawY, ICON_SIZE, ICON_SIZE)
 
         -- Draw Name
-        draw.SimpleText(ply:Nick(), VOICE_FONT, VOICE_X + ICON_SIZE + TEXT_X_OFFSET, drawY, Color(255, 255, 255, 255), 0, 0)
+        draw.SimpleText(ply:Nick(), VOICE_FONT, VOICE_X + ICON_SIZE + TEXT_X_OFFSET, drawY, Color(255, 255, 255), 0, 0)
 
         yOffset = yOffset + SPACING
     end
@@ -63,5 +63,6 @@ timer.Create("MW2_VoiceKiller", 1, 0, function()
 end)
 
 hook.Add("HUDShouldDraw", "MW2_HideVoiceHUD", function(name)
+	if (not GetConVar("mw2_enable_minimap"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
     if name == "CHudVoiceStatus" then return false end
 end)

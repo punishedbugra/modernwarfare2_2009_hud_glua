@@ -1,0 +1,17 @@
+UnLitGeneric
+{
+	$basetexture 			"mw2menu\menu_cloud_overlay"
+	$translucent			1
+	$vertexcolor			1
+	$vertexalpha			1
+
+Proxies
+	{
+	TextureScroll
+		{
+		texturescrollvar $basetexturetransform
+		texturescrollrate 0.015
+		texturescrollangle 180
+		}
+	}
+}

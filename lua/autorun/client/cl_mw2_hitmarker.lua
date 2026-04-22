@@ -99,7 +99,7 @@ if CLIENT then
         local cx, cy = ScrW() / 2, ScrH() / 2
 
         -- DRAW HITMARKER (icon size intentionally fixed, not scaled)
-        if ct < hitTime and GetConVar("mw2_enable_hitmarker"):GetBool() then
+        if ct < hitTime and (GetConVar("mw2_enable_hitmarker"):GetBool() and not GetConVar("mw2_quickdisable_hud"):GetBool()) then
             local fade = math.Clamp((hitTime - ct) / 0.9, 0, 1) * 255
             surface.SetMaterial(matHit)
             surface.SetDrawColor(255, 255, 255, fade)
@@ -109,7 +109,7 @@ if CLIENT then
 
         -- SCORE POPUP
         if ct < scoreTime then
-            if GetConVar("mw2_enable_xp"):GetBool() then
+            if (GetConVar("mw2_enable_xp"):GetBool() and not GetConVar("mw2_quickdisable_hud"):GetBool()) then
                 local animTime = ct - scoreStart
 
                 if animTime < 0.1 then
@@ -156,7 +156,9 @@ if CLIENT then
         hitAlpha = 255
         hitTime  = ct + 0.5
 
-        ply:EmitSound("hud/hitmarker.mp3", 100, 100, 1, CHAN_AUTO)
+		if GetConVar("mw2_enable_hitmarker"):GetBool() and not GetConVar("mw2_quickdisable_hud"):GetBool() then
+			ply:EmitSound("hud/hitmarker.mp3", 100, 100, 1, CHAN_AUTO)
+		end
 
         if isKill then _G.MW2_AddScore(100) end
     end)

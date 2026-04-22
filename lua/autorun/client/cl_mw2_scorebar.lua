@@ -284,7 +284,7 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
 end
 
 hook.Add("HUDPaint", "MW2_ScoreBar", function()
-    if not GetConVar("mw2_enable_scorebar"):GetBool() then return end
+    if (not GetConVar("mw2_enable_scorebar"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
 	if not GetConVar("cl_drawhud"):GetBool() then return end
 	local outlined = GetConVar("mw2_enable_outlinedtext"):GetBool()
 
@@ -355,7 +355,7 @@ hook.Add("HUDPaint", "MW2_ScoreBar", function()
 end)
 
 hook.Add("HUDPaint", "MW2_Scorebar_Merged", function()
-    if not GetConVar("mw2_enable_scorebar"):GetBool() then return end
+    if (not GetConVar("mw2_enable_scorebar"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
 	if not GetConVar("cl_drawhud"):GetBool() then return end
 
     if not IsValid(LocalPlayer()) then return end
@@ -558,7 +558,7 @@ hook.Add("HUDPaint", "MW2_Scorebar_Merged", function()
 end)
 
 hook.Add("HUDPaint", "DrawMyCustomArrow", function()
-    if not GetConVar("mw2_enable_scorebar"):GetBool() then return end
+    if (not GetConVar("mw2_enable_scorebar"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
 	if not GetConVar("cl_drawhud"):GetBool() then return end
 
     local scrW, scrH = ScrW(), ScrH()

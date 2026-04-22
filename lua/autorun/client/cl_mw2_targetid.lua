@@ -1,7 +1,7 @@
 if CLIENT then
     -- Master toggle for the entire label logic
-    local cvLabel = CreateClientConVar("mw2_targetid_label", "1", true, false, "Enable/Disable target identification labels")
-    local cvDeath = CreateClientConVar("mw2_targetid_death_icon", "1", true, false, "Show death icon when a friendly dies")
+    CreateClientConVar("mw2_targetid_label", "1", true, false, "Enable/Disable target identification labels")
+    CreateClientConVar("mw2_targetid_death_icon", "1", true, false, "Show death icon when a friendly dies")
 
     local CFG = {
         Y_OFFSET_NEAR       = 12, 
@@ -84,7 +84,7 @@ if CLIENT then
         local screenCenter = Vector(scrW / 2, scrH / 2, 0)
 
         -- Handle Death Icons
-        if cvDeath:GetBool() then
+        if GetConVar("mw2_targetid_death_icon"):GetBool() and not GetConVar("mw2_quickdisable_hud"):GetBool() then
             for i = #deathMarkers, 1, -1 do
                 local m = deathMarkers[i]
                 local elapsed = CurTime() - m.time
@@ -114,7 +114,7 @@ if CLIENT then
         end
 
         -- Handle Target Labels (Only if enabled)
-        if not cvLabel:GetBool() then return end
+        if (not GetConVar("mw2_targetid_label"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
 
         for _, ent in ipairs(ents.GetAll()) do
             if not IsValid(ent) or ent == lp then continue end

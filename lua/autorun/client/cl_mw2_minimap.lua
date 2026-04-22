@@ -45,7 +45,7 @@ hook.Add("HUDPaint", "MW2_Minimap_UAV", function()
     local ply = LocalPlayer()
     if not IsValid(ply) or not ply:Alive() then return end
     
-    if not GetConVar("mw2_enable_minimap"):GetBool() then return end
+    if (not GetConVar("mw2_enable_minimap"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
 	if not GetConVar("cl_drawhud"):GetBool() then return end
 
     local x, y = SX(MAP_CFG.X), SY(MAP_CFG.Y)

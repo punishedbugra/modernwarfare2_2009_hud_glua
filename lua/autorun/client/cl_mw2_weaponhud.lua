@@ -150,7 +150,7 @@ hook.Add("OnScreenSizeChanged", "MW2_ReinitFonts", MW2_InitFonts)
 -- [[ HUD HIDING ]]
 local HIDE = { ["CHudAmmo"] = true, ["CHudSecondaryAmmo"] = true, ["CHudHealth"] = true, ["CHudBattery"] = true }
 hook.Add("HUDShouldDraw", "MW2_HideDefaultHUD", function(name)
-	if not GetConVar("mw2_enable_weaponinfo"):GetBool() then return end
+	if (not GetConVar("mw2_enable_weaponinfo"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
 	
     if HIDE[name] then return false end
 end)
@@ -206,7 +206,7 @@ local wepSwitchTime = 0
 
 -- [[ MAIN MERGED DRAW HOOK ]]
 hook.Add("HUDPaint", "MW2_MergedHUD", function()
-	if not GetConVar("mw2_enable_weaponinfo"):GetBool() then return end
+	if (not GetConVar("mw2_enable_weaponinfo"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
 	if not GetConVar("cl_drawhud"):GetBool() then return end
 	local outlined = GetConVar("mw2_enable_outlinedtext"):GetBool()
 	

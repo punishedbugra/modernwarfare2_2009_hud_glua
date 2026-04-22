@@ -28,9 +28,9 @@ if CLIENT then
     local activeMedal = nil
 
     -- TIMING
-    local MEDAL_DURATION = 1.5
-    local FADE_IN_TIME   = 0.15
-    local EXIT_DURATION  = 0.15
+    local MEDAL_DURATION = 1.25
+    local FADE_IN_TIME   = 0.125
+    local EXIT_DURATION  = 0.125
     local FADE_OUT_START = MEDAL_DURATION - EXIT_DURATION
 
     local COL_POINTS = Color(255, 255, 50)
@@ -54,8 +54,7 @@ if CLIENT then
         if _G.MW2_AddScore then _G.MW2_AddScore(pts) end
         
         -- Check for the CVar before queuing
-        local cv = GetConVar("mw2_enable_medals")
-        if cv and not cv:GetBool() then return end
+		if (not GetConVar("mw2_enable_medals"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
 
         table.insert(medalQueue, {
             text      = txt,
