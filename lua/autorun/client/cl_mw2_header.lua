@@ -139,6 +139,42 @@ local function DrawCODText(text, fullText, pri, sec, shd, x, y, glow)
     draw.SimpleText(text, pri, startX,     y,     Color(255,255,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
 end
 
+local function DrawStableText(self, text, x, y)
+    surface.SetFont(self.fonts.pri)
+
+    local chars = {}
+    for i = 1, utf8.len(text) do
+        chars[i] = utf8.sub(text, i, i)
+    end
+
+    local totalW = surface.GetTextSize(text)
+    local startX = x - totalW / 2
+
+    for i = 1, #chars do
+        local c = chars[i]
+
+        -- erase phase: replace removed chars with space (NOT deletion)
+        if self.phase == "erase" then
+            if self.eraseBlanks[i] then
+                c = " "
+            end
+        end
+
+        local w = surface.GetTextSize(c)
+
+        -- glitch overlay only during write
+        if self.phase == "write" and i == self.written + 1 then
+            c = GLITCH[math.random(#GLITCH)]
+        end
+
+        draw.SimpleText(c, self.fonts.sec, startX, y + 1, self.color, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        draw.SimpleText(c, self.fonts.shd, startX + 2, y + 1, Color(0,0,0,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        draw.SimpleText(c, self.fonts.pri, startX, y, self.color, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+
+        startX = startX + w
+    end
+end
+
 local RE_MATS = {}
 local function GetSpawnMat(id)
     if RE_MATS[id] then return RE_MATS[id] end
@@ -159,12 +195,14 @@ function MW2_Header:Update()
     local now = CurTime()
 
     local speed = self.iconFadeInSpeed or 400
-    self.iconAlpha = math.min(255, self.iconAlpha + FrameTime() * speed)
-    self.subAlpha  = math.min(255, self.subAlpha  + FrameTime() * speed)
+
 
     -- WRITE
     if self.phase == "write" then
         local interval = 1 / self.writeSpeed
+		
+		self.iconAlpha = math.min(255, self.iconAlpha + FrameTime() * speed)
+		self.subAlpha  = math.min(255, self.subAlpha  + FrameTime() * speed)
 
         if now >= self.nextWrite and self.written < utf8.len(self.text) then
             self.written = self.written + 1
@@ -180,6 +218,10 @@ function MW2_Header:Update()
 
     -- HOLD
 	if self.phase == "hold" then
+	
+		self.iconAlpha = math.min(255, self.iconAlpha + FrameTime() * speed)
+		self.subAlpha  = math.min(255, self.subAlpha  + FrameTime() * speed)
+		
 		if self.persist then
 			if self.endTime and CurTime() >= self.endTime then
 				self.phase = "done"
@@ -198,17 +240,20 @@ function MW2_Header:Update()
 
     -- ERASE
 	if self.phase == "erase" then
+		self.iconAlpha = math.max(0, self.iconAlpha - FrameTime() * self.iconFadeOutSpeed)
+		self.subAlpha  = math.max(0, self.subAlpha  - FrameTime() * self.iconFadeOutSpeed)
+		
 		if self.skipErase then
 			-- Skip erase entirely
 			self.phase = "done"
 			return
 		end
 
-		local step = self.eraseTime / math.max(1, math.ceil(utf8.len(self.text) / 5))
+		local step = self.eraseTime / math.max(1, math.ceil(utf8.len(self.text) / 1))
 
 		if now >= self.nextErase then
 			self.nextErase = now + step
-			BlankStep(self.eraseBlanks, self.text, 5)
+			BlankStep(self.eraseBlanks, self.text, 2)
 
 			if not self.eraseSoundPlayed then
 				surface.PlaySound("hud/cod_dissapear.mp3")
@@ -216,19 +261,13 @@ function MW2_Header:Update()
 			end
 		end
 
-		if #self.eraseBlanks >= utf8.len(self.text) then
+		if (#self.eraseBlanks >= utf8.len(self.text)) and (self.iconAlpha == 0) and (self.subAlpha == 0) then
 			self.phase = "done"
 		end
 
 		if not self.fadeOutStart then
 			self.fadeOutStart = now
 		end
-
-		local fadeDur = 0.25
-		local t = math.Clamp((now - self.fadeOutStart) / fadeDur, 0, 1)
-
-		self.iconAlpha = math.max(0, self.iconAlpha - FrameTime() * self.iconFadeOutSpeed)
-		self.subAlpha  = math.max(0, self.subAlpha  - FrameTime() * self.iconFadeOutSpeed)
 	end
 end
 
@@ -262,18 +301,7 @@ function MW2_Header:Draw()
     -- SUBTEXT
 	if self.subtext then
 		local col = Color(self.subcolor.r, self.subcolor.g, self.subcolor.b, self.subAlpha)
-
-		draw.SimpleTextOutlined(
-			self.subtext,
-			self.fonts.sub or self.fonts.pri,
-			self.x,
-			self.y + 30,
-			col,
-			TEXT_ALIGN_CENTER,
-			TEXT_ALIGN_TOP,
-			outlined and 1 or 0,
-			Color(0,0,0, col.a)
-		)
+		draw.SimpleTextOutlined( self.subtext, self.fonts.sub or self.fonts.pri, self.x, self.y + 30, col, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, outlined and 1 or 0, Color(0,0,0, col.a) )
 	end
 
     -- ICON
@@ -444,9 +472,19 @@ end)
     -- end
 -- end)
 
+local function MW2_ShouldHideHUD()
+    if gui.IsGameUIVisible() then return true end
+    if gui.IsConsoleVisible() then return true end
+    if vgui.CursorVisible() then return true end
+    if IsValid(ScoreBoard) then return true end -- fallback safety
+    if MW2_ScoreboardOpened then return true end -- fallback safety
+    return false
+end
+
 hook.Add("DrawOverlay", "MW2_Header_Draw", function()
     if not GetConVar("cl_drawhud"):GetBool() then return end
     if _G.MW2_MedalsActive then return end
+    if MW2_ShouldHideHUD() then return end
 
     if not MW2_HeaderQueue.Active then return end
 

@@ -154,60 +154,6 @@ local sb_open = false
 hook.Add("ScoreboardShow", "MW2_RS_SBShow", function() sb_open = true  end)
 hook.Add("ScoreboardHide", "MW2_RS_SBHide", function() sb_open = false end)
 
-local function utf8_sub(str, startChar, endChar)
-    startChar = startChar or 1
-    endChar = endChar or -1
-
-    local startByte = utf8.offset(str, startChar)
-    local endByte = utf8.offset(str, endChar + 1)
-
-    if startByte then
-        if endByte then
-            return string.sub(str, startByte, endByte - 1)
-        else
-            return string.sub(str, startByte)
-        end
-    end
-
-    return ""
-end
-
-local function BlankStep(blanks, text, n)
-    local avail = {}
-    for i = 1, utf8.len(text) do
-        local found = false
-        for _, b in ipairs(blanks) do
-            if b == i then found = true; break end
-        end
-        if not found then avail[#avail + 1] = i end
-    end
-    for i = 1, math.min(n, #avail) do
-        local idx = math.random(1, #avail)
-        blanks[#blanks + 1] = avail[idx]
-        table.remove(avail, idx)
-    end
-end
-
-local function ApplyBlanks(text, blanks)
-    local chars = {}
-    for i = 1, utf8.len(text) do chars[i] = utf8.sub(text, i, i) end
-    for _, b in ipairs(blanks) do
-        if chars[b] then chars[b] = " " end
-    end
-    return table.concat(chars)
-end
-
-local function DrawCODText(text, fullText, pri, sec, shd, x, y, glow)
-    surface.SetFont(pri)
-    local fullW = surface.GetTextSize(fullText)
-
-    local startX = x - fullW / 2
-
-    draw.SimpleText(text, sec, startX + 2, y + 1, glow, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-    draw.SimpleText(text, shd, startX + 2, y + 1, Color(0,0,0,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-    draw.SimpleText(text, pri, startX,     y,     Color(255,255,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-end
-
 local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, align, squeezeOneBefore, outlineW)
     local str = tostring(text)
     surface.SetFont(font)

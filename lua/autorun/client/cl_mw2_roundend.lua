@@ -52,11 +52,6 @@ local CFG = {
 }
 
 -- ============================================================
---  Glitch chars
--- ============================================================
-local GLITCH = { "a", "¶", "Ð", "ق", "§", "ð", "œ", "ش", "Ф" }
-
--- ============================================================
 --  Music / voices
 -- ============================================================
 local VICTORY_MUSIC = {
@@ -75,14 +70,6 @@ local function CalcMatchBonus(kills)
     if kills == 0 then return math.random(100, 130) end
     local base = math.floor(100 + (kills / 75) ^ 2 * 2400)
     return math.Clamp(base + math.random(-50, 100), 100, 2500)
-end
-
--- ============================================================
---  Color Helper (Prevents nil color errors from halting the render hook)
--- ============================================================
-local function GetSafeColor(col)
-    if not col then return Color(255, 255, 255, 255) end
-    return Color(col.r or 255, col.g or 255, col.b or 255, col.a or 255)
 end
 
 -- ============================================================
@@ -108,90 +95,17 @@ RE_InitFonts()
 hook.Add("OnScreenSizeChanged", "MW2_RE_ReinitFonts", RE_InitFonts)
 
 -- ============================================================
---  DrawCODText
--- ============================================================
-local function DrawCODText(text, fullText, pri, sec, shd, x, y, glow)
-    surface.SetFont(pri)
-    local fullW  = surface.GetTextSize(fullText)
-    local startX = x - fullW / 2
-
-    draw.SimpleText(text, sec, startX + 2, y + 1, glow,              TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-    draw.SimpleText(text, shd, startX + 2, y + 1, Color(0, 0, 0, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-    draw.SimpleText(text, pri, startX,     y,     Color(255, 255, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-end
-
--- ============================================================
---  Spawn icon material cache
--- ============================================================
-local RE_MATS = {}
-local function GetSpawnMat(id)
-    if RE_MATS[id] then return RE_MATS[id] end
-    if not MW2Factions or not MW2Factions[id] then return nil end
-    RE_MATS[id] = Material(MW2Factions[id].spawnIcon, "smooth")
-    return RE_MATS[id]
-end
-
--- ============================================================
---  Write-in helpers
--- ============================================================
-local function utf8_sub(str, startChar, endChar)
-    startChar = startChar or 1
-    endChar = endChar or -1
-
-    local startByte = utf8.offset(str, startChar)
-    local endByte = utf8.offset(str, endChar + 1)
-
-    if startByte then
-        if endByte then
-            return string.sub(str, startByte, endByte - 1)
-        else
-            return string.sub(str, startByte)
-        end
-    end
-
-    return ""
-end
-
-local function AdvanceWrite(ws, interval, now, sound)
-    if ws.done then return end
-    local len = string.len(ws.str)
-    if len == 0 then ws.done = true; return end
-    if now >= ws.nxt and ws.written < len then
-        ws.written = ws.written + 1
-        ws.nxt     = now + interval
-        if sound then surface.PlaySound("hud/cod_write.mp3") end
-        if ws.written >= len then ws.done = true end
-    end
-end
-
-local function WriteDisplay(ws)
-    if ws.done then return ws.str end
-    local disp = utf8_sub(ws.str, 0, ws.written)
-    if string.len(ws.str) > 0 and ws.written < utf8.len(ws.str) then
-        disp = disp .. GLITCH[math.random(1, #GLITCH)]
-    end
-    return disp
-end
-
--- ============================================================
 --  State
 -- ============================================================
 local re_active       = false
 local re_lock_time    = 0
 local re_bw           = 0
 
-local re_winner       = " "
-local re_loser        = " "
-local re_has_two      = false
-local re_left_fac     = " "
-local re_right_fac    = " "
 local re_match_bonus  = 0
 
 -- Write-in states
-local ws_result = { str = " ", written = 0, nxt = 0, done = false }
-local ws_limit  = { str = " ", written = 0, nxt = 0, done = false }
-local ws_left   = { str = " ", written = 0, nxt = 0, done = false }
-local ws_right  = { str = " ", written = 0, nxt = 0, done = false }
+local ws_result = ""
+local ws_limit = ""
 
 local re_result_glow  = Color(255, 255, 255)
 
@@ -257,21 +171,19 @@ net.Receive("MW2_RoundEnd", function()
 
     -- Result text + glow color
     if winnerFac == "" then
-        ws_result.str = "MW2_MP_DRAW"
+        ws_result = "MW2_MP_DRAW"
         re_result_glow = Color(255, 255, 255)
     elseif isVictory then
-        ws_result.str = "MW2_MP_VICTORY"
+        ws_result = "MW2_MP_VICTORY"
         re_result_glow = Color(0, 220, 80)
     else
-        ws_result.str = "MW2_MP_DEFEAT"
+        ws_result = "MW2_MP_DEFEAT"
         re_result_glow = Color(220, 60, 60)
     end
 
     -- Write-in state reset
-    ws_result = { str = language.GetPhrase(ws_result.str), written = 0, nxt = now,       done = false }
-    ws_limit  = { str = language.GetPhrase("MW2_MP_SCORE_LIMIT_REACHED"), written = 0, nxt = now, done = false }
-    ws_left   = { str = tostring(leftSc or 0),  written = 0, nxt = now,       done = false }
-    ws_right  = { str = tostring(rightSc or 0), written = 0, nxt = now,       done = false }
+    ws_result = language.GetPhrase(ws_result)
+    ws_limit = language.GetPhrase("MW2_MP_SCORE_LIMIT_REACHED")
 
     -- Music
     if voiceTag then
@@ -344,7 +256,7 @@ net.Receive("MW2_RoundEnd", function()
 
 	-- Text
 	MW2_HeaderQueue.Push({
-		text = ws_result.str,
+		text = ws_result,
 		x = SX(CFG.RESULT_X),
 		y = SY(CFG.RESULT_Y),
 		color = re_result_glow,
@@ -361,7 +273,7 @@ net.Receive("MW2_RoundEnd", function()
 	})
 
 	MW2_HeaderQueue.Push({
-		text = ws_limit.str,
+		text = ws_limit,
 		x = SX(CFG.LIMIT_X),
 		y = SY(CFG.LIMIT_Y),
 		color = Color(135, 135, 180),
@@ -397,17 +309,6 @@ hook.Add("Think", "MW2_RE_Think", function()
 
     local now = CurTime()
     re_bw = math.Clamp((now - re_lock_time) / CFG.BW_FADE_TIME, 0, 1)
-
-    local el = now - re_lock_time
-
-    -- AdvanceWrite(ws_result, 1.0 / math.max(1, string.len(ws_result.str)), now, true)
-
-    -- AdvanceWrite(ws_left,  1.0 / math.max(1, string.len(ws_left.str)),  now, true)
-    -- if re_has_two then
-        -- AdvanceWrite(ws_right, 1.0 / math.max(1, string.len(ws_right.str)), now, false)
-    -- end
-
-    -- AdvanceWrite(ws_limit, 1.0 / math.max(1, string.len(ws_limit.str)), now, true)
 end)
 
 -- ============================================================
