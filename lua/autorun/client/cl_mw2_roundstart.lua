@@ -72,8 +72,6 @@ local MW2_RS_GM_NAMES = {
     "gtnw", -- Global Thermonuclear War
 }
 
-local MW2_RS_GLITCH = { "a", "¶", "Ð", "ق", "§", "ð", "œ", "ش", "Ф" }
-
 local MW2_RS_OBJECTIVES = {
     ["war"] = "MW2_MP_OBJ_WAR_HINT", -- TDM
     ["dm"] = "MW2_MP_OBJ_DM_HINT", -- FFA
@@ -139,34 +137,17 @@ local rs_glow       = Color(255, 255, 255)
 local rs_icon_mat   = nil
 local rs_icon_alpha = 0
 
-local rs_h_text    = ""
-local rs_h_written = 0
-local rs_h_nxt_w   = 0
-local rs_h_done    = false
-local rs_h_blanks  = {}
-local rs_h_nxt_e   = 0
-local rs_h_edone   = false
-local rs_h_erase_sound_played = false
-
 local rs_remaining = COUNTDOWN_DURATION
 local rs_last_dig  = -1
 local rs_dig_scale = 1.0
-
-local rs_o_text    = ""
-local rs_o_written = 0
-local rs_o_nxt_w   = 0
-local rs_o_done    = false
-local rs_o_hang_st = 0
-local rs_o_erasing = false
-local rs_o_blanks  = {}
-local rs_o_nxt_e   = 0
-local rs_o_edone   = false
-local rs_o_erase_sound_played = false
 
 local rs_bw         = 0
 local rs_boost_done = false
 local rs_locked_ang = nil
 local rs_gamemode	= "war"
+
+local rs_header = nil
+local rs_objective = nil
 
 local sb_open = false
 
@@ -296,27 +277,30 @@ local function MW2_RS_Start(gamemode)
     rs_icon_mat   = Material(fdata.spawnIcon, "smooth")
     rs_icon_alpha = 0
 
-    rs_h_text    = language.GetPhrase(fdata.name)
-    rs_h_written = 0
-    rs_h_nxt_w   = CurTime()
-    rs_h_done    = false
-    rs_h_blanks  = {}
-    rs_h_edone   = false
-	rs_h_erase_sound_played = false
-
     rs_remaining = COUNTDOWN_DURATION
     rs_last_dig  = -1
     rs_dig_scale = 1.0
 
-    rs_o_text    = language.GetPhrase( MW2_RS_OBJECTIVES[gamemode] or MW2_RS_OBJECTIVES["war"] )
-    rs_o_written = 0
-    rs_o_done    = false
-    rs_o_erasing = false
-    rs_o_blanks  = {}
-    rs_o_edone   = false
-	rs_o_erase_sound_played = false
-
     rs_bw = 1
+
+	MW2_HeaderQueue.Push({
+		text = language.GetPhrase(fdata.name),
+		x = SX(CFG.HEADER_X),
+		y = SY(CFG.HEADER_Y),
+		color = rs_glow,
+		
+		-- iconX = SX(CFG.ICON_X),
+		iconY = SY(CFG.ICON_Y),
+		iconSize = S(CFG.ICON_SIZE),
+
+		fonts = {
+			pri = "MW2_RS_H_Pri",
+			sec = "MW2_RS_H_Sec",
+			shd = "MW2_RS_H_Shd"
+		},
+
+		icon = rs_icon_mat
+	})
 
 	timer.Simple( 0.1, function() -- Tiny delay for round restart
 		if GetConVar("mw2_enable_music"):GetBool() and MW2_RS_SPAWN_MUSIC[rs_short] then
@@ -340,6 +324,14 @@ hook.Add("Think", "MW2_RS_Think", function()
 
     local now = CurTime()
 
+	if rs_header then
+		rs_header:Update()
+	end
+
+	if rs_objective then
+		rs_objective:Update()
+	end
+
     if rs_phase == "faction" then
         local elapsed = now - rs_seq_start
         rs_remaining  = math.max(0, COUNTDOWN_DURATION - math.floor(elapsed))
@@ -354,26 +346,9 @@ hook.Add("Think", "MW2_RS_Think", function()
             rs_bw = 0
         end
 
-        if not rs_h_done then
-            -- local interval = CFG.HEADER_WRITE / math.max(1, utf8.len(rs_h_text))
-			local CHARS_PER_SEC = 16
-			local interval = 1 / CHARS_PER_SEC
-            if now >= rs_h_nxt_w and rs_h_written < utf8.len(rs_h_text) then
-                rs_h_written = rs_h_written + 1
-                rs_h_nxt_w   = now + interval
-                surface.PlaySound("hud/cod_write.mp3")
-                if rs_h_written >= utf8.len(rs_h_text) then rs_h_done = true end
-            end
-        end
-
-        local fade_in_spd = 255 / math.max(0.01, CFG.ICON_FADE)
-        rs_icon_alpha = math.min(255, rs_icon_alpha + fade_in_spd * FrameTime())
-
         if elapsed >= COUNTDOWN_DURATION then
             rs_phase       = "erase_faction"
             rs_phase_start = now
-            rs_h_nxt_e     = now
-            rs_h_edone     = false
             rs_movement_locked = false
         end
 
@@ -387,74 +362,32 @@ hook.Add("Think", "MW2_RS_Think", function()
 			if sound then MW2HUD_PlayAnnouncerSound(sound, false) end
         end
 
-        if not rs_h_edone then
-            local step_iv = erase_t / math.max(1, math.ceil(utf8.len(rs_h_text) / 5))
-            if now >= rs_h_nxt_e then
-                rs_h_nxt_e = now + step_iv
-                BlankStep(rs_h_blanks, rs_h_text, 5)
-                if not rs_h_erase_sound_played then
-					surface.PlaySound("hud/cod_dissapear.mp3")
-					rs_h_erase_sound_played = true
-				end
-                if #rs_h_blanks >= utf8.len(rs_h_text) then rs_h_edone = true end
-            end
-        end
-
-        local fade_out_spd = 255 / erase_t
-        rs_icon_alpha = math.max(0, rs_icon_alpha - fade_out_spd * FrameTime())
-
         if elapsed >= erase_t then
             rs_phase       = "objective"
             rs_phase_start = now
-            rs_o_written   = 0
-            rs_o_nxt_w     = now
-            rs_o_done      = false
-            rs_o_hang_st   = 0
-            rs_o_erasing   = false
-            rs_o_blanks    = {}
-            rs_o_edone     = false
+            MW2_HeaderQueue.Push({
+				text = language.GetPhrase(MW2_RS_OBJECTIVES[rs_gamemode] or MW2_RS_OBJECTIVES["war"]),
+				x = SX(CFG.OBJ_X),
+				y = SY(CFG.OBJ_Y),
+				color = OBJ_GLOW,
+
+				writeSpeed = 12,
+				holdTime   = CFG.OBJ_HANG,
+				eraseTime  = CFG.OBJ_ERASE,
+
+				fonts = {
+					pri = "MW2_RS_O_Pri",
+					sec = "MW2_RS_O_Sec",
+					shd = "MW2_RS_O_Shd"
+				}
+			})
         end
 
-    elseif rs_phase == "objective" then
-        local wt = math.max(0.01, CFG.OBJ_WRITE)
-        local ht = CFG.OBJ_HANG
-        local et = math.max(0.01, CFG.OBJ_ERASE)
-
-        if not rs_o_done then
-            local interval = wt / math.max(1, utf8.len(rs_o_text))
-			local CHARS_PER_SEC = 12
-			local interval = 1 / CHARS_PER_SEC
-            if now >= rs_o_nxt_w and rs_o_written < utf8.len(rs_o_text) then
-                rs_o_written = rs_o_written + 1
-                rs_o_nxt_w   = now + interval
-                surface.PlaySound("hud/cod_write.mp3")
-                if rs_o_written >= utf8.len(rs_o_text) then
-                    rs_o_done    = true
-                    rs_o_hang_st = now
-                end
-            end
-        elseif not rs_o_erasing then
-            if now >= rs_o_hang_st + ht then
-                rs_o_erasing = true
-                rs_o_nxt_e   = now
-            end
-        else
-            if not rs_o_edone then
-                local step_iv = et / math.max(1, math.ceil(utf8.len(rs_o_text) / 5))
-                if now >= rs_o_nxt_e then
-                    rs_o_nxt_e = now + step_iv
-                    BlankStep(rs_o_blanks, rs_o_text, 5)
-                    if not rs_o_erase_sound_played then
-						surface.PlaySound("hud/cod_dissapear.mp3")
-						rs_o_erase_sound_played = true
-					end
-                    if #rs_o_blanks >= utf8.len(rs_o_text) then rs_o_edone = true end
-                end
-            else
-                MW2_RS_End()
-            end
-        end
-    end
+	elseif rs_phase == "objective" then
+		if rs_objective and rs_objective:IsDone() then
+			MW2_RS_End()
+		end
+	end
 end)
 
 hook.Add("HUDPaint", "MW2_RS_Draw", function()
@@ -463,36 +396,9 @@ hook.Add("HUDPaint", "MW2_RS_Draw", function()
     if not IsValid(LocalPlayer()) then return end
 	local outlined = GetConVar("mw2_enable_outlinedtext"):GetBool()
 
-    local hx  = SX(CFG.HEADER_X)
-    local hy  = SY(CFG.HEADER_Y)
-    local ix  = SX(CFG.ICON_X)
-    local iy  = SY(CFG.ICON_Y)
-    local isz = S(CFG.ICON_SIZE)
     local tx  = SX(CFG.TIMER_X)
     local ty  = SY(CFG.TIMER_Y)
     local syo = SY(CFG.STATIC_Y_OFFSET)
-
-    if rs_phase == "faction" or rs_phase == "erase_faction" then
-        local disp
-        if rs_phase == "faction" then
-            disp = utf8_sub(rs_h_text, 0, rs_h_written)
-            if not rs_h_done and rs_h_written < utf8.len(rs_h_text) then
-                disp = disp .. MW2_RS_GLITCH[math.random(1, #MW2_RS_GLITCH)]
-            end
-        else
-            disp = ApplyBlanks(rs_h_text, rs_h_blanks)
-        end
-
-        if disp ~= "" then
-            DrawCODText(disp, rs_h_text, "MW2_RS_H_Pri", "MW2_RS_H_Sec", "MW2_RS_H_Shd", hx, hy, rs_glow)
-        end
-
-        if rs_icon_mat and rs_icon_alpha > 0 then
-            surface.SetMaterial(rs_icon_mat)
-            surface.SetDrawColor(255, 255, 255, math.floor(rs_icon_alpha))
-            surface.DrawTexturedRect(ix, iy, isz, isz)
-        end
-    end
 
     if rs_phase == "faction" then
         local disp = math.max(0, rs_remaining)
@@ -513,30 +419,7 @@ hook.Add("HUDPaint", "MW2_RS_Draw", function()
                 DrawSqueezedText(disp, "MW2_RS_Timer", tx, ty, Color(255,255,100), -2, -6, 1, -4, outlined and 1 or 0)
             cam.PopModelMatrix()
 
-            -- draw.SimpleText("#MW2_MP_MATCH_STARTING_IN", "MW2_RS_S_Pri", tx, ty + syo, Color(255, 255, 255, 200), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-			
 			draw.SimpleTextOutlined( "#MW2_MP_MATCH_STARTING_IN", "MW2_RS_S_Pri", tx, ty + syo, Color(255,255,255), 1, 1, outlined and 1 or 0, Color(0,0,0) )
-        end
-    end
-
-    if rs_phase == "objective" then
-        local ox = SX(CFG.OBJ_X)
-        local oy = SY(CFG.OBJ_Y)
-
-        local disp
-        if not rs_o_done then
-            disp = utf8_sub(rs_o_text, 0, rs_o_written)
-            if rs_o_written < utf8.len(rs_o_text) then
-                disp = disp .. MW2_RS_GLITCH[math.random(1, #MW2_RS_GLITCH)]
-            end
-        elseif rs_o_erasing then
-            disp = ApplyBlanks(rs_o_text, rs_o_blanks)
-        else
-            disp = rs_o_text
-        end
-
-        if disp ~= "" then
-            DrawCODText(disp, rs_o_text, "MW2_RS_O_Pri", "MW2_RS_O_Sec", "MW2_RS_O_Shd", ox, oy, OBJ_GLOW)
         end
     end
 end)
@@ -583,52 +466,3 @@ net.Receive("MW2_RoundStart", function()
         MW2_RS_Start(gamemode)
     end)
 end)
-
--- local rs_confirm = nil
-
--- local function MW2_RS_OpenConfirm()
-    -- if IsValid(rs_confirm) then rs_confirm:Remove() end
-
-    -- rs_confirm = vgui.Create("DFrame")
-    -- rs_confirm:SetSize(420, 160)
-    -- rs_confirm:Center()
-    -- rs_confirm:SetTitle("#MW2HUD.RoundStart")
-    -- rs_confirm:MakePopup()
-
-    -- local lbl = vgui.Create("DLabel", rs_confirm)
-    -- lbl:SetPos(10, 30)
-    -- lbl:SetSize(400, 60)
-    -- lbl:SetText("#MW2HUD.RoundStart.Notice")
-    -- lbl:SetWrap(true)
-    -- lbl:SetDark(true)
-
-    -- local btn_nah = vgui.Create("DButton", rs_confirm)
-    -- btn_nah:SetPos(20, 110)
-    -- btn_nah:SetSize(100, 35)
-    -- btn_nah:SetText("#MW2HUD.RoundStart.No")
-    -- btn_nah.DoClick = function()
-        -- rs_confirm:Remove()
-    -- end
-
-    -- local btn_go = vgui.Create("DButton", rs_confirm)
-    -- btn_go:SetPos(300, 110)
-    -- btn_go:SetSize(100, 35)
-    -- btn_go:SetText("#MW2HUD.RoundStart.Yes")
-    -- btn_go.DoClick = function()
-        -- rs_confirm:Remove()
-
-        -- local gm = GetConVar("mw2_selected_gamemode"):GetString()
-
-		-- net.Start("MW2_StartRound")
-		-- net.SendToServer()
-    -- end
--- end
-
--- concommand.Add("mw2_roundstart", function()
-    -- local lp = LocalPlayer()
-    -- if not IsValid(lp) or not lp:IsAdmin() then
-        -- print("[MW2] Admin only.")
-        -- return
-    -- end
-    -- MW2_RS_OpenConfirm()
--- end)

@@ -135,6 +135,19 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
     end
 end
 
+local function SortLogic(a, b)
+    local scoreA = math.max(0, a:Frags() * 100)
+    local scoreB = math.max(0, b:Frags() * 100)
+
+    if scoreA == scoreB then
+        if a == LocalPlayer() then return true end
+        if b == LocalPlayer() then return false end
+        return a:Nick() < b:Nick()
+    end
+
+    return scoreA > scoreB
+end
+
 local function DrawPlayerRow(ply, lp, x, y, w, h, barRight, bgCol)
     -- Background
     surface.SetDrawColor(bgCol.r, bgCol.g, bgCol.b, CFG.BAR_ALPHA)
@@ -193,39 +206,40 @@ hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
     local lp = LocalPlayer()
 
     -- 1. IDENTIFY FACTIONS & PLAYERS
-    local myFactionKey = lp:GetNW2String("MW2_Faction", "rangers")
-    if myFactionKey == "" then myFactionKey = "rangers" end
+	local factions = {}
 
-    local friendlyPlayers = {}
-    local enemyPlayers    = {}
-    local enemyFactionKey = nil
+	for _, p in ipairs(player.GetAll()) do
+		local fac = p:GetNW2String("MW2_Faction", "rangers")
+		if fac == "" then fac = "rangers" end
 
-    for _, p in ipairs(player.GetAll()) do
-        local fac = p:GetNW2String("MW2_Faction", "rangers")
-        if fac == "" then fac = "rangers" end
-
-        if fac == myFactionKey then
-            table.insert(friendlyPlayers, p)
-        else
-            table.insert(enemyPlayers, p)
-            if not enemyFactionKey then enemyFactionKey = fac end
-        end
-    end
+		factions[fac] = factions[fac] or {}
+		table.insert(factions[fac], p)
+	end
 
     -- 2. SORT PLAYERS
-    local function SortLogic(a, b)
-        local scoreA = math.max(0, a:Frags() * 100)
-        local scoreB = math.max(0, b:Frags() * 100)
-        if scoreA == scoreB then
-            if a == lp then return true end
-            if b == lp then return false end
-            return a:Nick() < b:Nick()
-        end
-        return scoreA > scoreB
-    end
+	local factionList = {}
 
-    table.sort(friendlyPlayers, SortLogic)
-    table.sort(enemyPlayers, SortLogic)
+	for fac, players in pairs(factions) do
+		table.sort(players, SortLogic)
+
+		table.insert(factionList, {
+			key = fac,
+			players = players,
+			score = 0
+		})
+	end
+
+	for _, f in ipairs(factionList) do
+		local score = 0
+		for _, p in ipairs(f.players) do
+			score = score + math.max(0, p:Frags() * 100)
+		end
+		f.score = score
+	end
+
+	table.sort(factionList, function(a, b)
+		return a.score > b.score
+	end)
 
     -- 3. LAYOUT POSITIONS
     local barW = S(CFG.BAR_W)
@@ -233,42 +247,52 @@ hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
     local barX = (scrW / 2) - (barW / 2) + S(CFG.BAR_X_OFF)
     local barRight = barX + barW
 
-    local friendlyStartY = S(CFG.BAR_Y_OFF)
-    local enemyStartY = friendlyStartY + (#friendlyPlayers * (barH + S(CFG.ROW_GAP))) + S(CFG.TEAM_GAP)
+	local startY = S(CFG.BAR_Y_OFF)
+
+	for fi, facData in ipairs(factionList) do
+		local players = facData.players
+		local facKey = facData.key
+		local fData = MW2Factions and MW2Factions[facKey] or {
+			name = facKey,
+			short = facKey,
+			color = Color(120,120,120)
+		}
+
+		local sectionY = startY
+
+		-- ICON
+		local iconPath = "factions/faction_128_" .. facKey .. ".png"
+		local mat = Material(iconPath, "smooth")
+
+		surface.SetMaterial(mat)
+		surface.SetDrawColor(255,255,255,255)
+		surface.DrawTexturedRect(barX + S(CFG.ICON_X_OFF), sectionY + S(CFG.ICON_Y_OFF), S(CFG.ICON_SIZE), S(CFG.ICON_SIZE))
+
+		draw.SimpleTextOutlined(
+			language.GetPhrase(fData.short) .. " (" .. #players .. ")",
+			"MW2_Scoreboard_Text",
+			barX + S(CFG.FAC_NAME_X),
+			sectionY + S(CFG.FAC_NAME_Y),
+			Color(255,255,255),
+			0,0,
+			outlined and 1 or 0,
+			Color(0,0,0)
+		)
+
+		-- rows
+		for i, ply in ipairs(players) do
+			local rowY = sectionY + (i - 1) * (barH + S(CFG.ROW_GAP))
+			DrawPlayerRow(ply, lp, barX, rowY, barW, barH, barRight, fData.color)
+		end
+
+		-- push next faction down
+		local sectionHeight = S(0) + (#players * (barH + S(CFG.ROW_GAP)))
+		startY = startY + sectionHeight + S(CFG.TEAM_GAP)
+	end
 
     surface.SetDrawColor(110, 110, 110, CFG.HEADER_ALPHA)
     surface.SetMaterial(MAT_GRADIENT_L)
     surface.DrawTexturedRect(0, S(CFG.HEADER_Y_POS), scrW, S(CFG.HEADER_H))
-
-    -- Friendly Header
-    local myTeamScore = 0
-    for _, p in ipairs(friendlyPlayers) do myTeamScore = myTeamScore + math.max(0, p:Frags() * 100) end
-
-    local hIconPath = "factions/faction_128_" .. myFactionKey .. ".png"
-    local hMatIcon  = Material(hIconPath, "smooth")
-    surface.SetMaterial(hMatIcon)
-    surface.SetDrawColor(255, 255, 255, 255)
-
-    local hIconSize = S(CFG.HEADER_ICON_SIZE)
-    local hIconX = S(CFG.HEADER_ICON_X)
-    local hIconY = S(CFG.HEADER_Y_POS) + (S(CFG.HEADER_H) / 2) - (hIconSize / 2)
-    surface.DrawTexturedRect(hIconX, hIconY, hIconSize, hIconSize)
-    DrawSqueezedText(myTeamScore, "MW2_Scoreboard_Timer", hIconX + hIconSize + S(10), S(CFG.TIMER_Y_OFF), Color(255, 255, 255, 255), CFG.SQUEEZE, CFG.SQUEEZE_ONE, 0, CFG.SQUEEZE_ONE_BEFORE)
-
-    -- Enemy Header
-    if #enemyPlayers > 0 and enemyFactionKey then
-        local enemyTeamScore = 0
-        for _, p in ipairs(enemyPlayers) do enemyTeamScore = enemyTeamScore + math.max(0, p:Frags() * 100) end
-
-        local eIconPath = "factions/faction_128_" .. enemyFactionKey .. ".png"
-        local eMatIcon  = Material(eIconPath, "smooth")
-        surface.SetMaterial(eMatIcon)
-        surface.SetDrawColor(255, 255, 255, 255)
-
-        local eIconX = S(CFG.HEADER_ENEMY_ICON_X)
-        surface.DrawTexturedRect(eIconX, hIconY, hIconSize, hIconSize)
-        DrawSqueezedText(enemyTeamScore, "MW2_Scoreboard_Timer", eIconX + hIconSize + S(10), S(CFG.TIMER_Y_OFF), Color(255, 255, 255, 255), CFG.SQUEEZE, CFG.SQUEEZE_ONE, 0, CFG.SQUEEZE_ONE_BEFORE)
-    end
 
     -- Map name
     local mapName = string.upper(game.GetMap())
@@ -281,41 +305,66 @@ hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
     DrawSqueezedText(timeStr, "MW2_Scoreboard_Timer", scrW - S(CFG.TIMER_X_POS), S(CFG.TIMER_Y_OFF), Color(255, 255, 255, 255), CFG.SQUEEZE, CFG.SQUEEZE_ONE, 0, CFG.SQUEEZE_ONE_BEFORE)
 
     -- Stats column headers
-    local fData = MW2Factions and MW2Factions[myFactionKey] or { name = "Friendly", color = Color(100, 100, 100) }
-    local hy    = friendlyStartY + S(CFG.STATS_HEADER_Y)
+    local headerY = S(CFG.BAR_Y_OFF) - S(35)
+	draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_DEATHS"), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_DEATHS), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
+	draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_ASSISTS"), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_ASSISTS), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
+	draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_KILLS"), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_KILLS), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
+	draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_SCORE"), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_SCORE), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
+	
+	
+	local lp = LocalPlayer()
+	local myFaction = lp:GetNW2String("MW2_Faction", "rangers")
+	if myFaction == "" then myFaction = "rangers" end
+	
+	table.sort(factionList, function(a, b)
+		if a.key == myFaction then return true end
+		if b.key == myFaction then return false end
+		return a.score > b.score
+	end)
 
-    draw.SimpleTextOutlined(language.GetPhrase( "MW2_CGAME_SB_DEATHS" ), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_DEATHS),  hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
-    draw.SimpleTextOutlined(language.GetPhrase( "MW2_CGAME_SB_ASSISTS" ), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_ASSISTS), hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
-    draw.SimpleTextOutlined(language.GetPhrase( "MW2_CGAME_SB_KILLS" ), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_KILLS),   hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
-    draw.SimpleTextOutlined(language.GetPhrase( "MW2_CGAME_SB_SCORE" ), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_SCORE),   hy, Color(255, 255, 255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
+	local stripX = S(20)
+	local stripY = S(CFG.HEADER_Y_POS) + (S(CFG.HEADER_H) / 2) - (S(CFG.HEADER_ICON_SIZE) / 2)
+	local stripGap = S(18)
+	local iconSize = S(CFG.HEADER_ICON_SIZE)
+	local textOffset = S(8)
+	
+	local x = stripX
 
-    -- Friendly team section
-    surface.SetMaterial(hMatIcon)
-    surface.SetDrawColor(255, 255, 255, 255)
-    surface.DrawTexturedRect(barX + S(CFG.ICON_X_OFF), friendlyStartY + S(CFG.ICON_Y_OFF), S(CFG.ICON_SIZE), S(CFG.ICON_SIZE))
-    draw.SimpleTextOutlined( language.GetPhrase( fData.short ) .. " (" .. #friendlyPlayers .. ")", "MW2_Scoreboard_Text", barX + S(CFG.FAC_NAME_X), friendlyStartY + S(CFG.FAC_NAME_Y), Color(255, 255, 255), 0, 0, outlined and 1 or 0, Color(0,0,0) )
+	surface.SetFont("MW2_Scoreboard_Text")
 
-    for i, ply in ipairs(friendlyPlayers) do
-        local rowY = friendlyStartY + (i - 1) * (barH + S(CFG.ROW_GAP))
-        DrawPlayerRow(ply, lp, barX, rowY, barW, barH, barRight, fData.color)
-    end
+	for _, fac in ipairs(factionList) do
+		local key = fac.key
+		local players = fac.players
+		local score = fac.score or 0
 
-    -- Enemy team section
-    if #enemyPlayers > 0 and enemyFactionKey then
-        local eData     = MW2Factions and MW2Factions[enemyFactionKey] or { name = "Enemy", color = Color(150, 50, 50) }
-        local eIconPath = "factions/faction_128_" .. enemyFactionKey .. ".png"
-        local eMatIcon  = Material(eIconPath, "smooth")
+		local fData = MW2Factions and MW2Factions[key] or {
+			short = key,
+			color = Color(150,150,150)
+		}
 
-        surface.SetMaterial(eMatIcon)
-        surface.SetDrawColor(255, 255, 255, 255)
-        surface.DrawTexturedRect(barX + S(CFG.ICON_X_OFF), enemyStartY + S(CFG.ICON_Y_OFF), S(CFG.ICON_SIZE), S(CFG.ICON_SIZE))
-        draw.SimpleTextOutlined( language.GetPhrase( eData.short ) .. " (" .. #enemyPlayers .. ")", "MW2_Scoreboard_Text", barX + S(CFG.FAC_NAME_X), enemyStartY + S(CFG.FAC_NAME_Y), Color(255, 255, 255), 0, 0, outlined and 1 or 0, Color(0,0,0) )
+		local iconPath = "factions/faction_128_" .. key .. ".png"
+		local mat = Material(iconPath, "smooth")
 
-        for i, ply in ipairs(enemyPlayers) do
-            local rowY = enemyStartY + (i - 1) * (barH + S(CFG.ROW_GAP))
-            DrawPlayerRow(ply, lp, barX, rowY, barW, barH, barRight, eData.color)
-        end
-    end
+		if mat:IsError() then
+			mat = Material("vgui/hud/icon_error")
+		end
+
+		-- format label (NOW uses SCORE instead of player count)
+		local label = score
+
+		local textW, textH = surface.GetTextSize(label)
+
+		-- icon (aligned left)
+		surface.SetMaterial(mat)
+		surface.SetDrawColor(255,255,255,255)
+		surface.DrawTexturedRect(x, stripY, iconSize, iconSize)
+
+		-- text (VERTICALLY CENTERED like old system)
+		draw.SimpleTextOutlined( label, "MW2_Scoreboard_Text", x + iconSize + textOffset, stripY + iconSize / 2, Color(255,255,255), 0, 1, outlined and 1 or 0, Color(0,0,0) )
+
+		-- spacing correction (tightened + consistent)
+		x = x + iconSize + textW + S(25)
+	end
 
     -- Manually call the custom chat hook so it draws while the rest of the HUD is suppressed
     local hudHooks = hook.GetTable()["HUDPaint"]

@@ -25,6 +25,7 @@ local CFG = {
     MUSIC_DELAY      = 0.0,
     VOICE_DELAY      = 3.0,
 	POINTS_DELAY     = 4.0,
+	SCOREBOARD_DELAY = 6.0,
 
     ICON_SIZE        = 184,
     ICON_X           = 960,
@@ -292,8 +293,91 @@ net.Receive("MW2_RoundEnd", function()
         end)
     end
 
+	-- Team Scores
+	local teamsMap = {}
+
+	for _, p in ipairs(player.GetAll()) do
+		local fac = p:GetNW2String("MW2_Faction", "rangers")
+		if fac ~= "" then
+			teamsMap[fac] = teamsMap[fac] or {
+				fac = fac,
+				score = 0
+			}
+
+			teamsMap[fac].score = teamsMap[fac].score + math.max(0, p:Frags() * 100)
+		end
+	end
+
+	local teams = {}
+
+	for _, t in pairs(teamsMap) do
+		table.insert(teams, t)
+	end
+
+	-- Ensure local faction is first (optional but consistent with HUD)
+	local lp = LocalPlayer()
+	local localFac = lp:GetNW2String("MW2_Faction", "rangers")
+
+	table.sort(teams, function(a, b)
+		return (a.score or 0) > (b.score or 0)
+	end)
+
+	MW2_HeaderQueue.Push({
+		teams = teams,
+		x = SX(CFG.ICON_X),
+		y = SY(CFG.ICON_Y),
+		multiple = true,
+		persist = true,
+		endTime = CFG.SCOREBOARD_DELAY,
+
+		iconSize = S(CFG.ICON_SIZE),
+		iconGap  = S(CFG.ICON_GAP),
+
+		scoreY = SY(CFG.SCORE_Y),
+
+		fonts = {
+			score_pri = "MW2_RE_Sc_Pri",
+			score_sec = "MW2_RE_Sc_Sec",
+			score_shd = "MW2_RE_Sc_Shd",
+		}
+	})
+
+	-- Text
+	MW2_HeaderQueue.Push({
+		text = ws_result.str,
+		x = SX(CFG.RESULT_X),
+		y = SY(CFG.RESULT_Y),
+		color = re_result_glow,
+		multiple = true,
+		skipErase = true,
+		persist = true,
+		endTime = CFG.SCOREBOARD_DELAY,
+		fonts = {
+			pri = "MW2_RE_Re_Pri",
+			sec = "MW2_RE_Re_Sec",
+			shd = "MW2_RE_Re_Shd",
+			sub = "MW2_ChalSub"
+		}
+	})
+
+	MW2_HeaderQueue.Push({
+		text = ws_limit.str,
+		x = SX(CFG.LIMIT_X),
+		y = SY(CFG.LIMIT_Y),
+		color = Color(135, 135, 180),
+		multiple = true,
+		skipErase = true,
+		persist = true,
+		endTime = CFG.SCOREBOARD_DELAY,
+		fonts = {
+			pri = "MW2_RE_Li_Pri",
+			sec = "MW2_RE_Li_Sec",
+			shd = "MW2_RE_Li_Shd",
+		}
+	})
+
     -- Scoreboard opens at 6s, overlay drawing stops at 6s
-    timer.Create("MW2_RE_Board", 6.0, 1, function()
+    timer.Create("MW2_RE_Board", CFG.SCOREBOARD_DELAY, 1, function()
         if re_active then RunConsoleCommand("+showscores") end
     end)
 
@@ -316,16 +400,14 @@ hook.Add("Think", "MW2_RE_Think", function()
 
     local el = now - re_lock_time
 
-    AdvanceWrite(ws_result, 1.0 / math.max(1, string.len(ws_result.str)), now, true)
+    -- AdvanceWrite(ws_result, 1.0 / math.max(1, string.len(ws_result.str)), now, true)
 
-    AdvanceWrite(ws_left,  1.0 / math.max(1, string.len(ws_left.str)),  now, true)
-    if re_has_two then
-        AdvanceWrite(ws_right, 1.0 / math.max(1, string.len(ws_right.str)), now, false)
-    end
-
-    -- if el >= 1.0 then
-        AdvanceWrite(ws_limit, 1.0 / math.max(1, string.len(ws_limit.str)), now, true)
+    -- AdvanceWrite(ws_left,  1.0 / math.max(1, string.len(ws_left.str)),  now, true)
+    -- if re_has_two then
+        -- AdvanceWrite(ws_right, 1.0 / math.max(1, string.len(ws_right.str)), now, false)
     -- end
+
+    -- AdvanceWrite(ws_limit, 1.0 / math.max(1, string.len(ws_limit.str)), now, true)
 end)
 
 -- ============================================================
@@ -385,67 +467,6 @@ hook.Add("DrawOverlay", "MW2_RE_Draw", function()
     if el >= 6.0 then return end
 
     local iconAlpha = math.floor(math.Clamp(el / CFG.ICON_FADE_TIME, 0, 1) * 255)
-
-    local cx    = SX(CFG.ICON_X)
-    local isz   = S(CFG.ICON_SIZE)
-    local iconY = SY(CFG.ICON_Y)
-    local gap   = S(CFG.ICON_GAP)
-    local scx   = SX(CFG.SCORE_X)
-    local scy   = SY(CFG.SCORE_Y)
-
-    if re_has_two then
-        local lx = cx - gap / 2 - isz / 2
-        local rx = cx + gap / 2 + isz / 2
-
-        local mL = GetSpawnMat(re_left_fac)
-        if mL then
-            surface.SetMaterial(mL); surface.SetDrawColor(255, 255, 255, iconAlpha)
-            surface.DrawTexturedRect(lx - isz / 2, iconY, isz, isz)
-        end
-        local mR = GetSpawnMat(re_right_fac)
-        if mR then
-            surface.SetMaterial(mR); surface.SetDrawColor(255, 255, 255, iconAlpha)
-            surface.DrawTexturedRect(rx - isz / 2, iconY, isz, isz)
-        end
-
-        local fdL = MW2Factions and MW2Factions[re_left_fac]
-        local fdR = MW2Factions and MW2Factions[re_right_fac]
-        local lScoreCX = scx - gap / 2 - isz / 2
-        local rScoreCX = scx + gap / 2 + isz / 2
-
-        if fdL then
-            DrawCODText(WriteDisplay(ws_left), ws_left.str,
-                "MW2_RE_Sc_Pri", "MW2_RE_Sc_Sec", "MW2_RE_Sc_Shd",
-                lScoreCX, scy, GetSafeColor(fdL.glow))
-        end
-        if fdR then
-            DrawCODText(WriteDisplay(ws_right), ws_right.str,
-                "MW2_RE_Sc_Pri", "MW2_RE_Sc_Sec", "MW2_RE_Sc_Shd",
-                rScoreCX, scy, GetSafeColor(fdR.glow))
-        end
-    else
-        local mat = GetSpawnMat(re_winner)
-        if mat then
-            surface.SetMaterial(mat); surface.SetDrawColor(255, 255, 255, iconAlpha)
-            surface.DrawTexturedRect(cx - isz / 2, iconY, isz, isz)
-        end
-        local fd = MW2Factions and MW2Factions[re_winner]
-        if fd then
-            DrawCODText(WriteDisplay(ws_left), ws_left.str,
-                "MW2_RE_Sc_Pri", "MW2_RE_Sc_Sec", "MW2_RE_Sc_Shd",
-                scx, scy, GetSafeColor(fd.glow))
-        end
-    end
-
-    DrawCODText(WriteDisplay(ws_result), ws_result.str,
-        "MW2_RE_Re_Pri", "MW2_RE_Re_Sec", "MW2_RE_Re_Shd",
-        SX(CFG.RESULT_X), SY(CFG.RESULT_Y), re_result_glow)
-
-    -- if el >= 1.0 then
-        DrawCODText(WriteDisplay(ws_limit), ws_limit.str,
-            "MW2_RE_Li_Pri", "MW2_RE_Li_Sec", "MW2_RE_Li_Shd",
-            SX(CFG.LIMIT_X), SY(CFG.LIMIT_Y), Color(135, 135, 180))
-    -- end
 
 	draw.SimpleTextOutlined( string.format( language.GetPhrase("MW2_MP_MATCH_BONUS_IS"), tostring(re_match_bonus) ), "MW2_RE_Bonus", SX(CFG.BONUS_X), SY(CFG.BONUS_Y), Color(240, 250, 110, iconAlpha), 1, 1, outlined and 1 or 0, Color(0,0,0, iconAlpha) )
 end)

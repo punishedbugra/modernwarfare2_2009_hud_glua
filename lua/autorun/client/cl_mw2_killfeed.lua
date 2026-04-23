@@ -144,8 +144,8 @@ hook.Add("AddDeathNotice", "MW2_Killfeed_Core", function(attacker, team1, inflic
 end)
 
 -- Meta Events
-gameevent.Listen("player_connect_client")
-hook.Add("player_connect_client", "MW2_Feed_Join", function(data)
+gameevent.Listen("player_connect")
+hook.Add("player_connect", "MW2_Feed_Join", function(data)
     table.insert(KillFeed, { type = "meta", msg = string.format( language.GetPhrase("MW2_MP_CONNECTED"), data.name ), spawnTime = CurTime(), dieTime = CurTime() + CFG.LIFETIME })
 end)
 
@@ -198,14 +198,9 @@ hook.Add("HUDPaint", "MW2_Killfeed_Draw", function()
             fadeFactor = math.Clamp(timeLeft, 0, 1)
         end
 
-		-- Check kill icon size
-		local cls = data.isHeadshot and "MW2_Headshot" or data.weaponClass
-		local w, h = killicon.GetSize(cls)
-
         -- Vertical Offset Logic: Start lower and rise up
         local yOffset = (1 - animProgress) * S(CFG.ANIM_RISE)
-        -- local currentY = baseY - ((#KillFeed - i) * spacing) + yOffset
-        local currentY = baseY - ((#KillFeed - i) * h) + yOffset
+		local currentY = baseY - ((#KillFeed - i) * spacing) + yOffset
 
         local x = xPos
         local finalTxtAlpha = CFG.TEXT_ALPHA * fadeFactor
@@ -222,6 +217,10 @@ hook.Add("HUDPaint", "MW2_Killfeed_Draw", function()
 		local vCol = Color(vColBase.r, vColBase.g, vColBase.b, finalTxtAlpha)
 
         if data.type == "kill" then
+			-- Check kill icon size
+			local cls = data.isHeadshot and "MW2_Headshot" or data.weaponClass
+			local w, h = killicon.GetSize(cls)
+
             -- 1. Attacker
             if data.attackerName != "" then
                 draw.SimpleText(data.attackerName, "MW2_KillfeedFont", x, currentY, aCol)
