@@ -334,7 +334,16 @@ end)
 hook.Add("CreateMove", "MW2_RE_Input", function(cmd)
     if not re_mvlock then return end
     cmd:ClearMovement()
-    cmd:ClearButtons()
+
+    cmd:RemoveKey(IN_ATTACK)
+	cmd:RemoveKey(IN_ATTACK2)
+	cmd:RemoveKey(IN_RELOAD)
+	cmd:RemoveKey(IN_USE)
+	cmd:RemoveKey(IN_JUMP)
+	cmd:RemoveKey(IN_DUCK)
+	cmd:RemoveKey(IN_SPEED)
+	cmd:RemoveKey(IN_WALK)
+	
     if CurTime() >= re_lock_time + 1.3 then
         if not re_locked_ang then re_locked_ang = cmd:GetViewAngles() end
         cmd:SetViewAngles(re_locked_ang)
