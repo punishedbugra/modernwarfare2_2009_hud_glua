@@ -134,45 +134,10 @@ local function DrawCODText(text, fullText, pri, sec, shd, x, y, glow)
 
     local startX = x - fullW / 2
 
-    draw.SimpleText(text, sec, startX + 2, y + 1, glow, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    draw.SimpleText(text, sec, startX + 4, y + 0, glow, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    draw.SimpleText(text, sec, startX - 4, y - 0, glow, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
     draw.SimpleText(text, shd, startX + 2, y + 1, Color(0,0,0,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
     draw.SimpleText(text, pri, startX,     y,     Color(255,255,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-end
-
-local function DrawStableText(self, text, x, y)
-    surface.SetFont(self.fonts.pri)
-
-    local chars = {}
-    for i = 1, utf8.len(text) do
-        chars[i] = utf8.sub(text, i, i)
-    end
-
-    local totalW = surface.GetTextSize(text)
-    local startX = x - totalW / 2
-
-    for i = 1, #chars do
-        local c = chars[i]
-
-        -- erase phase: replace removed chars with space (NOT deletion)
-        if self.phase == "erase" then
-            if self.eraseBlanks[i] then
-                c = " "
-            end
-        end
-
-        local w = surface.GetTextSize(c)
-
-        -- glitch overlay only during write
-        if self.phase == "write" and i == self.written + 1 then
-            c = GLITCH[math.random(#GLITCH)]
-        end
-
-        draw.SimpleText(c, self.fonts.sec, startX, y + 1, self.color, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        draw.SimpleText(c, self.fonts.shd, startX + 2, y + 1, Color(0,0,0,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        draw.SimpleText(c, self.fonts.pri, startX, y, self.color, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-
-        startX = startX + w
-    end
 end
 
 local RE_MATS = {}
