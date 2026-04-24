@@ -448,7 +448,7 @@ end
 
 hook.Add("DrawOverlay", "MW2_Header_Draw", function()
     if not GetConVar("cl_drawhud"):GetBool() then return end
-    if _G.MW2_MedalsActive then return end
+    if _G.MW2_MedalSystem and _G.MW2_MedalSystem.IsBusy() then return end
     if MW2_ShouldHideHUD() then return end
 
     if not MW2_HeaderQueue.Active then return end

@@ -14,6 +14,7 @@ CreateClientConVar("mw2_enable_music", "1", true, false, "Enable or disable the 
 CreateClientConVar("mw2_enable_medals", "1", true, false, "Enable or disable Kill Medals.")
 CreateClientConVar("mw2_enable_minimap", "1", true, false, "Enable or disable the Minimap.")
 CreateClientConVar("mw2_enable_medal_outlines", "0", true, false, "Enable or disable Kill Medal text outlines.")
+CreateClientConVar("mw2_enable_medal_faster", "0", true, false, "Enable or disable Kill Medals moving by faster if there's many queued up at once.")
 CreateClientConVar("mw2_enable_scorebar", "1", true, false, "Enable or disable the Scorebar.")
 CreateClientConVar("mw2_enable_hitmarker", "1", true, false, "Enable or disable the Hitmarker.")
 CreateClientConVar("mw2_enable_xp", "1", true, false, "Enable or disable XP text.")
@@ -186,6 +187,7 @@ local MW2_SETTINGS = {
 							{ type = "checkbox",	label = "#MW2HUD.Enable.Weapon",			convar = "mw2_enable_weaponinfo",		tooltip = "MW2HUD.Enable.Weapon.desc" },
 							{ type = "checkbox",	label = "#MW2HUD.Enable.Splash",			convar = "mw2_enable_medals",			tooltip = "MW2HUD.Enable.Splash.desc" },
 							{ type = "checkbox",	label = "#MW2HUD.Enable.Splash.Outline",	convar = "mw2_enable_medal_outlines",	tooltip = "MW2HUD.Enable.Splash.Outline.desc" },
+							{ type = "checkbox",	label = "#MW2HUD.Enable.Splash.Speedup",	convar = "mw2_enable_medal_faster",		tooltip = "MW2HUD.Enable.Splash.Speedup.desc" },
 							{ type = "checkbox",	label = "#MW2HUD.Enable.Feed",				convar = "mw2_enable_killfeed",			tooltip = "MW2HUD.Enable.Feed.desc" },
 							{ type = "checkbox",	label = "#MW2HUD.Enable.Map",				convar = "mw2_enable_minimap",			tooltip = "MW2HUD.Enable.Map.desc" },
 							{ type = "checkbox",	label = "#MW2HUD.Enable.Hitmarker",			convar = "mw2_enable_hitmarker",		tooltip = "MW2HUD.Enable.Hitmarker.desc" },

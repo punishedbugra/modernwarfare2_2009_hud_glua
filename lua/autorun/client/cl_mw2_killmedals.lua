@@ -3,6 +3,7 @@
 -- [[ GLOBALS ]]
 -- Global flag for the Challenge System to read
 _G.MW2_MedalsActive = _G.MW2_MedalsActive or false
+_G.MW2_MedalSystem = _G.MW2_MedalSystem or {}
 
 if CLIENT then
     -- [[ RESOLUTION SCALING ]]
@@ -27,7 +28,40 @@ if CLIENT then
     local medalQueue  = {}
     local activeMedal = nil
 
+    -- [[ HELPERS ]]
+	function _G.MW2_MedalSystem.Clear()
+		medalQueue = {}
+		activeMedal = nil
+		_G.MW2_MedalsActive = false
+	end
+
+	function _G.MW2_MedalSystem.SkipCurrent()
+		activeMedal = nil
+	end
+
+	function _G.MW2_MedalSystem.GetQueueSize()
+		return #medalQueue + (activeMedal and 1 or 0)
+	end
+
+	function _G.MW2_MedalSystem.IsBusy()
+		return activeMedal ~= nil or #medalQueue > 0
+	end
+
     -- TIMING
+	local function GetMedalSpeedMultiplier()
+		local count = #medalQueue
+		local t = 1.25
+		
+		if not GetConVar("mw2_enable_medal_faster"):GetBool() then return t end
+
+		if count >= 6 then return t * 0.2 end  -- ultra fast
+		if count >= 4 then return t * 0.4 end   -- very fast
+		if count >= 3 then return t * 0.6 end   -- faster
+		if count >= 2 then return t * 0.8 end  -- slightly faster
+
+		return t -- normal
+	end
+	
     local MEDAL_DURATION = 1.25
     local FADE_IN_TIME   = 0.125
     local EXIT_DURATION  = 0.125
@@ -92,101 +126,122 @@ if CLIENT then
         if _G.MW2_OnMedalReceived then _G.MW2_OnMedalReceived("payback") end
     end)
 
-    -- [[ RENDERING ]]
-    hook.Add("HUDPaint", "MW2_DrawMedalsSystem", function()
-        local ct = CurTime()
+	-- MEDAL PROGRESS
+	hook.Add("Think", "MW2_Medal_Progress", function()
+		if not activeMedal then return end
+
+		local speedMul = GetMedalSpeedMultiplier()
+		local ct = CurTime()
+
+		-- ONLY track time, DO NOT terminate here anymore
+		-- (prevents double-termination conflicts with HUDPaint)
+		activeMedal._ct = ct
+		activeMedal._speedMul = speedMul
+	end)
+
+
+	-- RENDERING
+	hook.Add("HUDPaint", "MW2_DrawMedalsSystem", function()
+		local ct = CurTime()
 		local outlined = GetConVar("mw2_enable_outlinedtext"):GetBool()
 
-        -- UPDATE GLOBAL FLAG: Tell the Challenge system if we are busy
-        if activeMedal ~= nil or #medalQueue > 0 then
-            _G.MW2_MedalsActive = true
-        else
-            _G.MW2_MedalsActive = false
-        end
+		local busy = (activeMedal ~= nil or #medalQueue > 0)
+		_G.MW2_MedalsActive = busy
 
-        if activeMedal == nil and #medalQueue > 0 then
-            activeMedal       = table.remove(medalQueue, 1)
-            activeMedal.start = ct
-            surface.PlaySound("hud/hud_medal.mp3")
-        end
+		if not activeMedal and #medalQueue > 0 then
+			activeMedal = table.remove(medalQueue, 1)
+			activeMedal.start = ct
+			
+			local cv_fast_medals = GetConVar("mw2_enable_medal_faster")
 
-        if activeMedal then
-            local age = ct - activeMedal.start
+			local faster = cv_fast_medals:GetBool()
 
-            if age > MEDAL_DURATION then
-                activeMedal = nil
-            else
-                local alpha = 255
-                local scale = 1
+			if (not faster) or (#medalQueue < 3) then
+				surface.PlaySound("hud/hud_medal.mp3")
+			end
+		end
 
-                if age < FADE_IN_TIME then
-                    local progress = age / FADE_IN_TIME
-                    alpha = progress * 255
-                    scale = Lerp(progress, 3.5, 1.0)
-                elseif age > FADE_OUT_START then
-                    local progress = (age - FADE_OUT_START) / EXIT_DURATION
-                    alpha = math.Clamp((1 - progress) * 255, 0, 255)
-                    scale = Lerp(progress, 1.0, 3.0)
-                end
+		if not activeMedal then return end
 
-                local cx = (ScrW() / 2) + S(MEDAL_CFG.X_OFFSET)
-                local cy = (ScrH() / 2) + S(MEDAL_CFG.Y_OFFSET)
+		-- TIME HANDLING
+		local speedMul = GetMedalSpeedMultiplier()
+		local age = (ct - activeMedal.start) / speedMul
 
-                local colWhite      = Color(255, 255, 255, alpha)
-                local colBlack      = Color(0, 0, 0, alpha * 0.8)
-                local colYellow     = Color(COL_POINTS.r, COL_POINTS.g, COL_POINTS.b, alpha)
-                local colRedGlow    = Color(195, 110, 115, alpha * 0.5)
-                local colRedOutline = Color(180, 0, 0, alpha * 0.8)
+		if age > MEDAL_DURATION then
+			activeMedal = nil
+			return
+		end
 
-                local mat = Matrix()
-                mat:Translate(Vector(cx, cy, 0))
-                mat:Scale(Vector(scale, scale, 1))
-                mat:Translate(Vector(-cx, -cy, 0))
+		-- VISUALS
+		local alpha = 255
+		local scale = 1
 
-                cam.PushModelMatrix(mat)
-                    -- 1. Draw Medal Icon
-                    if activeMedal.hasIcon then
-                        surface.SetDrawColor(255, 255, 255, alpha)
-                        surface.SetMaterial(Material("icons/crosshair_red.png", "smooth"))
-                        surface.DrawTexturedRect(cx - S(60), cy - S(120), S(120), S(120))
-                    end
+		if age < FADE_IN_TIME then
+			local progress = age / FADE_IN_TIME
+			alpha = progress * 255
+			scale = Lerp(progress, 3.5, 1.0)
 
-                    -- 2. Draw Medal Text
-                    local localizedText = language.GetPhrase("MW2_" .. activeMedal.text)
-                    -- draw.SimpleText(localizedText, "MW2_MedalGlow",    cx, cy, colRedGlow,    1, 1)
-                    -- draw.SimpleText(localizedText, "MW2_MedalOutline", cx, cy, colRedOutline, 1, 1)
-                    -- draw.SimpleText(localizedText, "MW2_MedalPrimary", cx, cy, colWhite,      1, 1)
-					
-					draw.SimpleTextOutlined( localizedText, "MW2_MedalGlow", cx, cy, Color(0,0,0,0), 1, 1, 0.75, colRedGlow )
-					draw.SimpleTextOutlined( localizedText, "MW2_MedalPrimary", cx, cy, colWhite, 1, 1, 0, colRedOutline )
+		elseif age > FADE_OUT_START then
+			local progress = (age - FADE_OUT_START) / EXIT_DURATION
+			alpha = math.Clamp((1 - progress) * 255, 0, 255)
+			scale = Lerp(progress, 1.0, 3.0)
+		end
 
-                    -- 3. Draw Description or Points
-                    if activeMedal.desc then
-                        local localizedDesc = language.GetPhrase("MW2_" .. activeMedal.desc)
-                        
-                        if activeMedal.isSpecial then
-							draw.SimpleTextOutlined( localizedDesc, "MW2_MedalDesc", cx, cy + S(35), colWhite, 1, 1, outlined and 1 or 0, colBlack )
-                        else
-                            local descText     = localizedDesc .. " ("
-                            local pointsText   = "+" .. activeMedal.points
-                            local bracketClose = ")"
+		local cx = (ScrW() / 2) + S(MEDAL_CFG.X_OFFSET)
+		local cy = (ScrH() / 2) + S(MEDAL_CFG.Y_OFFSET)
 
-                            surface.SetFont("MW2_MedalDesc")
-                            local w1 = surface.GetTextSize(descText)
-                            local w2 = surface.GetTextSize(pointsText)
-                            local totalW = w1 + w2 + surface.GetTextSize(bracketClose)
+		local colWhite      = Color(255, 255, 255, alpha)
+		local colBlack      = Color(0, 0, 0, alpha * 0.8)
+		local colYellow     = Color(COL_POINTS.r, COL_POINTS.g, COL_POINTS.b, alpha)
+		local colRedGlow    = Color(195, 110, 115, alpha * 0.5)
+		local colRedOutline = Color(180, 0, 0, alpha * 0.8)
 
-                            local startX = cx - (totalW / 2)
-                            
-							draw.SimpleTextOutlined( descText, "MW2_MedalDesc", startX, cy + S(35), colWhite, 0, 1, outlined and 1 or 0, colBlack )
-							draw.SimpleTextOutlined( pointsText, "MW2_MedalDesc", startX + w1, cy + S(35), colYellow, 0, 1, outlined and 1 or 0, colBlack )
-							draw.SimpleTextOutlined( bracketClose, "MW2_MedalDesc", startX + w1 + w2, cy + S(35), colWhite, 0, 1, outlined and 1 or 0, colBlack )
-                        end
-                    else
-						draw.SimpleTextOutlined( "+" .. activeMedal.points, "MW2_MedalDesc", cx, cy + S(35), colYellow, 1, 1, outlined and 1 or 0, colBlack )
-                    end
-                cam.PopModelMatrix()
-            end
-        end
-    end)
+		local mat = Matrix()
+		mat:Translate(Vector(cx, cy, 0))
+		mat:Scale(Vector(scale, scale, 1))
+		mat:Translate(Vector(-cx, -cy, 0))
+
+		cam.PushModelMatrix(mat)
+
+			-- ICON
+			if activeMedal.hasIcon then
+				surface.SetDrawColor(255, 255, 255, alpha)
+				surface.SetMaterial(Material("icons/crosshair_red.png", "smooth"))
+				surface.DrawTexturedRect(cx - S(60), cy - S(120), S(120), S(120))
+			end
+
+			-- TEXT
+			local localizedText = language.GetPhrase("MW2_" .. activeMedal.text)
+
+			draw.SimpleTextOutlined( localizedText, "MW2_MedalGlow", cx, cy, Color(0,0,0,0), 1, 1, 0.75, colRedGlow )
+			draw.SimpleTextOutlined( localizedText, "MW2_MedalPrimary", cx, cy, colWhite, 1, 1, 0, colRedOutline )
+
+			-- DESC / POINTS
+			if activeMedal.desc then
+				local localizedDesc = language.GetPhrase("MW2_" .. activeMedal.desc)
+
+				if activeMedal.isSpecial then
+					draw.SimpleTextOutlined( localizedDesc, "MW2_MedalDesc", cx, cy + S(35), colWhite, 1, 1, outlined and 1 or 0, colBlack )
+				else
+					local descText     = localizedDesc .. " ("
+					local pointsText   = "+" .. activeMedal.points
+					local bracketClose = ")"
+
+					surface.SetFont("MW2_MedalDesc")
+					local w1 = surface.GetTextSize(descText)
+					local w2 = surface.GetTextSize(pointsText)
+					local totalW = w1 + w2 + surface.GetTextSize(bracketClose)
+
+					local startX = cx - (totalW / 2)
+
+					draw.SimpleTextOutlined( descText, "MW2_MedalDesc", startX, cy + S(35), colWhite, 0, 1, outlined and 1 or 0, colBlack )
+					draw.SimpleTextOutlined( pointsText, "MW2_MedalDesc", startX + w1, cy + S(35), colYellow, 0, 1, outlined and 1 or 0, colBlack )
+					draw.SimpleTextOutlined( bracketClose, "MW2_MedalDesc", startX + w1 + w2, cy + S(35), colWhite, 0, 1, outlined and 1 or 0, colBlack )
+				end
+			else
+				draw.SimpleTextOutlined( "+" .. activeMedal.points, "MW2_MedalDesc", cx, cy + S(35), colYellow, 1, 1, outlined and 1 or 0, colBlack )
+			end
+
+		cam.PopModelMatrix()
+	end)
 end

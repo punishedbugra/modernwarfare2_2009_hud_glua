@@ -111,7 +111,7 @@ end
 local function ProcessQueue()
 
     if MW2_HeaderQueue.IsBusy() then return end
-
+	if _G.MW2_MedalsActive then return end
     if #notificationQueue == 0 then return end
 
     local n = table.remove(notificationQueue, 1)
@@ -181,10 +181,10 @@ hook.Add("Think", "MW2_Challenge_TextThink", function()
     ProcessQueue()
 end)
 
-hook.Add("HUDPaint", "MW2_DrawChallenges", function()
-    if not GetConVar("cl_drawhud"):GetBool() then return end
-    if _G.MW2_MedalsActive then return end
-end)
+-- hook.Add("HUDPaint", "MW2_DrawChallenges", function()
+    -- if not GetConVar("cl_drawhud"):GetBool() then return end
+    -- if _G.MW2_MedalsActive then return end
+-- end)
 
 -- [[ DEBUG COMMANDS ]]
 concommand.Add("challengeplay", function(ply, cmd, args)

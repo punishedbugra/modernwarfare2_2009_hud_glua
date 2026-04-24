@@ -137,6 +137,8 @@ net.Receive("MW2_RoundEnd", function()
     local winnerSc  = net.ReadInt(32)
     local loserSc   = net.ReadInt(32)
 
+	if _G.MW2_MedalSystem then _G.MW2_MedalSystem.Clear() end -- Clears kill messages
+
     local ply = LocalPlayer()
     if not IsValid(ply) then return end
 
