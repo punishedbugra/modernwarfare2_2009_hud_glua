@@ -1,4 +1,4 @@
-local SUSPENSE_VOLUME = 1 -- Adjusted for CreateSound (0.1 to 1.0)
+local SUSPENSE_VOLUME = 0.5 -- Adjusted for CreateSound (0.1 to 1.0)
 local MIN_DELAY = 15        -- seconds
 local MAX_DELAY = 20       -- seconds
 

@@ -45,12 +45,12 @@ hook.Add("Think", "MW2_Announcer_Score_Think", function()
 
     -- 5. Music Trigger (Passing 'true' to indicate this is music)
     if not MusicTriggered then
-        if (limit - lpScore) <= 300 and lpScore > 0 then
+        if (limit - lpScore) <= 300 and lpScore > topEnemyScore and lpScore > 0 then
             MusicTriggered = true
             MW2HUD_PlayAnnouncerSound("music/hz_mp_opfor_victory.mp3", true)
-        elseif (limit - topEnemyScore) <= 300 and topEnemyScore > 0 then
+        elseif (limit - topEnemyScore) <= 300 and topEnemyScore > lpScore and topEnemyScore > 0 then
             MusicTriggered = true
-            MW2HUD_PlayAnnouncerSound("music/hz_mp_timeout_losing.mp3", true)
+            MW2HUD_PlayAnnouncerSound("music/hz_mp_time_out_losing.mp3", true)
         end
     end
 

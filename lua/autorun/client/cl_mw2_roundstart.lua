@@ -14,7 +14,7 @@ local CFG = {
     HEADER_X         = 960,
     HEADER_Y         = 150,
     HEADER_FONT_SIZE = 64,
-    HEADER_WRITE     = 2.1,
+    HEADER_WRITE     = 3.3,
     HEADER_ERASE     = 0.7,
 
     ICON_X    = 896,
@@ -124,7 +124,7 @@ local MW2_RS_SPAWN_MUSIC = {
 }
 
 local OBJ_GLOW           = Color(0, 220, 80)
-local COUNTDOWN_DURATION = 5
+local COUNTDOWN_DURATION = 10
 
 local rs_active      = false
 local rs_movement_locked = false

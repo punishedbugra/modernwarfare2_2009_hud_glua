@@ -217,6 +217,7 @@ local MW2_SETTINGS = {
                     { name = "#MW2HUD.Admin", adminOnly = true, controls = {
                             { type = "checkbox", label = "#MW2HUD.Admin.EndScreen", convar = "mw2_enable_roundend", tooltip = "MW2HUD.Admin.EndScreen.desc" },
                             { type = "checkbox", label = "#MW2HUD.Admin.EndScreen.StartNext", convar = "mw2_enable_roundend_startnext", tooltip = "MW2HUD.Admin.EndScreen.StartNext.desc" },
+							{ type = "checkbox", label = "#MW2HUD.Admin.FriendlyFire", convar = "mw2_friendly_fire", tooltip = "MW2HUD.Admin.FriendlyFire.desc" },
 
                             {
                                 type = "slider",
