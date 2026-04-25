@@ -209,6 +209,6 @@ net.Receive("MW2_ChatMessage", function()
 end)
 
 hook.Add("HUDShouldDraw", "MW2_HideDefaultChat", function(name)
-    if not GetConVar("mw2_enable_chat"):GetBool() then return end
+    if (not GetConVar("mw2_enable_chat"):GetBool()) or GetConVar("mw2_quickdisable_hud"):GetBool() then return end
     if name == "CHudChat" then return false end
 end)

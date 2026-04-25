@@ -277,7 +277,7 @@ function MW2_Header:Draw()
     end
 
     -- SUBTEXT
-	if self.subtext ~= "" and self.subAlpha > 0 then
+	if self.subtext and self.subtext ~= "" and self.subAlpha > 0 then
 		local col = Color(self.subcolor.r, self.subcolor.g, self.subcolor.b, self.subAlpha)
 		local lines = string.Split(self.subtext, "\n")
 
