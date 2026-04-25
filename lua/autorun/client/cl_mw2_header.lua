@@ -7,6 +7,19 @@ MW2_HeaderQueue.Queue = {}
 
 local GLITCH = { "a", "¶", "Ð", "ق", "§", "ð", "œ", "ش", "Ф" }
 
+-- [[ RESOLUTION SCALING ]]
+local BASE_W, BASE_H = 1920, 1080
+
+local function GetUIScale()
+    local scaleX = ScrW() / BASE_W
+    local scaleY = ScrH() / BASE_H
+    return math.max(math.min(scaleX, scaleY), 0.5)
+end
+
+local function S(x)  return math.Round(x * GetUIScale()) end
+local function SX(x) return math.Round(x * GetUIScale()) end
+local function SY(y) return math.Round(y * GetUIScale()) end
+
 -- =========================
 -- Constructor
 -- =========================
@@ -22,8 +35,8 @@ function MW2_Header:New(cfg)
 	
 	o.subAlpha     = 255
 
-    o.x          = cfg.x
-    o.y          = cfg.y
+    o.x          = cfg.x or 960
+    o.y          = cfg.y or 205
 
     o.fonts      = cfg.fonts
 
@@ -264,9 +277,13 @@ function MW2_Header:Draw()
     end
 
     -- SUBTEXT
-	if self.subtext then
+	if self.subtext ~= "" and self.subAlpha > 0 then
 		local col = Color(self.subcolor.r, self.subcolor.g, self.subcolor.b, self.subAlpha)
-		draw.SimpleTextOutlined( self.subtext, self.fonts.sub or self.fonts.pri, self.x, self.y + 30, col, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, outlined and 1 or 0, Color(0,0,0, col.a) )
+		local lines = string.Split(self.subtext, "\n")
+
+		for i, line in ipairs(lines) do
+			draw.SimpleTextOutlined( line, self.fonts.sub, self.x, self.y + S(25) + (i - 1) * S(24), col, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, outlined and 1 or 0, Color(0,0,0,col.a) )
+		end
 	end
 
     -- ICON
