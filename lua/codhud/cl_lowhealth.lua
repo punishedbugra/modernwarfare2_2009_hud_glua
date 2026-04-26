@@ -8,8 +8,8 @@ local lastHealth = 100
 local flashEndTime = 0
 
 -- Materials
-local MAT_BLOOD_DEFOCUS = Material("lowhealth/blood_defocus_color.png")
-local MAT_BLOOD_OVERLAY = Material("lowhealth/blood_overlay_lowhp.png")
+local MAT_BLOOD_DEFOCUS = Material("mw2/lowhealth/blood_defocus_color.png")
+local MAT_BLOOD_OVERLAY = Material("mw2/lowhealth/blood_overlay_lowhp.png")
 
 hook.Add("HUDPaint", "LowHealth_BloodHUD_Dynamic", function()
     local ply = LocalPlayer()

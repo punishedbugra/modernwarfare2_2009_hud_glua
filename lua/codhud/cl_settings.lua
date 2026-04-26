@@ -1,11 +1,5 @@
 ---- [ SETTINGS FILE ] ----
 
--- [[ FACTION CONFIGURATION ]]
-local factionOrder = {
-    "rangers", "taskforce141", "seals",
-    "ussr", "arab", "militia"
-}
-
 -- [[ CLIENT CONVARS ]]
 CreateClientConVar("codhud_quickdisable_hud", "0", true, false, "Quickly disable all MW2 HUD options.")
 CreateClientConVar("codhud_quickdisable_audio", "0", true, false, "Quickly disable all MW2 Audio options.")
@@ -26,6 +20,9 @@ CreateClientConVar("codhud_enable_prompts", "1", true, false, "Enable or disable
 CreateClientConVar("codhud_enable_chat", "1", true, false, "Enable or disable the Chat.")
 CreateClientConVar("codhud_enable_challenges", "1", true, false, "Enable or disable the Challenge prompts.")
 CreateClientConVar("codhud_enable_scoreboard", "1", true, false, "Enable or disable the Scoreboard.")
+
+CreateClientConVar("codhud_enable_iff", "1", true, false, "Enable/Disable target identification labels")
+CreateClientConVar("codhud_enable_deathicon", "1", true, false, "Show death icon when a friendly dies")
 
 CreateClientConVar("codhud_enable_outlinedtext", "0", true, false, "Enable or disable outlines on certain HUD texts.")
 
@@ -71,15 +68,14 @@ local function CoDHUD_RS_OpenConfirm()
 
     rs_confirm.Paint = function(self, w, h)
         draw.RoundedBox(0, 0, 0, w, h, Color(100,100,100))
-
-        surface.SetDrawColor(255, 255, 255, 125)
-        surface.SetMaterial(Material("mw2menu/menu_anim"))
-        surface.DrawTexturedRect(0, 0, w, h)
 		
-        surface.SetDrawColor(255, 255, 255)
-        surface.SetMaterial(Material("mw2menu/menu_bg"))
-        surface.DrawTexturedRect(0, 0, w, h)
-
+		surface.SetDrawColor(255, 255, 255, 125)
+		surface.SetMaterial( Material(CoDHUD_GetHUDType() .. "/menu_anim") )
+		surface.DrawTexturedRect(0, 0, w, h)
+		
+		surface.SetDrawColor(255, 255, 255)
+		surface.SetMaterial( Material(CoDHUD_GetHUDType() .. "/menu_bg") )
+		surface.DrawTexturedRect(0, 0, w, h)
     end
 
     -- main container (keeps everything aligned)
@@ -191,11 +187,11 @@ local CoDHUD_SETTINGS = {
 						}
 					},
 					{ name = "#CoDHUD.HUD.IFF", controls = {
-							{ type = "checkbox",	label = "#CoDHUD.HUD.IFF.Enable",		convar = "mw2_targetid_label",			tooltip = "CoDHUD.HUD.IFF.Enable.desc" },
+							{ type = "checkbox",	label = "#CoDHUD.HUD.IFF.Enable",		convar = "codhud_enable_iff",			tooltip = "CoDHUD.HUD.IFF.Enable.desc" },
 						}
 					},
 					{ name = "#CoDHUD.HUD.DeathIcon", controls = {
-							{ type = "checkbox",	label = "#CoDHUD.HUD.DeathIcon.Enable",		convar = "mw2_targetid_death_icon",			tooltip = "CoDHUD.HUD.DeathIcon.Enable.desc" },
+							{ type = "checkbox",	label = "#CoDHUD.HUD.DeathIcon.Enable",		convar = "codhud_enable_deathicon",			tooltip = "CoDHUD.HUD.DeathIcon.Enable.desc" },
 						}
 					},
 					{ name = "#CoDHUD.HUD.Chat", controls = {
@@ -235,19 +231,27 @@ local CoDHUD_SETTINGS = {
 
     { name = "#CoDHUD.Server", subtabs = {
             { name = "#CoDHUD.General", categories = {
-                    -- { name = "#CoDHUD.Admin.RestrictType", adminOnly = true, controls = {
-                            -- { type = "combobox", label = "#CoDHUD.Admin.EndScreen.Scorelimit", choices = CoDHUD.GetHUDList(),
-								-- getCurrent = function() return GetConVar("codhud_game"):GetString() end,
+                    { name = "#CoDHUD.Admin.RestrictType", adminOnly = true, controls = {
+                            { type = "combobox", label = "#CoDHUD.Admin.EndScreen.Scorelimit", choices = CoDHUD.GetHUDList(),
+								getCurrent = function() return GetConVar("codhud_game"):GetString() end,
 
-								-- onSelect = function(_, data)
-									-- net.Start("CoDHUD_SetGamemode")
-									-- net.WriteString(data)
-									-- net.SendToServer()
-								-- end
-							-- },
-                            -- { type = "label", label = "#CoDHUD.Admin.RestrictType.desc" },
-                        -- }
-                    -- },
+								onSelect = function(_, data)
+									if IsValid(codhud_menu_frame) then
+										codhud_menu_frame:Close()
+									end
+
+									net.Start("CoDHUD_SetGame")
+									net.WriteString(data)
+									net.SendToServer()
+
+									timer.Simple(0, function()
+										RunConsoleCommand("codhud_openmenu")
+									end)
+								end
+							},
+                            { type = "label", label = "#CoDHUD.Admin.RestrictType.desc" },
+                        }
+                    },
                     { name = "#CoDHUD.General", adminOnly = true, controls = {
                             { type = "checkbox", label = "#CoDHUD.Admin.EndScreen", convar = "codhud_enable_roundend", tooltip = "CoDHUD.Admin.EndScreen.desc" },
                             { type = "checkbox", label = "#CoDHUD.Admin.EndScreen.StartNext", convar = "codhud_enable_roundend_startnext", tooltip = "CoDHUD.Admin.EndScreen.StartNext.desc" },
@@ -261,9 +265,9 @@ local CoDHUD_SETTINGS = {
 				{ name = "#CoDHUD.RoundStart", adminOnly = true, controls = {
 						
                         { type = "label", label = "#CoDHUD.RoundStart.Info" },
-						{ type = "combobox", label = "#CoDHUD.RoundStart.Gamemode", choices = CoDHUD.Gamemodes["mw2"],
+						{ type = "combobox", label = "#CoDHUD.RoundStart.Gamemode",
+							choices = function() return CoDHUD.Gamemodes[CoDHUD_GetHUDType()] or {} end,
 							getCurrent = function() return GetConVar("codhud_selected_gamemode"):GetString() end,
-
 							onSelect = function(_, data)
 								net.Start("CoDHUD_SetGamemode")
 								net.WriteString(data)
@@ -342,16 +346,23 @@ local function CreateComboBox(parent, data)
     combo:SetText(data.label)
     combo:Dock(TOP)
     combo:DockMargin(5, 2, 5, 2)
-    combo:SetValue(language.GetPhrase(data.label))
 
-    for _, choice in ipairs(data.choices or {}) do
+    local choices = data.choices
+    if isfunction(choices) then
+        choices = choices()
+    end
+
+    choices = choices or {}
+
+    combo._choices = data.choices -- store raw (optional for refresh use)
+
+    for _, choice in ipairs(choices) do
         combo:AddChoice(language.GetPhrase(choice[1]), choice[2])
     end
 
-    -- Set default
     if data.getCurrent then
         local current = data.getCurrent()
-        for _, choice in ipairs(data.choices or {}) do
+        for _, choice in ipairs(choices) do
             if choice[2] == current then
                 combo:SetValue(language.GetPhrase(choice[1]))
                 break
@@ -388,6 +399,7 @@ local function CreateCategory(parent, data)
     if data.adminOnly and not LocalPlayer():IsAdmin() then return end
 
     local cat = vgui.Create("DCollapsibleCategory", parent)
+
     cat:SetLabel(data.name)
 	
     cat:Dock(TOP)
@@ -421,13 +433,28 @@ local function CreateCategory(parent, data)
         grid:SetRowHeight(64)
         grid:Dock(TOP)
 
-        for _, id in ipairs(factionOrder) do
-            local faction = CoDHUD.Factions["mw2"][id]
-            if not faction then continue end
+		local sorted = {}
+		local factions = CoDHUD.Factions[CoDHUD_GetHUDType()] or {}
 
-            local btn = vgui.Create("DImageButton")
-            btn:SetSize(64, 64)
-            btn:SetImage(faction.scoreIcon)
+		for id, factionData in pairs(factions) do
+			table.insert(sorted, {id = id, data = factionData})
+		end
+
+		table.sort(sorted, function(a, b)
+			return (a.data.order or 0) < (b.data.order or 0)
+		end)
+
+		for _, entry in ipairs(sorted) do
+			local id = entry.id
+			local faction = entry.data
+
+			local btn = vgui.Create("DImageButton")
+			btn:SetSize(64, 64)
+			if faction.scoreIcon then
+				btn:SetImage(faction.scoreIcon)
+			else
+				print("[CoDHUD] Missing scoreIcon for faction:", id)
+			end
             btn:SetToolTip(language.GetPhrase(faction.name) or id:upper())
 
             btn.DoClick = function()
@@ -515,11 +542,11 @@ concommand.Add("codhud_openmenu", function()
 		draw.RoundedBox(0, 0, 0, w, h, Color(100,100,100))
 		
 		surface.SetDrawColor(255, 255, 255, 125)
-		surface.SetMaterial( Material("mw2menu/menu_anim") )
+		surface.SetMaterial( Material(CoDHUD_GetHUDType() .. "/menu_anim") )
 		surface.DrawTexturedRect(0, 0, w, h)
 		
 		surface.SetDrawColor(255, 255, 255)
-		surface.SetMaterial( Material("mw2menu/menu_bg") )
+		surface.SetMaterial( Material(CoDHUD_GetHUDType() .. "/menu_bg") )
 		surface.DrawTexturedRect(0, 0, w, h)
 
     end

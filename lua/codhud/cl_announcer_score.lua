@@ -3,6 +3,7 @@
 local LastScoreState = "tied"
 local NearEndTriggered = false
 local MusicTriggered = false
+local voicefile = CoDHUD[CoDHUD_GetHUDType()].VoiceCallouts
 
 hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
     local ply = LocalPlayer()
@@ -14,9 +15,9 @@ hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
         currentFaction = cookie.GetString("CoDHUD_SelectedFaction", "rangers")
     end
 
-    if not CoDHUD.Factions["mw2"] or not CoDHUD.Factions["mw2"][currentFaction] then return end
+    if not CoDHUD.Factions[CoDHUD_GetHUDType()] or not CoDHUD.Factions[CoDHUD_GetHUDType()][currentFaction] then return end
     
-    local factionVoice = CoDHUD.Factions["mw2"][currentFaction].voice
+    local factionVoice = CoDHUD.Factions[CoDHUD_GetHUDType()][currentFaction].voice
     local basePath = "announcer/" .. factionVoice .. "/" .. factionVoice .. "_"
 
     -- 2. Calculate Scores
@@ -47,10 +48,10 @@ hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
     if not MusicTriggered then
         if (limit - lpScore) <= 300 and lpScore > topEnemyScore and lpScore > 0 then
             MusicTriggered = true
-            CoDHUD_PlayAnnouncerSound("music/hz_mp_opfor_victory.mp3", true)
+            CoDHUD_PlayAnnouncerSound(voicefile.winningmusic, true)
         elseif (limit - topEnemyScore) <= 300 and topEnemyScore > lpScore and topEnemyScore > 0 then
             MusicTriggered = true
-            CoDHUD_PlayAnnouncerSound("music/hz_mp_time_out_losing.mp3", true)
+            CoDHUD_PlayAnnouncerSound(voicefile.losingmusic, true)
         end
     end
 
@@ -58,13 +59,13 @@ hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
     if not NearEndTriggered then
         if (limit - lpScore) <= 300 and lpScore > topEnemyScore and lpScore > 0 then
             NearEndTriggered = true
-			local sound = CoDHUD_GetAnnouncerSound(basePath, { "winning_fight", "winning" })
+			local sound = CoDHUD_GetAnnouncerSound(voicefile.winningfight)
 
 			if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
 
         elseif (limit - topEnemyScore) <= 300 and topEnemyScore > lpScore and topEnemyScore > 0 then
             NearEndTriggered = true
-			local sound = CoDHUD_GetAnnouncerSound(basePath, { "losing_fight", "losing" })
+			local sound = CoDHUD_GetAnnouncerSound(voicefile.losingfight)
 			if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
         end
     end
@@ -80,17 +81,17 @@ hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
     if currentState ~= LastScoreState then
         if currentState == "winning" then
             if lpScore == 100 and topEnemyScore == 0 then
-				local sound = CoDHUD_GetAnnouncerSound(basePath, { "lead_taken" })
+				local sound = CoDHUD_GetAnnouncerSound(voicefile.leadtaken)
 				if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
             else
-				local sound = CoDHUD_GetAnnouncerSound(basePath, { "lead_taken" })
+				local sound = CoDHUD_GetAnnouncerSound(voicefile.leadtaken)
 				if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
             end
         elseif currentState == "losing" then
-			local sound = CoDHUD_GetAnnouncerSound(basePath, { "lead_lost" })
+			local sound = CoDHUD_GetAnnouncerSound(voicefile.leadlost)
 			if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
         elseif currentState == "tied" and (lpScore > 0 or topEnemyScore > 0) then
-			local sound = CoDHUD_GetAnnouncerSound(basePath, { "tied" })
+			local sound = CoDHUD_GetAnnouncerSound(voicefile.leadtied)
 			if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
         end
         

@@ -2,7 +2,6 @@
 
 if CLIENT then
     -- [[ VARIABLES ]]
-    local matHit = Material("icons/hitmarker.png", "mips smooth")
     local hitAlpha, hitTime = 0, 0
     local scoreVal, scoreAlpha, scoreTime, scoreStart = 0, 0, 0, 0
     local scoreScale = 1
@@ -16,55 +15,6 @@ if CLIENT then
         scoreStart = ct
     end
 
-    -- [[ SQUEEZED SCORE DRAW ]]
-    local function DrawSqueezedScore(val, x, y, alpha)
-        local textCol   = Color(255, 255, 50, alpha)
-        local shadowCol = Color(0, 0, 0, alpha * 0.8)
-        local s_val     = tostring(val)
-        local partPlus  = "+"
-
-        surface.SetFont("MW2_Score_Plus")
-        local wP  = surface.GetTextSize(partPlus)
-        local gapPlus = CoDHUD_SX(-6)
-
-        surface.SetFont("MW2_Score_Main")
-
-        local totalW = wP + gapPlus
-        for i = 1, #s_val do
-            local char = s_val:sub(i, i)
-            local w    = surface.GetTextSize(char)
-            totalW = totalW + w
-            if i < #s_val then
-                local gap = (char == "1") and CoDHUD_SX(-11) or CoDHUD_SX(-5)
-                totalW = totalW + gap
-            end
-        end
-
-        local curX = x - (totalW / 2)
-
-        local function DrawComponent(txt, font, px, py)
-            -- draw.SimpleText(txt, font, px + CoDHUD_SX(1), py + CoDHUD_SY(1), shadowCol, 0, 1)
-            -- draw.SimpleText(txt, font, px,         py,         textCol,   0, 1)
-            
-            draw.SimpleTextOutlined(txt, font, px, py, textCol, 0, 1, 0, shadowCol)
-            surface.SetFont(font)
-            local w = surface.GetTextSize(txt)
-            return w
-        end
-
-        local runX = curX
-        runX = runX + DrawComponent(partPlus, "MW2_Score_Plus", runX, y) + gapPlus
-
-        for i = 1, #s_val do
-            local char = s_val:sub(i, i)
-            local w    = DrawComponent(char, "MW2_Score_Main", runX, y)
-            if i < #s_val then
-                local gap = (char == "1") and CoDHUD_SX(-11) or CoDHUD_SX(-5)
-                runX = runX + w + gap
-            end
-        end
-    end
-
     -- [[ HUD PAINT HOOK ]]
     hook.Add("HUDPaint", "CoDHUD_DrawHitmarkerSystem", function()
         local ct = CurTime()
@@ -72,11 +22,9 @@ if CLIENT then
 
         -- DRAW HITMARKER (icon size intentionally fixed, not scaled)
         if ct < hitTime and (GetConVar("codhud_enable_hitmarker"):GetBool() and not GetConVar("codhud_quickdisable_hud"):GetBool()) then
-            local fade = math.Clamp((hitTime - ct) / 0.9, 0, 1) * 255
-            surface.SetMaterial(matHit)
-            surface.SetDrawColor(255, 255, 255, fade)
-            local size = 36
-            surface.DrawTexturedRect(cx - (size / 2), cy - (size / 2), size, size)
+			if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].Hitmarker then
+				CoDHUD[CoDHUD_GetHUDType()].Hitmarker(hitTime)
+			end
         end
 
         -- SCORE POPUP
@@ -103,17 +51,9 @@ if CLIENT then
                     finalAlpha = scoreAlpha
                 end
 
-                local drawAlpha = (currentPulseAlpha / 255) * finalAlpha
-                local drawY     = cy - CoDHUD_SY(140)
-
-                local mat = Matrix()
-                mat:Translate(Vector(cx, drawY, 0))
-                mat:Scale(Vector(scoreScale, scoreScale, 1))
-                mat:Translate(Vector(-cx, -drawY, 0))
-
-                cam.PushModelMatrix(mat)
-                    DrawSqueezedScore(scoreVal, cx, drawY, drawAlpha)
-                cam.PopModelMatrix()
+				if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].XP then
+					CoDHUD[CoDHUD_GetHUDType()].XP(animtime, scoreTime, finalAlpha, scoreScale, currentPulseAlpha, scoreVal)
+				end
             end
         else
             scoreVal = 0

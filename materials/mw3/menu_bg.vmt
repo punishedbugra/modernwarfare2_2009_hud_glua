@@ -1,0 +1,7 @@
+UnLitGeneric
+{
+	$basetexture 			"mw3\menu_mp_image"
+	$translucent			1
+	$vertexcolor			1
+	$vertexalpha			1
+}

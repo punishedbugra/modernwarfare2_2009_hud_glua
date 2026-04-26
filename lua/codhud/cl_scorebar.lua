@@ -1,95 +1,10 @@
 ---- [ SCOREBAR ] ----
 
-local CFG = {
-    -- Base Bar
-    BAR_W     = 776,
-    BAR_H     = 96,
-    BAR_X_OFF = 0,
-    BAR_Y_OFF = 44,
-
-    -- Faction Icon
-    ICON_SCALE = 1.28,
-    ICON_X     = 12,
-    ICON_Y     = 8,
-
-    -- Timer
-    TIMER_X          = 86,
-    TIMER_Y          = -32,
-    TIMER_SHIFT_2DIG = -10,
-    TIMER_SHIFT_3DIG = -12,
-    TIMER_OUTLINE_W  = 1.5,
-
-    -- Winning / Losing / Tie Text Position
-    STATUS_X = 150,
-    STATUS_Y = 5,
-
-    -- Squeeze Values
-    SQUEEZE            = -2,
-    SQUEEZE_ONE        = -6,
-    SQUEEZE_ONE_BEFORE = -4,
-}
-
-local SCORES_CFG = {
-    -- Text Config
-    X = 162,
-    Y = 974,
-    GAP_OFFSET = 32,
-    SQUEEZE = -4,
-    SQUEEZE_ONE = -10,
-    SQUEEZE_ONE_BEFORE = -10,
-    OUTLINE_W = 1.5,
-
-    -- Score Limit for Bar Scaling
-    SCORE_LIMIT = 7500,
-
-    -- Active Bar Config (Green/Red)
-    HUD_X = 200,
-    HUD_Y = 1015,
-    HUD_W_BASE = 28,
-    HUD_W_MAX = 282,
-    HUD_H = 10,
-    SLANT_SIZE = 11,
-    VERTICAL_GAP = 10,
-    SHADOW_OFFSET = 2,
-
-    -- Base Bar Config (Black Backgrounds)
-    BASE_X = 190,
-    BASE_Y = 1012,
-    BASE_W = 298,
-    BASE_H = 11,
-    BASE_SLANT = 10,
-    BASE_GAP = 4,
-
-    -- End Cap Config
-    CAP_W = 3,
-    CAP_H_OFFSET = 2,
-    CAP_SLANT = 10,
-    CAP_COLOR = Color(255, 255, 255, 155),
-
-    -- Active Slant Config
-    SLANT_W = 7,
-    SLANT_H_OFFSET = 0.4,
-    SLANT_SEP_W = 1,
-    SLANT_Y_OFFSET_TOP = 0,
-    SLANT_COLOR = Color(255, 255, 255, 220),
-}
-
-local ARROW_CFG = {
-    x = 140,
-    y = 978,
-    w = 27,
-    h = 31,
-    outline = 4,
-    color = Color(140, 220, 140, 255),
-    outlineColor = Color(0, 0, 0, 255),
-    material = Material("hud/ui_arrow_right.png", "smooth noclamp"),
-}
-
 local function SyncFactionPersistence()
     local lp = LocalPlayer()
     if not IsValid(lp) then return end
     local saved = cookie.GetString("CoDHUD_SelectedFaction", "rangers")
-    if not CoDHUD.Factions["mw2"][saved] then saved = "rangers" end
+    if not CoDHUD.Factions[CoDHUD_GetHUDType()][saved] then saved = "rangers" end
     lp:SetNW2String("CoDHUD_Faction", saved)
     RunConsoleCommand("codhud_setfaction", saved)
 end
@@ -106,32 +21,15 @@ hook.Add("NotifyShouldTransmit", "MW2_SyncFactionOnSpawn", function(ent, should)
     end
 end)
 
-local FACTION_MATS = {}
-for key, data in pairs(CoDHUD.Factions["mw2"]) do
-    FACTION_MATS[key] = Material(data.scoreIcon, "smooth")
-end
-
-local MAT_BAR      = Material("hud/hud_scorebar.png", "smooth")
-local MAT_GRADIENT = Material("vgui/gradient-r")
-
-local COLOR_SHADOW = Color(0, 0, 0, 100)
-local COLOR_GREEN  = Color(110, 180, 90, 255)
-local COLOR_RED    = Color(180, 55, 55, 255)
-
--- Status Colors
-local COL_WINNING = Color(110, 220, 120, 255)
-local COL_LOSING  = Color(215, 110, 120, 255)
-local COL_TIE     = Color(230, 230, 110, 255)
-
 concommand.Add("set_faction", function(ply, cmd, args)
     local faction = args[1] and string.lower(args[1]) or ""
-    if CoDHUD.Factions["mw2"][faction] then
+    if CoDHUD.Factions[CoDHUD_GetHUDType()][faction] then
         LocalPlayer():SetNW2String("CoDHUD_Faction", faction)
         cookie.Set("CoDHUD_SelectedFaction", faction)
         RunConsoleCommand("codhud_setfaction", faction)
-        print("[MW2] Faction set to: " .. CoDHUD.Factions["mw2"][faction].name)
+        print("[CoD HUD] You joined team " .. language.GetPhrase(CoDHUD.Factions[CoDHUD_GetHUDType()][faction].name))
     else
-        print("[MW2] Unknown faction. Valid: rangers, taskforce141, seals, ussr, arab, militia")
+        print("[CoD HUD] Tried to join an invalid faction.")
     end
 end)
 
@@ -179,302 +77,66 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
     end
 end
 
-hook.Add("HUDPaint", "MW2_ScoreBar", function()
-    if (not GetConVar("codhud_enable_scorebar"):GetBool()) or GetConVar("codhud_quickdisable_hud"):GetBool() then return end
-	if not GetConVar("cl_drawhud"):GetBool() then return end
-	local outlined = GetConVar("codhud_enable_outlinedtext"):GetBool()
-
+local function GetScorebarData()
     local ply = LocalPlayer()
-    if not IsValid(ply) or not ply:Alive() then return end
+    if not IsValid(ply) then return end
 
-    local currentFaction = ply:GetNW2String("CoDHUD_Faction", "")
-    if currentFaction == "" then
-        currentFaction = cookie.GetString("CoDHUD_SelectedFaction", "rangers")
-        if not CoDHUD.Factions["mw2"][currentFaction] then currentFaction = "rangers" end
-        ply:SetNW2String("CoDHUD_Faction", currentFaction)
-    end
+    local data = {}
 
-    local scrW, scrH = ScrW(), ScrH()
-    local barW, barH = CoDHUD_SX(CFG.BAR_W), CoDHUD_SY(CFG.BAR_H)
-    -- Scorebar is anchored to the left edge (X=0 + offset) and bottom edge.
-    local barX = CoDHUD_SX(CFG.BAR_X_OFF)
-    local barY = scrH - CoDHUD_SY(CFG.BAR_Y_OFF) - barH
-
-    -- 1. Base bar texture
-    surface.SetMaterial(MAT_BAR)
-    surface.SetDrawColor(255, 255, 255, 155)
-    surface.DrawTexturedRect(barX, barY, barW, barH)
-
-    -- 2. Faction icon
-    local factionMat = FACTION_MATS[currentFaction]
-    if factionMat then
-        local iSize = math.Round(barH * CFG.ICON_SCALE)
-        surface.SetMaterial(factionMat)
-        surface.SetDrawColor(255, 255, 255, 255)
-        surface.DrawTexturedRect(barX + CoDHUD_SX(CFG.ICON_X), barY + CoDHUD_SY(CFG.ICON_Y), iSize, iSize)
-    end
-
-    -- 3. Timer
+    -- TIMER (unchanged logic)
     local totalSecs = math.floor(CurTime())
-    local mins, secs = math.floor(totalSecs / 60), totalSecs % 60
-    local timeStr = string.format("%d:%02d", mins, secs)
+    local mins = math.floor(totalSecs / 60)
+    local secs = totalSecs % 60
 
-    local xShift = (#tostring(mins) >= 3 and CoDHUD_SX(CFG.TIMER_SHIFT_3DIG)) or (#tostring(mins) >= 2 and CoDHUD_SX(CFG.TIMER_SHIFT_2DIG)) or 0
-    DrawSqueezedText(timeStr, "MW2_Timer",
-        barX + CoDHUD_SX(CFG.TIMER_X) + xShift, barY + CoDHUD_SY(CFG.TIMER_Y),
-        Color(255, 255, 255, 255),
-        CFG.SQUEEZE, CFG.SQUEEZE_ONE, 1, CFG.SQUEEZE_ONE_BEFORE,
-        CoDHUD_SX(CFG.TIMER_OUTLINE_W)
-    )
+    data.timeStr = string.format("%d:%02d", mins, secs)
+    data.mins = mins
 
-    -- 4. Status Text (Winning / Losing / Tie)
-    local lpScore = math.max(0, ply:Frags()) * 100
+    -- SCORES (unchanged logic)
+    local clientScore = math.max(0, ply:Frags()) * 100
     local topEnemyScore = 0
+
     for _, p in ipairs(player.GetAll()) do
         if p == ply then continue end
-        local pScore = math.max(0, p:Frags()) * 100
-        if pScore > topEnemyScore then topEnemyScore = pScore end
-    end
-
-    local statusText = "#MW2_MPUI_TIED_CAPS"
-    local statusCol  = COL_TIE
-
-    if lpScore > topEnemyScore then
-        statusText = "#MW2_MPUI_WINNING_CAPS"
-        statusCol  = COL_WINNING
-    elseif lpScore < topEnemyScore then
-        statusText = "#MW2_MPUI_LOSING_CAPS"
-        statusCol  = COL_LOSING
-    end
-
-	draw.SimpleTextOutlined( statusText, "MW2_Status", barX + CoDHUD_SX(CFG.STATUS_X), barY + CoDHUD_SY(CFG.STATUS_Y), statusCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP, outlined and 1 or 0, Color(0,0,0) )
-end)
-
-hook.Add("HUDPaint", "MW2_Scorebar_Merged", function()
-    if (not GetConVar("codhud_enable_scorebar"):GetBool()) or GetConVar("codhud_quickdisable_hud"):GetBool() then return end
-	if not GetConVar("cl_drawhud"):GetBool() then return end
-
-    if not IsValid(LocalPlayer()) then return end
-
-    local client = LocalPlayer()
-    local clientKills = math.max(0, client:Frags()) * 100
-
-    local topEnemyKills = 0
-    for _, ply in ipairs(player.GetAll()) do
-        if ply == client then continue end
-        local pKills = math.max(0, ply:Frags()) * 100
-        if pKills > topEnemyKills then topEnemyKills = pKills end
-    end
-
-    local S_CFG = SCORES_CFG
-    local scrW, scrH = ScrW(), ScrH()
-
-    -- All sizes/offsets scale uniformly with CoDHUD_S(). Positions that sit near the left/top use CoDHUD_S() from the edge directly. Positions near the bottom use scrH - CoDHUD_S(distance_from_bottom).
-    local baseX     = CoDHUD_S(S_CFG.BASE_X)
-    local baseY_raw = scrH - CoDHUD_S(1080 - S_CFG.BASE_Y)
-    local baseW     = CoDHUD_S(S_CFG.BASE_W)
-    local baseH     = CoDHUD_S(S_CFG.BASE_H)
-    local baseSlant = CoDHUD_S(S_CFG.BASE_SLANT)
-    local baseGap   = CoDHUD_S(S_CFG.BASE_GAP)
-
-    local capW      = CoDHUD_S(S_CFG.CAP_W)
-    local capSlant  = CoDHUD_S(S_CFG.CAP_SLANT)
-    local capHOff   = CoDHUD_S(S_CFG.CAP_H_OFFSET)
-
-    local hudX      = CoDHUD_S(S_CFG.HUD_X)
-    local hudY_raw  = scrH - CoDHUD_S(1080 - S_CFG.HUD_Y)
-    local hudWBase  = CoDHUD_S(S_CFG.HUD_W_BASE)
-    local hudWMax   = CoDHUD_S(S_CFG.HUD_W_MAX)
-    local hudH      = CoDHUD_S(S_CFG.HUD_H)
-    local slantSize = CoDHUD_S(S_CFG.SLANT_SIZE)
-    local vertGap   = CoDHUD_S(S_CFG.VERTICAL_GAP)
-    local shadowOff = CoDHUD_S(S_CFG.SHADOW_OFFSET)
-
-    local slantW    = CoDHUD_S(S_CFG.SLANT_W)
-    local slantHOff = CoDHUD_S(S_CFG.SLANT_H_OFFSET)
-    local slantSepW = CoDHUD_S(S_CFG.SLANT_SEP_W)
-
-    -- Base bars (black backgrounds)
-    local BASE_X   = baseX
-    local BASE_Y   = baseY_raw
-    local BASE_W   = baseW
-    local BASE_H   = baseH
-    local BASE_SLANT = baseSlant
-    local top_y_base = BASE_Y - baseGap - BASE_H
-
-    surface.SetMaterial(MAT_GRADIENT)
-    surface.SetDrawColor(0, 0, 0, 175)
-    surface.DrawTexturedRect(BASE_X, BASE_Y, BASE_W, BASE_H)
-
-    draw.NoTexture()
-    surface.SetDrawColor(0, 0, 0, 175)
-    surface.DrawPoly({
-        { x = BASE_X + BASE_W,              y = BASE_Y },
-        { x = BASE_X + BASE_W + BASE_SLANT, y = BASE_Y },
-        { x = BASE_X + BASE_W,              y = BASE_Y + BASE_H },
-    })
-
-    surface.SetMaterial(MAT_GRADIENT)
-    surface.SetDrawColor(0, 0, 0, 175)
-    surface.DrawTexturedRect(BASE_X, top_y_base, BASE_W, BASE_H)
-
-    draw.NoTexture()
-    surface.SetDrawColor(0, 0, 0, 175)
-    surface.DrawPoly({
-        { x = BASE_X + BASE_W,              y = top_y_base },
-        { x = BASE_X + BASE_W + BASE_SLANT, y = top_y_base + BASE_H },
-        { x = BASE_X + BASE_W,              y = top_y_base + BASE_H },
-    })
-
-    -- End caps
-    surface.SetDrawColor(S_CFG.CAP_COLOR)
-    surface.DrawPoly({
-        { x = BASE_X + BASE_W,                  y = top_y_base - (capHOff / 2) },
-        { x = BASE_X + BASE_W + capW,            y = top_y_base - (capHOff / 2) },
-        { x = BASE_X + BASE_W + capSlant + capW, y = top_y_base + BASE_H + (capHOff / 2) },
-        { x = BASE_X + BASE_W + capSlant,        y = top_y_base + BASE_H + (capHOff / 2) },
-    })
-    surface.DrawPoly({
-        { x = BASE_X + BASE_W + capSlant,        y = BASE_Y - (capHOff / 2) },
-        { x = BASE_X + BASE_W + capSlant + capW, y = BASE_Y - (capHOff / 2) },
-        { x = BASE_X + BASE_W + capW,            y = BASE_Y + BASE_H + (capHOff / 2) },
-        { x = BASE_X + BASE_W,                  y = BASE_Y + BASE_H + (capHOff / 2) },
-    })
-
-    -- [SCALING LOGIC MERGE: Safely get the limit from the ConVar, fallback to SCORES_CFG.SCORE_LIMIT]
-    local liveScoreLimit = S_CFG.SCORE_LIMIT
-    local cv_limit = GetConVar("codhud_score_limit")
-    if cv_limit then
-        local val = cv_limit:GetInt()
-        if val > 0 then
-            liveScoreLimit = val
+        local score = math.max(0, p:Frags()) * 100
+        if score > topEnemyScore then
+            topEnemyScore = score
         end
     end
 
-    -- Active bars (green = client, red = enemy)
-    local maxAddedWidth = hudWMax - hudWBase
-    local client_w = math.Round(hudWBase + math.Clamp((clientKills / liveScoreLimit) * maxAddedWidth, 0, maxAddedWidth))
-    local enemy_w  = math.Round(hudWBase + math.Clamp((topEnemyKills / liveScoreLimit) * maxAddedWidth, 0, maxAddedWidth))
-    local HUD_X    = hudX
-    local HUD_Y    = hudY_raw
-    local top_y    = HUD_Y - vertGap - hudH
-    local white    = Color(255, 255, 255, 255)
+    data.clientScore = clientScore
+    data.enemyScore  = topEnemyScore
 
-    -- Shadows
-    surface.SetMaterial(MAT_GRADIENT)
-    surface.SetDrawColor(COLOR_SHADOW)
-    surface.DrawTexturedRect(HUD_X + shadowOff, top_y + shadowOff, client_w, hudH)
-    surface.DrawTexturedRect(HUD_X + shadowOff, HUD_Y + shadowOff, enemy_w, hudH)
+	-- STATUS COLORS (define here, not in scorebar)
+	local COL_WINNING = Color(110, 220, 120, 255)
+	local COL_LOSING  = Color(215, 110, 120, 255)
+	local COL_TIE     = Color(230, 230, 110, 255)
 
-    draw.NoTexture()
-    surface.SetDrawColor(COLOR_SHADOW)
-    surface.DrawPoly({
-        { x = HUD_X + client_w + shadowOff,             y = top_y + shadowOff },
-        { x = HUD_X + client_w + slantSize + shadowOff, y = top_y + hudH + shadowOff },
-        { x = HUD_X + client_w + shadowOff,             y = top_y + hudH + shadowOff },
-    })
-    surface.DrawPoly({
-        { x = HUD_X + enemy_w + shadowOff,             y = HUD_Y + shadowOff },
-        { x = HUD_X + enemy_w + slantSize + shadowOff, y = HUD_Y + shadowOff },
-        { x = HUD_X + enemy_w + shadowOff,             y = HUD_Y + hudH + shadowOff },
-    })
+	data.statusText = "#MW2_MPUI_TIED_CAPS"
+	data.statusCol  = COL_TIE
 
-    -- Client bar (green)
-    surface.SetMaterial(MAT_GRADIENT)
-    surface.SetDrawColor(COLOR_GREEN)
-    surface.DrawTexturedRect(HUD_X, top_y, client_w, hudH)
+	if clientScore > topEnemyScore then
+		data.statusText = "#MW2_MPUI_WINNING_CAPS"
+		data.statusCol  = COL_WINNING
+	elseif clientScore < topEnemyScore then
+		data.statusText = "#MW2_MPUI_LOSING_CAPS"
+		data.statusCol  = COL_LOSING
+	end
 
-    draw.NoTexture()
-    surface.SetDrawColor(COLOR_GREEN)
-    surface.DrawPoly({
-        { x = HUD_X + client_w,             y = top_y },
-        { x = HUD_X + client_w + slantSize, y = top_y + hudH },
-        { x = HUD_X + client_w,             y = top_y + hudH },
-    })
+    return data
+end
 
-    -- Enemy bar (red)
-    surface.SetMaterial(MAT_GRADIENT)
-    surface.SetDrawColor(COLOR_RED)
-    surface.DrawTexturedRect(HUD_X, HUD_Y, enemy_w, hudH)
-
-    draw.NoTexture()
-    surface.SetDrawColor(COLOR_RED)
-    surface.DrawPoly({
-        { x = HUD_X + enemy_w,             y = HUD_Y },
-        { x = HUD_X + enemy_w + slantSize, y = HUD_Y },
-        { x = HUD_X + enemy_w,             y = HUD_Y + hudH },
-    })
-
-    -- Client slant accent
-    local tx1, ty1 = HUD_X + client_w, top_y
-    local tx2, ty2 = HUD_X + client_w + slantSize, top_y + hudH
-
-    surface.SetDrawColor(0, 0, 0, 255)
-    surface.DrawPoly({
-        { x = tx1 - slantSepW, y = ty1 },
-        { x = tx1,             y = ty1 },
-        { x = tx2,             y = ty2 },
-        { x = tx2 - slantSepW, y = ty2 },
-    })
-    surface.SetDrawColor(S_CFG.SLANT_COLOR)
-    surface.DrawPoly({
-        { x = tx1,           y = ty1 - (slantHOff / 2) },
-        { x = tx1 + slantW,  y = ty1 - (slantHOff / 2) },
-        { x = tx2 + slantW,  y = ty2 + (slantHOff / 2) },
-        { x = tx2,           y = ty2 + (slantHOff / 2) },
-    })
-
-    -- Enemy slant accent
-    local bx1, by1 = HUD_X + enemy_w + slantSize, HUD_Y
-    local bx2, by2 = HUD_X + enemy_w, HUD_Y + hudH
-
-    surface.SetDrawColor(0, 0, 0, 255)
-    surface.DrawPoly({
-        { x = bx1,             y = by1 },
-        { x = bx1 + slantSepW, y = by1 },
-        { x = bx2 + slantSepW, y = by2 },
-        { x = bx2,             y = by2 },
-    })
-    surface.SetDrawColor(S_CFG.SLANT_COLOR)
-    surface.DrawPoly({
-        { x = bx1 + slantSepW,          y = by1 - (slantHOff / 2) },
-        { x = bx1 + slantSepW + slantW, y = by1 - (slantHOff / 2) },
-        { x = bx2 + slantSepW + slantW, y = by2 + (slantHOff / 2) },
-        { x = bx2 + slantSepW,          y = by2 + (slantHOff / 2) },
-    })
-
--- Score text
-    local textX   = CoDHUD_S(S_CFG.X)
-    -- Calculate Y based on the distance from the HUD_Y bar to maintain the layout
-    local textY   = HUD_Y - CoDHUD_S(41) -- Adjust 41 to change vertical distance from the bars
-    local textGap = CoDHUD_S(S_CFG.GAP_OFFSET)
-
-    DrawSqueezedText(clientKills,   "MW2_Font", textX, textY,          white, S_CFG.SQUEEZE, S_CFG.SQUEEZE_ONE, 2, S_CFG.SQUEEZE_ONE_BEFORE, S_CFG.OUTLINE_W)
-    DrawSqueezedText(topEnemyKills, "MW2_Font", textX, textY + textGap, white, S_CFG.SQUEEZE, S_CFG.SQUEEZE_ONE, 2, S_CFG.SQUEEZE_ONE_BEFORE, S_CFG.OUTLINE_W)
-end)
-
-hook.Add("HUDPaint", "DrawMyCustomArrow", function()
+hook.Add("HUDPaint", "CoDHUD_Scorebar", function()
     if (not GetConVar("codhud_enable_scorebar"):GetBool()) or GetConVar("codhud_quickdisable_hud"):GetBool() then return end
-	if not GetConVar("cl_drawhud"):GetBool() then return end
+    if not GetConVar("cl_drawhud"):GetBool() then return end
 
-    local scrW, scrH = ScrW(), ScrH()
-    local ax = CoDHUD_S(ARROW_CFG.x)
-    local ay = scrH - CoDHUD_S(1920 - ARROW_CFG.y)
-    local aw = CoDHUD_S(ARROW_CFG.w)
-    local ah = CoDHUD_S(ARROW_CFG.h)
-    local ao = CoDHUD_S(ARROW_CFG.outline)
+    local ply = LocalPlayer()
+    -- if not IsValid(ply) or not ply:Alive() then return end
+    if not IsValid(ply) then return end
 
-    surface.SetMaterial(ARROW_CFG.material)
-
-    surface.SetDrawColor(ARROW_CFG.outlineColor)
-    surface.DrawTexturedRectUV(
-        ax - ao,
-        ay - ao,
-        aw + (ao * 2),
-        ah + (ao * 2),
-        0, 0, 1, 1
-    )
-
-    surface.SetDrawColor(ARROW_CFG.color)
-    surface.DrawTexturedRectUV(ax, ay, aw, ah, 0, 0, 1, 1)
+    if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].Scorebar then
+        local data = GetScorebarData()
+        if data then
+            CoDHUD[CoDHUD_GetHUDType()].Scorebar(data)
+        end
+    end
 end)

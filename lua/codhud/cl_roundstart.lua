@@ -22,9 +22,6 @@ local CFG = {
     OBJ_ERASE     = 0.7,
 }
 
-local hudtype = GetConVar("codhud_game"):GetString() or "mw2"
-local hudfac = CoDHUD.Factions[hudtype]
-
 local OBJ_GLOW           = Color(0, 220, 80)
 local COUNTDOWN_DURATION = 5
 
@@ -95,8 +92,8 @@ local function MW2_RS_Start(gamemode)
     if not IsValid(lp) then return end
 
     local fkey = lp:GetNW2String("CoDHUD_Faction", "rangers")
-    if not CoDHUD.Factions[hudtype][fkey] then fkey = "rangers" end
-    local fdata = CoDHUD.Factions[hudtype][fkey]
+    if not CoDHUD.Factions[CoDHUD_GetHUDType()][fkey] then fkey = "rangers" end
+    local fdata = CoDHUD.Factions[CoDHUD_GetHUDType()][fkey]
 
     rs_active      = true
     rs_movement_locked = true
@@ -122,16 +119,16 @@ local function MW2_RS_Start(gamemode)
 
     rs_bw = 1
 
-	if CoDHUD[hudtype] and CoDHUD[hudtype].RoundStart then
-		CoDHUD[hudtype].RoundStart(fdata.name, rs_glow, rs_icon_mat)
+	if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].RoundStart then
+		CoDHUD[CoDHUD_GetHUDType()].RoundStart(fdata.name, rs_glow, rs_icon_mat)
 	end
 
 	timer.Simple( 0.1, function() -- Tiny delay for round restart
 		if GetConVar("codhud_enable_music"):GetBool() and fdata.spawntheme then
-			surface.PlaySound(fdata.spawntheme)
+			surface.PlaySound("music/" .. CoDHUD_GetHUDType() .. "/" .. fdata.spawntheme)
 		end
 		
-		local sound = CoDHUD_GetAnnouncerSound(basePath, { CoDHUD.Gamemodes[hudtype].Callouts[gamemode] or "team_deathmtch" })
+		local sound = CoDHUD_GetAnnouncerSound({ CoDHUD.Gamemodes[CoDHUD_GetHUDType()].Callouts[gamemode] or "team_deathmtch" })
 		if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
 	end)
 end
@@ -182,7 +179,7 @@ hook.Add("Think", "CoDHUD_RS_Think", function()
 
         if not rs_boost_done then
             rs_boost_done = true
-			local sound = CoDHUD_GetAnnouncerSound(basePath, { CoDHUD.Gamemodes[hudtype].Boosts[rs_gamemode] or CoDHUD.Gamemodes[hudtype].Boosts["war"] })
+			local sound = CoDHUD_GetAnnouncerSound({ CoDHUD.Gamemodes[CoDHUD_GetHUDType()].Boosts[rs_gamemode] or CoDHUD.Gamemodes[CoDHUD_GetHUDType()].Boosts["war"] })
 			if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
         end
 
@@ -190,8 +187,8 @@ hook.Add("Think", "CoDHUD_RS_Think", function()
             rs_phase       = "objective"
             rs_phase_start = now
 
-			if CoDHUD[hudtype] and CoDHUD[hudtype].ChallengeComplete then
-				CoDHUD[hudtype].RoundStartObjective(CoDHUD.Gamemodes[hudtype].Hints[rs_gamemode] or CoDHUD.Gamemodes[hudtype].Hints["war"])
+			if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].ChallengeComplete then
+				CoDHUD[CoDHUD_GetHUDType()].RoundStartObjective(CoDHUD.Gamemodes[CoDHUD_GetHUDType()].Hints[rs_gamemode] or CoDHUD.Gamemodes[CoDHUD_GetHUDType()].Hints["war"])
 			end
         end
 
@@ -211,8 +208,8 @@ hook.Add("HUDPaint", "CoDHUD_RS_Draw", function()
     if rs_phase == "faction" then
         local disp = math.max(0, rs_remaining)
 
-		if CoDHUD[hudtype] and CoDHUD[hudtype].RoundStartTimer then
-			CoDHUD[hudtype].RoundStartTimer(disp)
+		if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].RoundStartTimer then
+			CoDHUD[CoDHUD_GetHUDType()].RoundStartTimer(disp)
 		end
     end
 end)

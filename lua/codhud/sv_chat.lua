@@ -3,16 +3,70 @@
 util.AddNetworkString("CoDHUD_ChatMessage")
 
 -- Faction Name Mapping
-local FACTION_NAMES = {
-    ["rangers"]      = "Army Rangers",
-    ["taskforce141"] = "Task Force 141",
-    ["seals"]        = "Navy SEALs",
-    ["ussr"]         = "Spetsnaz",
-    ["arab"]         = "OpFor",
-    ["militia"]      = "Militia"
+local validfactions = {
+	["mw2"] = {
+		["rangers"]      = "Army Rangers",
+		["taskforce141"] = "Task Force 141",
+		["seals"]        = "Navy SEALs",
+		["ussr"]         = "Spetsnaz",
+		["arab"]         = "OpFor",
+		["militia"]      = "Militia"
+	},
+	["mw3"] = {
+		["sas"]			= "Special Air Service",
+		["delta"]		= "Delta Force",
+		["gign"]		= "GIGN",
+		["innercircle"]	= "Inner Circle",
+		["militia"]		= "Africa Militia",
+		["ussr"]		= "Spetsnaz",
+		["pmc"]			= "P.M.C."
+	},
 }
 
 -- [[ 1. FACTION SYNC ]]
+
+local function GetFactionName(factionID)
+	local c = GetConVar("codhud_game")
+	c = c and c:GetString() or "mw2"
+	
+    local factionTable = validfactions[c]
+
+    if not factionTable then
+        factionTable = validfactions["mw2"] -- fallback
+    end
+
+    return factionTable[factionID]
+end
+
+cvars.AddChangeCallback("codhud_game", function(convar, oldValue, newValue)
+    print("[CoDHUD] Game changed from " .. oldValue .. " to " .. newValue)
+
+    -- Fallback safety
+    if not validfactions[newValue] then
+        newValue = "mw2"
+    end
+
+    local factionTable = validfactions[newValue]
+    local factionKeys = {}
+
+    -- Collect valid faction IDs
+    for k, _ in pairs(factionTable) do
+        table.insert(factionKeys, k)
+    end
+
+    -- Assign random faction to every player
+    for _, ply in ipairs(player.GetAll()) do
+        if IsValid(ply) then
+            local randomFaction = factionKeys[math.random(#factionKeys)]
+
+            -- Store + network it (same logic as your concommand)
+            ply.CoDHUD_StoredFaction = randomFaction
+            ply:SetNW2String("CoDHUD_Faction", randomFaction)
+
+            print("[CoDHUD] " .. ply:Nick() .. " reassigned to " .. GetFactionName(randomFaction))
+        end
+    end
+end, "CoDHUD_GameChangeCallback")
 
 -- This command is called by the client's SyncFactionPersistence() 
 -- whenever they join or change their faction menu.
@@ -22,7 +76,7 @@ concommand.Add("codhud_setfaction", function(ply, cmd, args)
     local faction = args[1] and string.lower(args[1]) or "rangers"
     
     -- Validate that it is a real faction
-    if not FACTION_NAMES[faction] then faction = "rangers" end
+    if not GetFactionName(faction) then faction = "rangers" end
 
     -- Store it in the player object so it survives through the session
     ply.CoDHUD_StoredFaction = faction
@@ -30,7 +84,7 @@ concommand.Add("codhud_setfaction", function(ply, cmd, args)
     -- Update the networked string so the HUD and Scoreboard see it
     ply:SetNW2String("CoDHUD_Faction", faction)
     
-    print("[CoDHUD] Player " .. ply:Nick() .. " joined team " .. FACTION_NAMES[faction])
+    print("[CoDHUD] Player " .. ply:Nick() .. " joined team " .. GetFactionName(faction))
 end)
 
 -- Ensure the faction persists through death/respawn on the server side
@@ -50,7 +104,7 @@ hook.Add("PlayerSay", "CoDHUD_Chat_Interceptor", function(ply, text, teamOnly)
 
     -- Get faction ID and exact Name
     local factionID = ply:GetNW2String("CoDHUD_Faction", "rangers")
-    local factionName = FACTION_NAMES[factionID] or "Army Rangers"
+    local factionName = GetFactionName(factionID) or "Army Rangers"
 
     -- Broadcast to relevant players via Net Message
     net.Start("CoDHUD_ChatMessage")

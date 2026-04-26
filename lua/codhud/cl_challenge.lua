@@ -21,7 +21,7 @@ end
 -- [[ HELPERS ]]
 function CoDHUD_ChallengeTitle(header, level, prefix)
     local name = header
-	local prefix = prefix or "MW2_CHALLENGE_"
+    prefix = prefix or "MW2_CHALLENGE_"
 
     local mode = nil
 
@@ -32,9 +32,10 @@ function CoDHUD_ChallengeTitle(header, level, prefix)
     elseif string.find(header, "%[HS%]") then
         mode = "EXPERT"
         name = string.Trim(string.Replace(header, "[HS] ", ""))
-	else
-		mode = "LEVEL"
-		name = language.GetPhrase(prefix .. header)
+    else
+		if string.find(header, " ") then prefix = "" end
+        mode = "LEVEL"
+        name = language.GetPhrase(prefix .. header)
     end
 
     -- Build rank name
@@ -43,12 +44,17 @@ function CoDHUD_ChallengeTitle(header, level, prefix)
         rank = language.GetPhrase(prefix .. mode .. "_" .. level)
     end
 
+    -- Fallback
     if rank == "LEVEL" then
         rank = mode
     end
 
-    -- Format: "AK-47: Marksman II"
-    return name .. rank
+    -- Final format
+    if rank ~= "" then
+        return name .. rank
+    else
+        return name
+    end
 end
 
 -- [[ QUEUE SYSTEM ]]
@@ -56,7 +62,7 @@ local notificationQueue = {}
 local activeNotif = nil
 local queuedChallenge = false
 
-local function QueueNotification(id, header, level, sub, subval, pts)
+local function QueueNotification(id, header, level, sub, subval, pts, align)
     if id ~= "debug" and CoDHUD_Stats.completed[id] then return end
 
     if _G.CoDHUD_AddScore and pts and pts > 0 then
@@ -72,13 +78,14 @@ local function QueueNotification(id, header, level, sub, subval, pts)
 
     if (not GetConVar("codhud_enable_challenges"):GetBool()) or GetConVar("codhud_quickdisable_hud"):GetBool() then return end
 
-    table.insert(notificationQueue, {
-        id = id,
-        header = header,
-        level = level,
-        sub = sub,
-        subval = subval
-    })
+	table.insert(notificationQueue, {
+		id = id,
+		header = header,
+		level = level,
+		sub = sub,
+		subval = subval,
+		align = align
+	})
 end
 
 local function ProcessQueue()
@@ -89,20 +96,8 @@ local function ProcessQueue()
 
     local n = table.remove(notificationQueue, 1)
 
-    local subKey = language.GetPhrase("MW2_CHALLENGE_" .. (n.sub or ""))
-    local subVal = n.subval or 0
-
-    local sub
-    if subVal > 0 and string.find(subKey, "%%s") then
-        sub = string.format(subKey, subVal)
-    else
-        sub = subKey
-    end
-	
-	local hudtype = GetConVar("codhud_game"):GetString() or "mw2"
-
-	if CoDHUD[hudtype] and CoDHUD[hudtype].ChallengeComplete then
-		CoDHUD[hudtype].ChallengeComplete( n.header, n.level, sub )
+	if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].ChallengeComplete then
+		CoDHUD[CoDHUD_GetHUDType()].ChallengeComplete( n.header, n.level, n.sub, n.subval, n.align )
 	end
 end
 
@@ -151,6 +146,22 @@ concommand.Add("codhud_challenge_debug", function(ply, cmd, args)
 		local randomchal = challenges[randomKey]
 
 		QueueNotification("debug", randomchal[1], randomchal[2], randomchal[3], randomchal[4], randomchal[5])
+	end
+	
+	if key == "testvar" then
+		local testChallenges = {
+			["test1"] = { "Test Challenge!", nil, "Testing Subtext, single line.", nil, 1 },
+			["test2"] = { "Test Challenge! II", nil, "Testing Subtext\nTwo lines.", nil, 1 },
+			["test3"] = { "Test Challenge! III", nil, "Testing Subtext\nVersion two\nThree lines.", nil, 1 },
+			["test4"] = { "Debug Challenge Testing!\nTest Challenge! IV", nil, nil, nil, 1 },
+			["test5"] = { "Test Challenge! V", nil, "This challenge is aligned to the right.", nil, 1, "right" },
+			["test6"] = { "Test Challenge! VI", nil, "This challenge is aligned to the left.", nil, 1, "left" },
+		}
+
+		for _, v in pairs(testChallenges) do
+			QueueNotification("debug", v[1], v[2], v[3], v[4], v[5], v[6])
+		end
+		return
 	end
 end)
 

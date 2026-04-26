@@ -25,3 +25,9 @@ end
 function CoDHUD_S(x)  return math.Round(x * CoDHUD_GetUIScale()) end
 function CoDHUD_SX(x) return math.Round(x * CoDHUD_GetUIScale()) end
 function CoDHUD_SY(y) return math.Round(y * CoDHUD_GetUIScale()) end
+
+
+function CoDHUD_GetHUDType()
+    local c = GetConVar("codhud_game")
+    return c and c:GetString() or "mw2"
+end

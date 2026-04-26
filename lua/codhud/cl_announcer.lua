@@ -12,7 +12,11 @@ function CoDHUD_PlayAnnouncerSound(path, isMusic)
 end
 
 -- Resolve announcer sound with language + suffix fallback
-function CoDHUD_GetAnnouncerSound(basePath, keys)
+function CoDHUD_GetAnnouncerSound(keys)
+    if isstring(keys) then
+        keys = { keys }
+    end
+
     local ply = LocalPlayer()
     if not IsValid(ply) then return nil end
 
@@ -21,13 +25,11 @@ function CoDHUD_GetAnnouncerSound(basePath, keys)
         faction = cookie.GetString("CoDHUD_SelectedFaction", "rangers")
     end
 
-	local hudtype = GetConVar("codhud_game"):GetString() or "mw2"
-
-    if not CoDHUD.Factions[hudtype] or not CoDHUD.Factions[hudtype][faction] then
+    if not CoDHUD.Factions[CoDHUD_GetHUDType()] or not CoDHUD.Factions[CoDHUD_GetHUDType()][faction] then
         return nil
     end
 
-	local voice = CoDHUD.Factions[hudtype][faction].voicepath
+	local voice = CoDHUD.Factions[CoDHUD_GetHUDType()][faction].voicepath
     local lang = GetConVar("gmod_language"):GetString() or "en"
 
     local function tryLang(l)
@@ -36,7 +38,7 @@ function CoDHUD_GetAnnouncerSound(basePath, keys)
             -- suffix search
             for i = 1, 5 do
                 local suffix = (i < 10 and "0" .. i or tostring(i))
-				local path = "announcer/" .. hudtype .. "/" .. l .. "/" .. CoDHUD.Factions[hudtype][faction].voicepath .. key .. "_" .. suffix .. ".wav"
+				local path = "announcer/" .. CoDHUD_GetHUDType() .. "/" .. l .. "/" .. CoDHUD.Factions[CoDHUD_GetHUDType()][faction].voicepath .. key .. "_" .. suffix .. ".wav"
 
                 if file.Exists("sound/" .. path, "GAME") then
                     return path
@@ -44,7 +46,7 @@ function CoDHUD_GetAnnouncerSound(basePath, keys)
             end
 
             -- fallback no suffix
-            local path = "announcer/" .. hudtype .. "/" .. l .. "/" .. CoDHUD.Factions[hudtype][faction].voicepath .. key .. ".wav"
+            local path = "announcer/" .. CoDHUD_GetHUDType() .. "/" .. l .. "/" .. CoDHUD.Factions[CoDHUD_GetHUDType()][faction].voicepath .. key .. ".wav"
 
             if file.Exists("sound/" .. path, "GAME") then
                 return path

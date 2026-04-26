@@ -7,11 +7,6 @@ _G.CoDHUD_MedalSystem = _G.CoDHUD_MedalSystem or {}
 
 if CLIENT then
     -- [[ TINKERING MENU ]]
-    local MEDAL_CFG = {
-        X_OFFSET = 0,    -- Horizontal offset from center
-        Y_OFFSET = -250, -- Vertical offset (Match this with cl_mw2_challenge.lua)
-    }
-
     local medalQueue  = {}
     local activeMedal = nil
 
@@ -48,13 +43,6 @@ if CLIENT then
 
 		return t -- normal
 	end
-	
-    local MEDAL_DURATION = 1.25
-    local FADE_IN_TIME   = 0.125
-    local EXIT_DURATION  = 0.125
-    local FADE_OUT_START = MEDAL_DURATION - EXIT_DURATION
-
-    local COL_POINTS = Color(255, 255, 50)
 
     -- [[ MEDAL QUEUE LOGIC ]]
     local function AddMedalToQueue(txt, hasIcon, pts, desc, isSpecial)
@@ -75,7 +63,7 @@ if CLIENT then
     -- [[ NETWORK RECEIVERS (Communicating with Challenge System) ]]
     net.Receive("CoDHUD_Medal_Headshot",   function()
         AddMedalToQueue("SPLASHES_HEADSHOT", true, 50)
-        if _G.MW2_OnMedalReceived then _G.MW2_OnMedalReceived("headshot") end
+        if _G.CoDHUD_OnMedalReceived then _G.CoDHUD_OnMedalReceived("headshot") end
     end)
 
     net.Receive("CoDHUD_Medal_DoubleKill", function() AddMedalToQueue("SPLASHES_DOUBLEKILL", false, 50)  end)
@@ -84,19 +72,19 @@ if CLIENT then
 
     net.Receive("CoDHUD_Medal_Longshot",   function()
         AddMedalToQueue("SPLASHES_LONGSHOT", true, 50, "SPLASHES_LONGSHOT_DESC")
-        if _G.MW2_OnMedalReceived then _G.MW2_OnMedalReceived("longshot") end
+        if _G.CoDHUD_OnMedalReceived then _G.CoDHUD_OnMedalReceived("longshot") end
     end)
 
     net.Receive("CoDHUD_Medal_OneShot",    function()
         AddMedalToQueue("SPLASHES_ONE_SHOT_KILL", true, 0, "SPLASHES_ONE_SHOT_KILL_DESC", true)
-        if _G.MW2_OnMedalReceived then _G.MW2_OnMedalReceived("oneshot") end
+        if _G.CoDHUD_OnMedalReceived then _G.CoDHUD_OnMedalReceived("oneshot") end
     end)
 
     net.Receive("CoDHUD_Medal_FirstBlood", function() AddMedalToQueue("SPLASHES_FIRSTBLOOD", true,  100, "SPLASHES_FIRSTBLOOD_DESC")              end)
     net.Receive("CoDHUD_Medal_Comeback",   function() AddMedalToQueue("SPLASHES_COMEBACK",    true,  100, "SPLASHES_COMEBACK_DESC") end)
     net.Receive("CoDHUD_Medal_Payback",    function()
         AddMedalToQueue("SPLASHES_REVENGE", true, 50, "SPLASHES_REVENGE_DESC")
-        if _G.MW2_OnMedalReceived then _G.MW2_OnMedalReceived("payback") end
+        if _G.CoDHUD_OnMedalReceived then _G.CoDHUD_OnMedalReceived("payback") end
     end)
 
 	-- MEDAL PROGRESS
@@ -112,12 +100,10 @@ if CLIENT then
 		activeMedal._speedMul = speedMul
 	end)
 
-
 	-- RENDERING
 	hook.Add("HUDPaint", "MW2_DrawMedalsSystem", function()
 		local ct = CurTime()
-		local outlined = GetConVar("codhud_enable_outlinedtext"):GetBool()
-
+		
 		local busy = (activeMedal ~= nil or #medalQueue > 0)
 		_G.CoDHUD_MedalsActive = busy
 
@@ -130,7 +116,9 @@ if CLIENT then
 			local faster = cv_fast_medals:GetBool()
 
 			if (not faster) or (#medalQueue < 3) then
-				surface.PlaySound("hud/hud_medal.mp3")
+				if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].MedalsSound then
+					surface.PlaySound(CoDHUD[CoDHUD_GetHUDType()].MedalsSound)
+				end
 			end
 		end
 
@@ -138,83 +126,13 @@ if CLIENT then
 
 		-- TIME HANDLING
 		local speedMul = GetMedalSpeedMultiplier()
-		local age = (ct - activeMedal.start) / speedMul
 
-		if age > MEDAL_DURATION then
-			activeMedal = nil
-			return
-		end
+		if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].Medals then
+			local finished = CoDHUD[CoDHUD_GetHUDType()].Medals(speedMul, activeMedal)
 
-		-- VISUALS
-		local alpha = 255
-		local scale = 1
-
-		if age < FADE_IN_TIME then
-			local progress = age / FADE_IN_TIME
-			alpha = progress * 255
-			scale = Lerp(progress, 3.5, 1.0)
-
-		elseif age > FADE_OUT_START then
-			local progress = (age - FADE_OUT_START) / EXIT_DURATION
-			alpha = math.Clamp((1 - progress) * 255, 0, 255)
-			scale = Lerp(progress, 1.0, 3.0)
-		end
-
-		local cx = (ScrW() / 2) + CoDHUD_S(MEDAL_CFG.X_OFFSET)
-		local cy = (ScrH() / 2) + CoDHUD_S(MEDAL_CFG.Y_OFFSET)
-
-		local colWhite      = Color(255, 255, 255, alpha)
-		local colBlack      = Color(0, 0, 0, alpha * 0.8)
-		local colYellow     = Color(COL_POINTS.r, COL_POINTS.g, COL_POINTS.b, alpha)
-		local colRedGlow    = Color(195, 110, 115, alpha * 0.5)
-		local colRedOutline = Color(180, 0, 0, alpha * 0.8)
-
-		local mat = Matrix()
-		mat:Translate(Vector(cx, cy, 0))
-		mat:Scale(Vector(scale, scale, 1))
-		mat:Translate(Vector(-cx, -cy, 0))
-
-		cam.PushModelMatrix(mat)
-
-			-- ICON
-			if activeMedal.hasIcon then
-				surface.SetDrawColor(255, 255, 255, alpha)
-				surface.SetMaterial(Material("icons/crosshair_red.png", "smooth"))
-				surface.DrawTexturedRect(cx - CoDHUD_S(60), cy - CoDHUD_S(120), CoDHUD_S(120), CoDHUD_S(120))
+			if finished then
+				activeMedal = nil
 			end
-
-			-- TEXT
-			local localizedText = language.GetPhrase("MW2_" .. activeMedal.text)
-
-			draw.SimpleTextOutlined( localizedText, "MW2_MedalGlow", cx, cy, Color(0,0,0,0), 1, 1, 0.75, colRedGlow )
-			draw.SimpleTextOutlined( localizedText, "MW2_MedalPrimary", cx, cy, colWhite, 1, 1, 0, colRedOutline )
-
-			-- DESC / POINTS
-			if activeMedal.desc then
-				local localizedDesc = language.GetPhrase("MW2_" .. activeMedal.desc)
-
-				if activeMedal.isSpecial then
-					draw.SimpleTextOutlined( localizedDesc, "MW2_MedalDesc", cx, cy + CoDHUD_S(35), colWhite, 1, 1, outlined and 1 or 0, colBlack )
-				else
-					local descText     = localizedDesc .. " ("
-					local pointsText   = "+" .. activeMedal.points
-					local bracketClose = ")"
-
-					surface.SetFont("MW2_MedalDesc")
-					local w1 = surface.GetTextSize(descText)
-					local w2 = surface.GetTextSize(pointsText)
-					local totalW = w1 + w2 + surface.GetTextSize(bracketClose)
-
-					local startX = cx - (totalW / 2)
-
-					draw.SimpleTextOutlined( descText, "MW2_MedalDesc", startX, cy + CoDHUD_S(35), colWhite, 0, 1, outlined and 1 or 0, colBlack )
-					draw.SimpleTextOutlined( pointsText, "MW2_MedalDesc", startX + w1, cy + CoDHUD_S(35), colYellow, 0, 1, outlined and 1 or 0, colBlack )
-					draw.SimpleTextOutlined( bracketClose, "MW2_MedalDesc", startX + w1 + w2, cy + CoDHUD_S(35), colWhite, 0, 1, outlined and 1 or 0, colBlack )
-				end
-			else
-				draw.SimpleTextOutlined( "+" .. activeMedal.points, "MW2_MedalDesc", cx, cy + CoDHUD_S(35), colYellow, 1, 1, outlined and 1 or 0, colBlack )
-			end
-
-		cam.PopModelMatrix()
+		end
 	end)
 end

@@ -12,40 +12,17 @@ local CFG = {
 	POINTS_DELAY     = 4.0,
 	SCOREBOARD_DELAY = 6.0,
 
-    ICON_SIZE        = 184,
-    ICON_X           = 960,
-    ICON_Y           = 400,
-    ICON_GAP         = 80,
-
-    SCORE_X          = 960,
-    SCORE_Y          = 620,
-
-    RESULT_X         = 960,
-    RESULT_Y         = 240,
-
-    LIMIT_X          = 960,
-    LIMIT_Y          = 330,
-
     BONUS_X          = 960,
     BONUS_Y          = 720,
 
     ICON_FADE_TIME   = 1.0,
 }
 
--- ============================================================
---  Music / voices
--- ============================================================
-local VICTORY_MUSIC = {
-    US = "music/US/hz_mp_usvictory_1.mp3", UK = "music/UK/hz_mp_ukvictory_1.mp3",
-    NS = "music/NS/hz_mp_nsvictory_1.mp3", RU = "music/RU/hz_mp_ruvictory_1.mp3",
-    AB = "music/AB/hz_mp_abvictory_1.mp3", PG = "music/PG/hz_mp_pgvictory_1.mp3",
-}
-local DEFEAT_MUSIC = {
-    US = "music/US/hz_mp_usdefeat_1.mp3",  UK = "music/UK/hz_mp_ukdefeat_1.mp3",
-    NS = "music/NS/hz_mp_nsdefeat_1.mp3",  RU = "music/RU/hz_mp_rudefeat_1.mp3",
-    AB = "music/AB/hz_mp_abdefeat_1.mp3",  PG = "music/PG/hz_mp_pgdefeat_1.mp3",
-}
+local voicefile = CoDHUD[CoDHUD_GetHUDType()].VoiceCallouts
 
+-- ============================================================
+--  Match Bonus
+-- ============================================================
 local function CalcMatchBonus(kills)
     kills = math.Clamp(kills, 0, 75)
     if kills == 0 then return math.random(100, 130) end
@@ -105,10 +82,10 @@ net.Receive("CoDHUD_RoundEnd", function()
     if localFac == "" then localFac = cookie.GetString("CoDHUD_SelectedFaction", "rangers") end
 
     local kills     = math.max(0, ply:Frags())
-    local fdata     = CoDHUD.Factions["mw2"] and CoDHUD.Factions["mw2"][localFac]
+    local fdata     = CoDHUD.Factions[CoDHUD_GetHUDType()] and CoDHUD.Factions[CoDHUD_GetHUDType()][localFac]
     local voiceTag  = fdata and fdata.voice or nil
     local isVictory = (localFac == winnerFac)
-    local hasTwo    = (loserFac ~= "" and CoDHUD.Factions["mw2"] and CoDHUD.Factions["mw2"][loserFac] ~= nil)
+    local hasTwo    = (loserFac ~= "" and CoDHUD.Factions[CoDHUD_GetHUDType()] and CoDHUD.Factions[CoDHUD_GetHUDType()][loserFac] ~= nil)
 
     local leftFac   = localFac
     local rightFac  = isVictory and loserFac or winnerFac
@@ -147,24 +124,21 @@ net.Receive("CoDHUD_RoundEnd", function()
     ws_limit = language.GetPhrase("MW2_MP_SCORE_LIMIT_REACHED")
 
     -- Music
-    if voiceTag then
-        timer.Create("MW2_RE_Music", CFG.MUSIC_DELAY, 1, function()
-            if not re_active then return end
-            local tbl   = isVictory and VICTORY_MUSIC or DEFEAT_MUSIC
-            local music = tbl[voiceTag]
-            if music then CoDHUD_PlayAnnouncerSound(music, true) end
-        end)
-    end
+	timer.Simple( CFG.MUSIC_DELAY, function()
+		local theme = isVictory and fdata.victorytheme or fdata.defeattheme
 
+		if GetConVar("codhud_enable_music"):GetBool() and theme then
+			surface.PlaySound("music/" .. CoDHUD_GetHUDType() .. "/" .. theme)
+		end
+	end)
+	
     -- Voiceline
-    if voiceTag then
-        timer.Create("MW2_RE_Voice", CFG.VOICE_DELAY, 1, function()
-			local victoryvoice = isVictory and "mission_success" or "mission_fail"
+	timer.Simple( CFG.VOICE_DELAY, function()
+		local victoryvoice = isVictory and voicefile.missionwin or voicefile.missionlose
 
-			local sound = CoDHUD_GetAnnouncerSound(basePath, { victoryvoice })
-			if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
-        end)
-    end
+		local sound = CoDHUD_GetAnnouncerSound(victoryvoice)
+		if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
+	end)
 
 	-- Team Scores
 	local teamsMap = {}
@@ -195,59 +169,9 @@ net.Receive("CoDHUD_RoundEnd", function()
 		return (a.score or 0) > (b.score or 0)
 	end)
 
-	CoDHUD_HeaderQueue.Push({
-		teams = teams,
-		x = CoDHUD_SX(CFG.ICON_X),
-		y = CoDHUD_SY(CFG.ICON_Y),
-		multiple = true,
-		persist = true,
-		endTime = CFG.SCOREBOARD_DELAY,
-
-		iconSize = CoDHUD_S(CFG.ICON_SIZE),
-		iconGap  = CoDHUD_S(CFG.ICON_GAP),
-
-		scoreY = CoDHUD_SY(CFG.SCORE_Y),
-
-		fonts = {
-			score_pri = "MW2_RE_Sc_Pri",
-			score_sec = "MW2_RE_Sc_Sec",
-			score_shd = "MW2_RE_Sc_Shd",
-		}
-	})
-
-	-- Text
-	CoDHUD_HeaderQueue.Push({
-		text = ws_result,
-		x = CoDHUD_SX(CFG.RESULT_X),
-		y = CoDHUD_SY(CFG.RESULT_Y),
-		color = re_result_glow,
-		multiple = true,
-		skipErase = true,
-		persist = true,
-		endTime = CFG.SCOREBOARD_DELAY,
-		fonts = {
-			pri = "MW2_RE_Re_Pri",
-			sec = "MW2_RE_Re_Sec",
-			shd = "MW2_RE_Re_Shd",
-			sub = "MW2_ChalSub"
-		}
-	})
-
-	CoDHUD_HeaderQueue.Push({
-		text = ws_limit,
-		x = CoDHUD_SX(CFG.LIMIT_X),
-		y = CoDHUD_SY(CFG.LIMIT_Y),
-		color = Color(135, 135, 180),
-		multiple = true,
-		skipErase = true,
-		persist = true,
-		endTime = CFG.SCOREBOARD_DELAY,
-		fonts = {
-			pri = "MW2_RE_Li_Pri",
-			sec = "MW2_RE_Li_Sec",
-			shd = "MW2_RE_Li_Shd",
-		}
-	})
+	if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].RoundEnd then
+		CoDHUD[CoDHUD_GetHUDType()].RoundEnd(teams, ws_result, ws_limit, re_result_glow, CFG)
+	end
 
     -- Scoreboard opens at 6s, overlay drawing stops at 6s
     timer.Create("MW2_RE_Board", CFG.SCOREBOARD_DELAY, 1, function()
@@ -322,13 +246,8 @@ end)
 hook.Add("DrawOverlay", "MW2_RE_Draw", function()
     if not re_active then return end
     if not IsValid(LocalPlayer()) then return end
-	local outlined = GetConVar("codhud_enable_outlinedtext"):GetBool()
 
-    local el = CurTime() - re_lock_time
-    if el < 0 then return end
-    if el >= 6.0 then return end
-
-    local iconAlpha = math.floor(math.Clamp(el / CFG.ICON_FADE_TIME, 0, 1) * 255)
-
-	draw.SimpleTextOutlined( string.format( language.GetPhrase("MW2_MP_MATCH_BONUS_IS"), tostring(re_match_bonus) ), "MW2_RE_Bonus", CoDHUD_SX(CFG.BONUS_X), CoDHUD_SY(CFG.BONUS_Y), Color(240, 250, 110, iconAlpha), 1, 1, outlined and 1 or 0, Color(0,0,0, iconAlpha) )
+	if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].RoundEndBonus then
+		CoDHUD[CoDHUD_GetHUDType()].RoundEndBonus(re_lock_time, re_match_bonus)
+	end
 end)

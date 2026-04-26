@@ -1,10 +1,6 @@
 ---- [ IDENTIFY FRIEND-OR-FOE ] ----
 
 if CLIENT then
-    -- Master toggle for the entire label logic
-    CreateClientConVar("mw2_targetid_label", "1", true, false, "Enable/Disable target identification labels")
-    CreateClientConVar("mw2_targetid_death_icon", "1", true, false, "Show death icon when a friendly dies")
-
     local CFG = {
         Y_OFFSET_NEAR       = 12, 
         Y_OFFSET_FAR        = 24, 
@@ -25,7 +21,6 @@ if CLIENT then
     local ENEMY_COLOR    = Color(210, 30, 50)  
     local FRIENDLY_COLOR = Color(60, 200, 60)
     local CENTER_RADIUS  = 60 
-    local MAT_DEAD_ICON  = Material("icons/headicon_dead.png", "smooth")
     
     local targetAlphas = {} 
     local focusTimers  = {} 
@@ -75,7 +70,7 @@ if CLIENT then
         local screenCenter = Vector(scrW / 2, scrH / 2, 0)
 
         -- Handle Death Icons
-        if GetConVar("mw2_targetid_death_icon"):GetBool() and not GetConVar("codhud_quickdisable_hud"):GetBool() then
+        if GetConVar("codhud_enable_deathicon"):GetBool() and not GetConVar("codhud_quickdisable_hud"):GetBool() then
             for i = #deathMarkers, 1, -1 do
                 local m = deathMarkers[i]
                 local elapsed = CurTime() - m.time
@@ -85,27 +80,14 @@ if CLIENT then
                     continue 
                 end
 
-                local screenData = m.pos:ToScreen()
-                if screenData.visible then
-                    local currentAlpha = CFG.DEATH_ICON_ALPHA
-                    
-                    if elapsed > (CFG.DEATH_ICON_DURATION - 1.0) then
-                        currentAlpha = Lerp((elapsed - (CFG.DEATH_ICON_DURATION - 1.0)) / 1.0, CFG.DEATH_ICON_ALPHA, 0)
-                    end
-
-                    local dist = lp:GetPos():Distance(m.pos)
-                    local scale = math.Clamp(1 - (dist / 2500), 0.5, 1)
-                    local scaledSize = CFG.DEATH_ICON_SIZE * scale
-
-                    surface.SetMaterial(MAT_DEAD_ICON)
-                    surface.SetDrawColor(255, 255, 255, currentAlpha)
-                    surface.DrawTexturedRect(screenData.x - (scaledSize/2), screenData.y - (scaledSize/2), scaledSize, scaledSize)
-                end
+				if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].DeathIcon then
+					CoDHUD[CoDHUD_GetHUDType()].DeathIcon(m, elapsed)
+				end
             end
         end
 
         -- Handle Target Labels (Only if enabled)
-        if (not GetConVar("mw2_targetid_label"):GetBool()) or GetConVar("codhud_quickdisable_hud"):GetBool() then return end
+        if (not GetConVar("codhud_enable_iff"):GetBool()) or GetConVar("codhud_quickdisable_hud"):GetBool() then return end
 
         for _, ent in ipairs(ents.GetAll()) do
             if not IsValid(ent) or ent == lp then continue end
@@ -175,19 +157,9 @@ if CLIENT then
                 local distScale = 1 - math.Clamp((distToPlayer - CFG.NEAR_DISTANCE) / (CFG.OFFSET_DIST - CFG.NEAR_DISTANCE), 0, 1)
                 local finalScale = Lerp(distScale, CFG.MIN_SCALE, CFG.MAX_SCALE)
 
-                surface.SetFont("MW2_TargetName_Primary")
-                local tw, th = surface.GetTextSize(displayName)
-                tw, th = tw * finalScale, th * finalScale
-
-                local drawX, drawY = screenData.x - (tw / 2), screenData.y - (th / 2)
-
-                local matrix = Matrix()
-                matrix:Translate(Vector(drawX, drawY, 0))
-                matrix:Scale(Vector(finalScale, finalScale, 1))
-
-                cam.PushModelMatrix(matrix)
-                    draw.SimpleText(displayName, "MW2_TargetName_Primary", 0, 0, Color(factionColor.r, factionColor.g, factionColor.b, alpha), 0, 0)
-                cam.PopModelMatrix()
+				if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].IFF then
+					CoDHUD[CoDHUD_GetHUDType()].IFF(displayName, finalScale, screenData, isFriendly, alpha)
+				end
             end
         end
     end)

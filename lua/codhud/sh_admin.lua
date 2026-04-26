@@ -17,3 +17,15 @@ if SERVER then
 end
 
 CreateConVar("codhud_game", "mw2", {FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "Which CoD game factions and UI should utilize.")
+
+if SERVER then
+	util.AddNetworkString("CoDHUD_SetGame")
+
+	net.Receive("CoDHUD_SetGame", function(len, ply)
+		if not IsValid(ply) or not ply:IsAdmin() then return end
+
+		local game = net.ReadString()
+
+		RunConsoleCommand("codhud_game", game)
+	end)
+end

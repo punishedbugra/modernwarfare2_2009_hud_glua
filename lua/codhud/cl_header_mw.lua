@@ -46,6 +46,7 @@ function CoDHUD_Header_MW:New(cfg)
 	o.skipErase = cfg.skipErase or false
 	o.multiple = cfg.multiple or false
 	o.persist = cfg.persist or false
+	o.align = cfg.align or "center"
 
 	if cfg.endTime then
 		o.endTime = CurTime() + cfg.endTime
@@ -76,6 +77,23 @@ function CoDHUD_Header_MW:New(cfg)
 end
 
 function CoDHUD_HeaderQueue.Push(cfg)
+	cfg.groupId = cfg.groupId or (CurTime() .. "_" .. math.random(9999))
+	
+	if cfg.text and string.find(cfg.text, "\n") then
+		local lines = string.Split(cfg.text, "\n")
+
+		for i, line in ipairs(lines) do
+			local copy = table.Copy(cfg)
+			copy.text = line
+			copy.y = cfg.y + ((i - 1) * CoDHUD_S(28))
+			copy.multiple = true
+			copy.groupId = cfg.groupId
+			
+			table.insert(CoDHUD_HeaderQueue.Queue, copy)
+		end
+
+		return
+	end
     table.insert(CoDHUD_HeaderQueue.Queue, cfg)
 end
 
@@ -130,11 +148,19 @@ local function ApplyBlanks(text, blanks)
     return table.concat(chars)
 end
 
-local function DrawCODText(text, fullText, pri, sec, shd, x, y, glow)
+local function DrawCODText(text, fullText, pri, sec, shd, x, y, glow, align)
     surface.SetFont(pri)
     local fullW = surface.GetTextSize(fullText)
 
-    local startX = x - fullW / 2
+    local startX
+
+	if align == "right" then
+		startX = x - fullW
+	elseif align == "left" then
+		startX = x
+	else
+		startX = x - fullW / 2
+	end
 
     draw.SimpleText(text, sec, startX + 4, y + 0, glow, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
     draw.SimpleText(text, sec, startX - 4, y - 0, glow, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
@@ -145,8 +171,8 @@ end
 local RE_MATS = {}
 local function GetSpawnMat(id)
     if RE_MATS[id] then return RE_MATS[id] end
-    if not CoDHUD.Factions["mw2"] or not CoDHUD.Factions["mw2"][id] then return nil end
-    RE_MATS[id] = Material(CoDHUD.Factions["mw2"][id].spawnIcon, "smooth")
+    if not CoDHUD.Factions[CoDHUD_GetHUDType()] or not CoDHUD.Factions[CoDHUD_GetHUDType()][id] then return nil end
+    RE_MATS[id] = Material(CoDHUD.Factions[CoDHUD_GetHUDType()][id].spawnIcon, "smooth")
     return RE_MATS[id]
 end
 
@@ -262,7 +288,7 @@ function CoDHUD_Header_MW:Draw()
     end
 
     if display ~= "" then
-        DrawCODText( display, self.text, self.fonts.pri, self.fonts.sec, self.fonts.shd, self.x, self.y, self.color )
+        DrawCODText( display, self.text, self.fonts.pri, self.fonts.sec, self.fonts.shd, self.x, self.y, self.color, self.align )
     end
 
     -- SUBTEXT
@@ -270,8 +296,12 @@ function CoDHUD_Header_MW:Draw()
 		local col = Color(self.subcolor.r, self.subcolor.g, self.subcolor.b, self.subAlpha)
 		local lines = string.Split(self.subtext, "\n")
 
+		local align = self.align or "center"
+
 		for i, line in ipairs(lines) do
-			draw.SimpleTextOutlined( line, self.fonts.sub, self.x, self.y + CoDHUD_S(25) + (i - 1) * CoDHUD_S(24), col, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, outlined and 1 or 0, Color(0,0,0,col.a) )
+			local y = self.y + CoDHUD_S(25) + (i - 1) * CoDHUD_S(24)
+
+			draw.SimpleTextOutlined( line, self.fonts.sub, self.x, y, col, align == "right" and TEXT_ALIGN_RIGHT or align == "left" and TEXT_ALIGN_LEFT or TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, outlined and 1 or 0, Color(0,0,0,col.a) )
 		end
 	end
 
@@ -359,7 +389,7 @@ function CoDHUD_Header_MW:Draw()
 				surface.DrawTexturedRect(x - size/2, y, size, size)
 			end
 
-			local fd = CoDHUD.Factions["mw2"] and CoDHUD.Factions["mw2"][t.fac]
+			local fd = CoDHUD.Factions[CoDHUD_GetHUDType()] and CoDHUD.Factions[CoDHUD_GetHUDType()][t.fac]
 
 			local score = t.score or 0
 
@@ -381,6 +411,12 @@ function CoDHUD_Header_MW:Draw()
 end
 
 function CoDHUD_Header_MW:IsDone()
+    if self.groupId then
+        if CoDHUD_HeaderGroups[self.groupId] then
+            return true
+        end
+    end
+
     return self.phase == "done"
 end
 
@@ -426,6 +462,25 @@ function CoDHUD_HeaderQueue.Think()
             table.remove(CoDHUD_HeaderQueue.Active, i)
         end
     end
+	
+	local groups = {}
+
+	for _, h in ipairs(CoDHUD_HeaderQueue.Active) do
+		if h.groupId then
+			groups[h.groupId] = groups[h.groupId] or {total = 0, done = 0}
+			groups[h.groupId].total = groups[h.groupId].total + 1
+
+			if h.phase == "done" then
+				groups[h.groupId].done = groups[h.groupId].done + 1
+			end
+		end
+	end
+
+	for id, g in pairs(groups) do
+		if g.total > 0 and g.total == g.done then
+			CoDHUD_HeaderGroups[id] = true
+		end
+	end
 end
 
 hook.Add("Think", "CoDHUD_HeaderQueueThink", function()

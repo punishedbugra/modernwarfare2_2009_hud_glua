@@ -53,45 +53,8 @@ if CLIENT then
             return 
         end
 
-        local cx, cy = ScrW() / 2, ScrH() / 2
-        local curTime = CurTime()
-
-        for i = #attackers, 1, -1 do
-            local v = attackers[i]
-            
-            -- Fade Logic
-            if curTime > v.time - 1 then 
-                v.alpha = math.Approach(v.alpha, 0, FrameTime() * 400)
-                if v.alpha <= 0 then table.remove(attackers, i) continue end
-            end
-
-            -- Live Tracking: If they are still alive, grab their new position
-            local targetWorldPos = v.trackPos
-            if IsValid(v.ent) then
-                -- Re-apply stability offset
-                targetWorldPos = v.ent:GetPos() + (ply:GetPos() - v.ent:GetPos()) * -33000
-            end
-
-            -- === DIRECTION MATH (Grenade Pointer Logic) ===
-            -- 1. Get relative position
-            local localPos = ply:WorldToLocal(targetWorldPos)
-            
-            -- 2. Calculate Angle (Inverting Y for screen space)
-            local dirVecX = localPos.x
-            local dirVecY = -localPos.y 
-            local screenAngleRad = math.atan2(dirVecX, dirVecY)
-
-            -- 3. Position on Orbit
-            local orbitRadius = 280
-            local px = cx + math.cos(screenAngleRad) * orbitRadius
-            local py = cy - math.sin(screenAngleRad) * orbitRadius
-
-            -- 4. Rotate Texture (Angle + 270 degrees)
-            local rotation = math.deg(screenAngleRad) + 270
-
-            surface.SetMaterial(matDamage)
-            surface.SetDrawColor(255, 255, 255, v.alpha)
-            surface.DrawTexturedRectRotated(px, py, 180, 90, rotation)
-        end
+		if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].DamageDirection then
+			CoDHUD[CoDHUD_GetHUDType()].DamageDirection(attackers)
+		end
     end)
 end
