@@ -1,18 +1,5 @@
 ---- [ CHAT ] ----
 
--- [[ RESOLUTION SCALING ]]
-local BASE_W, BASE_H = 1920, 1080
-
--- The universal scale factor used to keep UI elements proportionate across resolutions
-local function GetUIScale()
-    local scaleX = ScrW() / BASE_W
-    local scaleY = ScrH() / BASE_H
-    return math.max(math.min(scaleX, scaleY), 0.5)
-end
-
--- Scaling function for pixels/sizes
-local function S(x) return math.Round(x * GetUIScale()) end
-
 local chatHistory = {}
 local MAX_MESSAGES = 4 
 local MESSAGE_LIFETIME = 10 
@@ -41,7 +28,7 @@ local function CloseCoDHUDChat()
 end
 
 -- [[ LOGIC: OPEN CHAT ]]
-local function OpenMW2Chat(isTeam)
+local function OpenCoDHUDChat(isTeam)
     if isTyping then return end
     isTyping = true
     chatType = isTeam and "say_team" or "say"
@@ -85,8 +72,8 @@ end
 hook.Add("PlayerBindPress", "CoDHUD_Chat_BindPress", function(ply, bind, pressed)
 	if (not GetConVar("codhud_enable_chat"):GetBool()) or GetConVar("codhud_quickdisable_hud"):GetBool() then return end
     if not pressed then return end
-    if bind == "messagemode" then OpenMW2Chat(false) return true
-    elseif bind == "messagemode2" then OpenMW2Chat(true) return true end
+    if bind == "messagemode" then OpenCoDHUDChat(false) return true
+    elseif bind == "messagemode2" then OpenCoDHUDChat(true) return true end
 end)
 
 -- [[ RENDERING ]]
@@ -98,8 +85,8 @@ hook.Add("HUDPaint", "CoDHUD_DrawChat", function()
 
     -- We calculate these inside the hook using S(x) so they update instantly if resolution changes
     local chatInputY = ScrH() * CHAT_INPUT_Y_RATIO
-    local lineHeight = S(22)
-    local marginX    = S(25)
+    local lineHeight = CoDHUD_S(22)
+    local marginX    = CoDHUD_S(25)
 
     -- 1. INPUT AREA
     if isTyping and IsValid(CoDHUD_ChatEntry) then
@@ -155,7 +142,7 @@ hook.Add("HUDPaint", "CoDHUD_DrawChat", function()
             -- Draw Individual Background Gradient using S(60) for scaled padding
             surface.SetMaterial(MAT_GRAD)
             surface.SetDrawColor(0, 0, 0, math.Clamp(alpha - 45, 0, 180))
-            surface.DrawTexturedRect(0, currentY, marginX + totalW + S(60), lineHeight)
+            surface.DrawTexturedRect(0, currentY, marginX + totalW + CoDHUD_S(60), lineHeight)
 
             -- Draw Text
             local bodyCol = data.isTeam and COL_TEAM or COL_WHITE

@@ -1,35 +1,7 @@
 ---- [ CHALLENGE NOTIFICATIONS & CLIENT TRACKING ] ----
 
--- [[ RESOLUTION SCALING ]]
-local BASE_W, BASE_H = 1920, 1080
-
-local function GetUIScale()
-    local scaleX = ScrW() / BASE_W
-    local scaleY = ScrH() / BASE_H
-    return math.max(math.min(scaleX, scaleY), 0.5)
-end
-
-local function S(x)  return math.Round(x * GetUIScale()) end
-local function SX(x) return math.Round(x * GetUIScale()) end
-local function SY(y) return math.Round(y * GetUIScale()) end
-
-local CFG = {
-    TITLE_X         = 960,
-    TITLE_Y         = 205,
-    TITLE_FONT_SIZE = 46,
-    TITLE_WRITE     = 2.1,
-    TITLE_HANG      = 3.0,
-    TITLE_ERASE     = 0.7,
-}
-
--- [[ TINKERING MENU ]]
-local CHAL_CFG = {
-    X_OFFSET = 0,
-    Y_OFFSET = -250,
-}
-
 -- [[ TRACKING DATA & PERSISTENCE ]]
-local STATS_FILE = "mw2_client_progression.json"
+local STATS_FILE = "codhud_challenges.json"
 local defaultStats = {
     completed = {} 
 }
@@ -47,8 +19,9 @@ local function SaveCoDHUDStats()
 end
 
 -- [[ HELPERS ]]
-local function BuildChallengeTitle(header, level)
+function CoDHUD_ChallengeTitle(header, level, prefix)
     local name = header
+	local prefix = prefix or "MW2_CHALLENGE_"
 
     local mode = nil
 
@@ -61,13 +34,13 @@ local function BuildChallengeTitle(header, level)
         name = string.Trim(string.Replace(header, "[HS] ", ""))
 	else
 		mode = "LEVEL"
-		name = language.GetPhrase("MW2_CHALLENGE_" .. header)
+		name = language.GetPhrase(prefix .. header)
     end
 
     -- Build rank name
     local rank = ""
     if level and level > 0 then
-        rank = language.GetPhrase("MW2_CHALLENGE_" .. mode .. "_" .. level)
+        rank = language.GetPhrase(prefix .. mode .. "_" .. level)
     end
 
     if rank == "LEVEL" then
@@ -125,22 +98,12 @@ local function ProcessQueue()
     else
         sub = subKey
     end
+	
+	local hudtype = GetConVar("codhud_game"):GetString() or "mw2"
 
-    CoDHUD_HeaderQueue.Push({
-        text = BuildChallengeTitle(n.header, n.level),
-        subtext = sub,
-        x = CFG.TITLE_X,
-        y = CFG.TITLE_Y,
-        color = Color(0,220,80),
-        fonts = {
-            pri = "MW2_ChalHeader_Pri",
-            sec = "MW2_ChalHeader_Sec",
-            shd = "MW2_ChalHeader_Shd",
-            sub = "MW2_ChalSub"
-        }
-    })
-
-    surface.PlaySound("hud/mp_challengecomplete_metal_2.mp3")
+	if CoDHUD[hudtype] and CoDHUD[hudtype].ChallengeComplete then
+		CoDHUD[hudtype].ChallengeComplete( n.header, n.level, sub )
+	end
 end
 
 -- [[ NETWORK RECEIVERS ]]

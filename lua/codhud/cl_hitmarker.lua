@@ -1,12 +1,6 @@
 ---- [ HITMARKER ] ----
 
 if CLIENT then
-    -- [[ RESOLUTION SCALING ]]
-    local BASE_W, BASE_H = 1920, 1080
-    local function SX(x) return math.Round(x * (ScrW() / BASE_W)) end
-    local function SY(y) return math.Round(y * (ScrH() / BASE_H)) end
-    local function S(x)  return math.Round(x * (ScrH() / BASE_H)) end
-
     -- [[ VARIABLES ]]
     local matHit = Material("icons/hitmarker.png", "mips smooth")
     local hitAlpha, hitTime = 0, 0
@@ -31,7 +25,7 @@ if CLIENT then
 
         surface.SetFont("MW2_Score_Plus")
         local wP  = surface.GetTextSize(partPlus)
-        local gapPlus = SX(-6)
+        local gapPlus = CoDHUD_SX(-6)
 
         surface.SetFont("MW2_Score_Main")
 
@@ -41,7 +35,7 @@ if CLIENT then
             local w    = surface.GetTextSize(char)
             totalW = totalW + w
             if i < #s_val then
-                local gap = (char == "1") and SX(-11) or SX(-5)
+                local gap = (char == "1") and CoDHUD_SX(-11) or CoDHUD_SX(-5)
                 totalW = totalW + gap
             end
         end
@@ -49,7 +43,7 @@ if CLIENT then
         local curX = x - (totalW / 2)
 
         local function DrawComponent(txt, font, px, py)
-            -- draw.SimpleText(txt, font, px + SX(1), py + SY(1), shadowCol, 0, 1)
+            -- draw.SimpleText(txt, font, px + CoDHUD_SX(1), py + CoDHUD_SY(1), shadowCol, 0, 1)
             -- draw.SimpleText(txt, font, px,         py,         textCol,   0, 1)
             
             draw.SimpleTextOutlined(txt, font, px, py, textCol, 0, 1, 0, shadowCol)
@@ -65,7 +59,7 @@ if CLIENT then
             local char = s_val:sub(i, i)
             local w    = DrawComponent(char, "MW2_Score_Main", runX, y)
             if i < #s_val then
-                local gap = (char == "1") and SX(-11) or SX(-5)
+                local gap = (char == "1") and CoDHUD_SX(-11) or CoDHUD_SX(-5)
                 runX = runX + w + gap
             end
         end
@@ -110,7 +104,7 @@ if CLIENT then
                 end
 
                 local drawAlpha = (currentPulseAlpha / 255) * finalAlpha
-                local drawY     = cy - SY(140)
+                local drawY     = cy - CoDHUD_SY(140)
 
                 local mat = Matrix()
                 mat:Translate(Vector(cx, drawY, 0))

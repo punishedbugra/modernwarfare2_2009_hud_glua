@@ -1,16 +1,5 @@
 ---- [ KILLFEED ] ----
 
--- [[ RESOLUTION SCALING ]]
-local BASE_W, BASE_H = 1920, 1080
-
-local function GetUIScale()
-    local scaleX = ScrW() / BASE_W
-    local scaleY = ScrH() / BASE_H
-    return math.max(math.min(scaleX, scaleY), 0.5)
-end
-
-local function S(x) return math.Round(x * GetUIScale()) end
-
 -- ==========================================
 -- CONFIGURATION & TINKERING
 -- ==========================================
@@ -139,15 +128,15 @@ hook.Add("HUDPaint", "CoDHUD_Killfeed_Draw", function()
     local ct = CurTime()
 
     -- Scale all layout values uniformly at draw time.
-    local xPos = S(CFG.X_POS)
-    local yPos = S(CFG.Y_POS)
-    local spacing = S(CFG.SPACING)
-    local iconW = S(CFG.ICON_W)
-    local iconH = S(CFG.ICON_H)
-    local iconOffY = S(CFG.ICON_OFFSET_Y)
-    local gap_name = S(10)
-    local gap_icon = S(5)
-    local gap_extra = S(25)
+    local xPos = CoDHUD_S(CFG.X_POS)
+    local yPos = CoDHUD_S(CFG.Y_POS)
+    local spacing = CoDHUD_S(CFG.SPACING)
+    local iconW = CoDHUD_S(CFG.ICON_W)
+    local iconH = CoDHUD_S(CFG.ICON_H)
+    local iconOffY = CoDHUD_S(CFG.ICON_OFFSET_Y)
+    local gap_name = CoDHUD_S(10)
+    local gap_icon = CoDHUD_S(5)
+    local gap_extra = CoDHUD_S(25)
 
     local baseY = ScrH() - yPos
 
@@ -177,7 +166,7 @@ hook.Add("HUDPaint", "CoDHUD_Killfeed_Draw", function()
         end
 
         -- Vertical Offset Logic: Start lower and rise up
-        local yOffset = (1 - animProgress) * S(CFG.ANIM_RISE)
+        local yOffset = (1 - animProgress) * CoDHUD_S(CFG.ANIM_RISE)
 		local currentY = baseY - ((#KillFeed - i) * spacing) + yOffset
 
         local x = xPos

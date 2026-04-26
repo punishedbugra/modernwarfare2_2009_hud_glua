@@ -1,18 +1,5 @@
 ---- [ SCOREBOARD ] ----
 
--- [[ RESOLUTION SCALING ]]
-local BASE_W, BASE_H = 1920, 1080
-
-local function GetUIScale()
-    local scaleX = ScrW() / BASE_W
-    local scaleY = ScrH() / BASE_H
-    return math.max(math.min(scaleX, scaleY), 0.5)
-end
-
-local function S(x)  return math.Round(x * GetUIScale()) end
-local function SX(x) return math.Round(x * GetUIScale()) end
-local function SY(y) return math.Round(y * GetUIScale()) end
-
 local CFG = {
     -- Player Row Background
     BAR_W = 1086,
@@ -94,7 +81,7 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
     for i = 1, #str do
         local char     = str:sub(i, i)
         local nextChar = str:sub(i + 1, i + 1)
-        local o        = S(CFG.TIMER_OUTLINE_W)
+        local o        = CoDHUD_S(CFG.TIMER_OUTLINE_W)
         local outlineCol = Color(0, 0, 0, color.a)
 
         -- draw.SimpleText(char, font, runX - o, y,     outlineCol, 0, 0)
@@ -138,7 +125,7 @@ local function DrawPlayerRow(ply, lp, x, y, w, h, barRight, bgCol)
         surface.SetDrawColor(255, 255, 255, 255)
         local iconSz = h * 0.8
         -- Adjusted X to be right before the name (name starts at 110)
-        surface.DrawTexturedRect(x + S(75), y + (h / 2) - (iconSz / 2), iconSz, iconSz)
+        surface.DrawTexturedRect(x + CoDHUD_S(75), y + (h / 2) - (iconSz / 2), iconSz, iconSz)
     end
 
     -- Colors & Stats
@@ -147,29 +134,29 @@ local function DrawPlayerRow(ply, lp, x, y, w, h, barRight, bgCol)
     local pScore = math.max(0, ply:Frags() * 100)
 
     -- Text
-    draw.SimpleTextOutlined(ply:Nick(), "MW2_Scoreboard_Text", x + S(110), y + (h / 2), tCol, TEXT_ALIGN_LEFT,  TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
-    draw.SimpleTextOutlined(ply:Deaths(), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_DEATHS),  y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
-    draw.SimpleTextOutlined(ply:GetNWInt("Assists", 0), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_ASSISTS), y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
-    draw.SimpleTextOutlined(ply:Frags(), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_KILLS),   y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
-    draw.SimpleTextOutlined(pScore, "MW2_Scoreboard_Text", barRight - S(CFG.OFF_SCORE),   y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
+    draw.SimpleTextOutlined(ply:Nick(), "MW2_Scoreboard_Text", x + CoDHUD_S(110), y + (h / 2), tCol, TEXT_ALIGN_LEFT,  TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
+    draw.SimpleTextOutlined(ply:Deaths(), "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_DEATHS),  y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
+    draw.SimpleTextOutlined(ply:GetNWInt("Assists", 0), "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_ASSISTS), y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
+    draw.SimpleTextOutlined(ply:Frags(), "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_KILLS),   y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
+    draw.SimpleTextOutlined(pScore, "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_SCORE),   y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
 
     -- Ping Indicator
-    local boxSize = S(CFG.PING_BOX_SIZE)
-    local pingX = barRight + S(CFG.PING_X_OFF)
+    local boxSize = CoDHUD_S(CFG.PING_BOX_SIZE)
+    local pingX = barRight + CoDHUD_S(CFG.PING_X_OFF)
     local pingY = y + (h / 2) - (boxSize / 2)
 
     surface.SetDrawColor(0, 0, 0, CFG.PING_BOX_ALPHA)
     surface.DrawRect(pingX, pingY, boxSize, boxSize)
 
     surface.SetDrawColor(0, 255, 0, 255)
-    local rodW = S(CFG.PING_BAR_W)
-    local rodSpacing = S(CFG.PING_BAR_SPACING)
+    local rodW = CoDHUD_S(CFG.PING_BAR_W)
+    local rodSpacing = CoDHUD_S(CFG.PING_BAR_SPACING)
     local totalRodsWidth = (rodW * 4) + (rodSpacing * 3)
     local startX = pingX + (boxSize / 2) - (totalRodsWidth / 2)
 
     for i = 1, 4 do
-        local bh = (boxSize - S(6)) * (i / 4)
-        surface.DrawRect(startX + ((i - 1) * (rodW + rodSpacing)), pingY + (boxSize - bh - S(3)), rodW, bh)
+        local bh = (boxSize - CoDHUD_S(6)) * (i / 4)
+        surface.DrawRect(startX + ((i - 1) * (rodW + rodSpacing)), pingY + (boxSize - bh - CoDHUD_S(3)), rodW, bh)
     end
 end
 
@@ -220,12 +207,12 @@ hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
 	end)
 
     -- 3. LAYOUT POSITIONS
-    local barW = S(CFG.BAR_W)
-    local barH = S(CFG.BAR_H)
-    local barX = (scrW / 2) - (barW / 2) + S(CFG.BAR_X_OFF)
+    local barW = CoDHUD_S(CFG.BAR_W)
+    local barH = CoDHUD_S(CFG.BAR_H)
+    local barX = (scrW / 2) - (barW / 2) + CoDHUD_S(CFG.BAR_X_OFF)
     local barRight = barX + barW
 
-	local startY = S(CFG.BAR_Y_OFF)
+	local startY = CoDHUD_S(CFG.BAR_Y_OFF)
 
 	for fi, facData in ipairs(factionList) do
 		local players = facData.players
@@ -244,13 +231,13 @@ hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
 
 		surface.SetMaterial(mat)
 		surface.SetDrawColor(255,255,255,255)
-		surface.DrawTexturedRect(barX + S(CFG.ICON_X_OFF), sectionY + S(CFG.ICON_Y_OFF), S(CFG.ICON_SIZE), S(CFG.ICON_SIZE))
+		surface.DrawTexturedRect(barX + CoDHUD_S(CFG.ICON_X_OFF), sectionY + CoDHUD_S(CFG.ICON_Y_OFF), CoDHUD_S(CFG.ICON_SIZE), CoDHUD_S(CFG.ICON_SIZE))
 
 		draw.SimpleTextOutlined(
 			language.GetPhrase(fData.short) .. " (" .. #players .. ")",
 			"MW2_Scoreboard_Text",
-			barX + S(CFG.FAC_NAME_X),
-			sectionY + S(CFG.FAC_NAME_Y),
+			barX + CoDHUD_S(CFG.FAC_NAME_X),
+			sectionY + CoDHUD_S(CFG.FAC_NAME_Y),
 			Color(255,255,255),
 			0,0,
 			outlined and 1 or 0,
@@ -259,35 +246,35 @@ hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
 
 		-- rows
 		for i, ply in ipairs(players) do
-			local rowY = sectionY + (i - 1) * (barH + S(CFG.ROW_GAP))
+			local rowY = sectionY + (i - 1) * (barH + CoDHUD_S(CFG.ROW_GAP))
 			DrawPlayerRow(ply, lp, barX, rowY, barW, barH, barRight, fData.color)
 		end
 
 		-- push next faction down
-		local sectionHeight = S(0) + (#players * (barH + S(CFG.ROW_GAP)))
-		startY = startY + sectionHeight + S(CFG.TEAM_GAP)
+		local sectionHeight = CoDHUD_S(0) + (#players * (barH + CoDHUD_S(CFG.ROW_GAP)))
+		startY = startY + sectionHeight + CoDHUD_S(CFG.TEAM_GAP)
 	end
 
     surface.SetDrawColor(110, 110, 110, CFG.HEADER_ALPHA)
     surface.SetMaterial(MAT_GRADIENT_L)
-    surface.DrawTexturedRect(0, S(CFG.HEADER_Y_POS), scrW, S(CFG.HEADER_H))
+    surface.DrawTexturedRect(0, CoDHUD_S(CFG.HEADER_Y_POS), scrW, CoDHUD_S(CFG.HEADER_H))
 
     -- Map name
     local mapName = string.upper(game.GetMap())
-	draw.SimpleTextOutlined( mapName, "MW2_Scoreboard_Timer", scrW/2, S(CFG.MAP_Y_OFF), Color(255, 255, 255), 1, 0, outlined and 1.5 or 0, Color(0,0,0) )
+	draw.SimpleTextOutlined( mapName, "MW2_Scoreboard_Timer", scrW/2, CoDHUD_S(CFG.MAP_Y_OFF), Color(255, 255, 255), 1, 0, outlined and 1.5 or 0, Color(0,0,0) )
 
     -- Timer
     local totalSecs = math.floor(CurTime())
     local mins, secs = math.floor(totalSecs / 60), totalSecs % 60
     local timeStr = string.format("%d:%02d", mins, secs)
-    DrawSqueezedText(timeStr, "MW2_Scoreboard_Timer", scrW - S(CFG.TIMER_X_POS), S(CFG.TIMER_Y_OFF), Color(255, 255, 255, 255), CFG.SQUEEZE, CFG.SQUEEZE_ONE, 0, CFG.SQUEEZE_ONE_BEFORE)
+    DrawSqueezedText(timeStr, "MW2_Scoreboard_Timer", scrW - CoDHUD_S(CFG.TIMER_X_POS), CoDHUD_S(CFG.TIMER_Y_OFF), Color(255, 255, 255, 255), CFG.SQUEEZE, CFG.SQUEEZE_ONE, 0, CFG.SQUEEZE_ONE_BEFORE)
 
     -- Stats column headers
-    local headerY = S(CFG.BAR_Y_OFF) - S(35)
-	draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_DEATHS"), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_DEATHS), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
-	draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_ASSISTS"), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_ASSISTS), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
-	draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_KILLS"), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_KILLS), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
-	draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_SCORE"), "MW2_Scoreboard_Text", barRight - S(CFG.OFF_SCORE), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
+    local headerY = CoDHUD_S(CFG.BAR_Y_OFF) - CoDHUD_S(35)
+	draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_DEATHS"), "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_DEATHS), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
+	draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_ASSISTS"), "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_ASSISTS), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
+	draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_KILLS"), "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_KILLS), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
+	draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_SCORE"), "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_SCORE), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
 	
 	
 	local lp = LocalPlayer()
@@ -300,11 +287,11 @@ hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
 		return a.score > b.score
 	end)
 
-	local stripX = S(20)
-	local stripY = S(CFG.HEADER_Y_POS) + (S(CFG.HEADER_H) / 2) - (S(CFG.HEADER_ICON_SIZE) / 2)
-	local stripGap = S(18)
-	local iconSize = S(CFG.HEADER_ICON_SIZE)
-	local textOffset = S(8)
+	local stripX = CoDHUD_S(20)
+	local stripY = CoDHUD_S(CFG.HEADER_Y_POS) + (CoDHUD_S(CFG.HEADER_H) / 2) - (CoDHUD_S(CFG.HEADER_ICON_SIZE) / 2)
+	local stripGap = CoDHUD_S(18)
+	local iconSize = CoDHUD_S(CFG.HEADER_ICON_SIZE)
+	local textOffset = CoDHUD_S(8)
 	
 	local x = stripX
 
@@ -341,7 +328,7 @@ hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
 		draw.SimpleTextOutlined( label, "MW2_Scoreboard_Text", x + iconSize + textOffset, stripY + iconSize / 2, Color(255,255,255), 0, 1, outlined and 1 or 0, Color(0,0,0) )
 
 		-- spacing correction (tightened + consistent)
-		x = x + iconSize + textW + S(25)
+		x = x + iconSize + textW + CoDHUD_S(25)
 	end
 
     -- Manually call the custom chat hook so it draws while the rest of the HUD is suppressed

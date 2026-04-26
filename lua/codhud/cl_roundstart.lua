@@ -1,17 +1,5 @@
 ---- [ ROUND START ] ----
 
-local BASE_W, BASE_H = 1920, 1080
-
-local function GetUIScale()
-    local scaleX = ScrW() / BASE_W
-    local scaleY = ScrH() / BASE_H
-    return math.max(math.min(scaleX, scaleY), 0.5)
-end
-
-local function S(x)  return math.Round(x * GetUIScale()) end
-local function SX(x) return math.Round(x * GetUIScale()) end
-local function SY(y) return math.Round(y * GetUIScale()) end
-
 local CFG = {
     HEADER_X         = 960,
     HEADER_Y         = 150,
@@ -34,72 +22,8 @@ local CFG = {
     OBJ_ERASE     = 0.7,
 }
 
-CreateClientConVar("codhud_selected_gamemode", "war", true, false)
-
-local MW2_RS_GM_NAMES = {
-    "war", -- Team Deathmatch
-    "dm", -- Free-for-All
-    "dom", -- Domination
-    "sd", -- Search & Destroy
-    "sab", -- Sabotage
-    "ctf", -- Capture the Flag
-    "hq", -- Headquarters
-    "oneflag", -- One Flag CTF
-    "arena", -- Arena
-    "dd", -- Demolition
-    "gtnw", -- Global Thermonuclear War
-}
-
-local MW2_RS_OBJECTIVES = {
-    ["war"] = "MW2_MP_OBJ_WAR_HINT", -- TDM
-    ["dm"] = "MW2_MP_OBJ_DM_HINT", -- FFA
-    ["dom"] = "MW2_OBJECTIVES_DOM_HINT", -- Domination
-    ["sd"] = "MW2_OBJECTIVES_SD_ATTACKER_HINT", -- Search & Destroy
-    ["sab"] = "MW2_OBJECTIVES_SAB_HINT", -- Sabotage
-    ["ctf"] = "MW2_OBJECTIVES_CTF_HINT", -- Capture the Flag
-    ["hq"] = "MW2_OBJECTIVES_KOTH_HINT", -- Headquarters
-    ["oneflag"] = "MW2_OBJECTIVES_ONE_FLAG_ATTACKER_HINT", -- One Flag CTF
-    ["arena"] = "MW2_OBJECTIVES_ARENA_HINT", -- Arena
-    ["dd"] = "MW2_OBJECTIVES_SD_ATTACKER_HINT", -- Demolition
-    ["gtnw"] = "MW2_OBJECTIVES_GTNW_HINT", -- Global Thermonuclear War
-}
-
-local MW2_RS_ANNOUNCER_TAG = {
-    ["war"] = "team_deathmtch",
-    ["dm"] = "freeforall",
-    ["dom"] = "domination",
-    ["sd"] = "searchdestroy",
-    ["sab"] = "sabotage",
-    ["ctf"] = "captureflag",
-    ["hq"] = "headquarters",
-    ["oneflag"] = "one_flag",
-    ["arena"] = "arena",
-    ["dd"] = "demolition",
-    ["gtnw"] = "gtw",
-}
-
-local MW2_RS_ANNOUNCER_BOOST = {
-    ["war"] = "boost",
-    ["dm"] = "boost",
-    ["dom"] = "capture_obj",
-    ["sd"] = "objs_destroy",
-    ["sab"] = "obj_destroy",
-    ["ctf"] = "capture_obj",
-    ["hq"] = "capture_obj",
-    ["oneflag"] = "capture_obj",
-    ["arena"] = "boost",
-    ["dd"] = "objs_destroy",
-    ["gtnw"] = "capture_obj",
-}
-
-local MW2_RS_SPAWN_MUSIC = {
-    US = "music/US/hz_mp_usspawn_1.mp3",
-    UK = "music/UK/hz_mp_ukspawn_1.mp3",
-    NS = "music/NS/hz_mp_nsspawn_1.mp3",
-    RU = "music/RU/hz_mp_ruspawn_1.mp3",
-    AB = "music/AB/hz_mp_abspawn_1.mp3",
-    PG = "music/PG/hz_mp_pgspawn_1.mp3",
-}
+local hudtype = GetConVar("codhud_game"):GetString() or "mw2"
+local hudfac = CoDHUD.Factions[hudtype]
 
 local OBJ_GLOW           = Color(0, 220, 80)
 local COUNTDOWN_DURATION = 5
@@ -129,8 +53,8 @@ local rs_objective = nil
 
 local sb_open = false
 
-hook.Add("ScoreboardShow", "MW2_RS_SBShow", function() sb_open = true  end)
-hook.Add("ScoreboardHide", "MW2_RS_SBHide", function() sb_open = false end)
+hook.Add("ScoreboardShow", "CoDHUD_RS_SBShow", function() sb_open = true  end)
+hook.Add("ScoreboardHide", "CoDHUD_RS_SBHide", function() sb_open = false end)
 
 local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, align, squeezeOneBefore, outlineW)
     local str = tostring(text)
@@ -156,15 +80,6 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
         local o        = outlineW or 0
         local outlineCol = Color(0, 0, 0, color.a)
 
-        -- if o > 0 then
-            -- draw.SimpleText(char, font, runX - o, y,     outlineCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-            -- draw.SimpleText(char, font, runX + o, y,     outlineCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-            -- draw.SimpleText(char, font, runX,     y - o, outlineCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-            -- draw.SimpleText(char, font, runX,     y + o, outlineCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        -- end
-
-        -- draw.SimpleText(char, font, runX, y, color, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-		
 		draw.SimpleTextOutlined( char, font, runX, y, color, 0, 1, o, outlineCol )
 
         local w = surface.GetTextSize(char)
@@ -180,8 +95,8 @@ local function MW2_RS_Start(gamemode)
     if not IsValid(lp) then return end
 
     local fkey = lp:GetNW2String("CoDHUD_Faction", "rangers")
-    if not CoDHUD.Factions["mw2"][fkey] then fkey = "rangers" end
-    local fdata = CoDHUD.Factions["mw2"][fkey]
+    if not CoDHUD.Factions[hudtype][fkey] then fkey = "rangers" end
+    local fdata = CoDHUD.Factions[hudtype][fkey]
 
     rs_active      = true
     rs_movement_locked = true
@@ -196,7 +111,7 @@ local function MW2_RS_Start(gamemode)
     rs_locked_ang.p = 0
     rs_locked_ang.r = 0
 
-    rs_short      = fdata.voice
+    rs_short      = fdata.spawntheme
     rs_glow       = fdata.glow
     rs_icon_mat   = Material(fdata.spawnIcon, "smooth")
     rs_icon_alpha = 0
@@ -207,31 +122,16 @@ local function MW2_RS_Start(gamemode)
 
     rs_bw = 1
 
-	CoDHUD_HeaderQueue.Push({
-		text = language.GetPhrase(fdata.name),
-		x = SX(CFG.HEADER_X),
-		y = SY(CFG.HEADER_Y),
-		color = rs_glow,
-		
-		-- iconX = SX(CFG.ICON_X),
-		iconY = SY(CFG.ICON_Y),
-		iconSize = S(CFG.ICON_SIZE),
-
-		fonts = {
-			pri = "MW2_RS_H_Pri",
-			sec = "MW2_RS_H_Sec",
-			shd = "MW2_RS_H_Shd"
-		},
-
-		icon = rs_icon_mat
-	})
+	if CoDHUD[hudtype] and CoDHUD[hudtype].RoundStart then
+		CoDHUD[hudtype].RoundStart(fdata.name, rs_glow, rs_icon_mat)
+	end
 
 	timer.Simple( 0.1, function() -- Tiny delay for round restart
-		if GetConVar("codhud_enable_music"):GetBool() and MW2_RS_SPAWN_MUSIC[rs_short] then
-			surface.PlaySound(MW2_RS_SPAWN_MUSIC[rs_short])
+		if GetConVar("codhud_enable_music"):GetBool() and fdata.spawntheme then
+			surface.PlaySound(fdata.spawntheme)
 		end
 		
-		local sound = CoDHUD_GetAnnouncerSound(basePath, { MW2_RS_ANNOUNCER_TAG[gamemode] or "team_deathmtch" })
+		local sound = CoDHUD_GetAnnouncerSound(basePath, { CoDHUD.Gamemodes[hudtype].Callouts[gamemode] or "team_deathmtch" })
 		if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
 	end)
 end
@@ -243,7 +143,7 @@ local function MW2_RS_End()
     rs_locked_ang = nil
 end
 
-hook.Add("Think", "MW2_RS_Think", function()
+hook.Add("Think", "CoDHUD_RS_Think", function()
     if not rs_active then return end
 
     local now = CurTime()
@@ -282,29 +182,17 @@ hook.Add("Think", "MW2_RS_Think", function()
 
         if not rs_boost_done then
             rs_boost_done = true
-			local sound = CoDHUD_GetAnnouncerSound(basePath, { MW2_RS_ANNOUNCER_BOOST[rs_gamemode] or MW2_RS_ANNOUNCER_BOOST["war"] })
+			local sound = CoDHUD_GetAnnouncerSound(basePath, { CoDHUD.Gamemodes[hudtype].Boosts[rs_gamemode] or CoDHUD.Gamemodes[hudtype].Boosts["war"] })
 			if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
         end
 
         if elapsed >= erase_t then
             rs_phase       = "objective"
             rs_phase_start = now
-            CoDHUD_HeaderQueue.Push({
-				text = language.GetPhrase(MW2_RS_OBJECTIVES[rs_gamemode] or MW2_RS_OBJECTIVES["war"]),
-				x = SX(CFG.OBJ_X),
-				y = SY(CFG.OBJ_Y),
-				color = OBJ_GLOW,
 
-				writeSpeed = 12,
-				holdTime   = CFG.OBJ_HANG,
-				eraseTime  = CFG.OBJ_ERASE,
-
-				fonts = {
-					pri = "MW2_RS_O_Pri",
-					sec = "MW2_RS_O_Sec",
-					shd = "MW2_RS_O_Shd"
-				}
-			})
+			if CoDHUD[hudtype] and CoDHUD[hudtype].ChallengeComplete then
+				CoDHUD[hudtype].RoundStartObjective(CoDHUD.Gamemodes[hudtype].Hints[rs_gamemode] or CoDHUD.Gamemodes[hudtype].Hints["war"])
+			end
         end
 
 	elseif rs_phase == "objective" then
@@ -314,41 +202,22 @@ hook.Add("Think", "MW2_RS_Think", function()
 	end
 end)
 
-hook.Add("HUDPaint", "MW2_RS_Draw", function()
+hook.Add("HUDPaint", "CoDHUD_RS_Draw", function()
     if not rs_active then return end
     if sb_open then return end
     if not IsValid(LocalPlayer()) then return end
 	local outlined = GetConVar("codhud_enable_outlinedtext"):GetBool()
 
-    local tx  = SX(CFG.TIMER_X)
-    local ty  = SY(CFG.TIMER_Y)
-    local syo = SY(CFG.STATIC_Y_OFFSET)
-
     if rs_phase == "faction" then
         local disp = math.max(0, rs_remaining)
 
-        if disp ~= rs_last_dig then
-            rs_last_dig  = disp
-            rs_dig_scale = 1.8
-        end
-        rs_dig_scale = math.Approach(rs_dig_scale, 1, FrameTime() * 6)
-
-        if disp > 0 then
-            local tMat = Matrix()
-            tMat:Translate(Vector(tx, ty, 0))
-            tMat:Scale(Vector(rs_dig_scale, rs_dig_scale, 1))
-            tMat:Translate(Vector(-tx, -ty, 0))
-
-            cam.PushModelMatrix(tMat)
-                DrawSqueezedText(disp, "MW2_RS_Timer", tx, ty, Color(255,255,100), -2, -6, 1, -4, outlined and 1 or 0)
-            cam.PopModelMatrix()
-
-			draw.SimpleTextOutlined( "#MW2_MP_MATCH_STARTING_IN", "MW2_RS_S_Pri", tx, ty + syo, Color(255,255,255), 1, 1, outlined and 1 or 0, Color(0,0,0) )
-        end
+		if CoDHUD[hudtype] and CoDHUD[hudtype].RoundStartTimer then
+			CoDHUD[hudtype].RoundStartTimer(disp)
+		end
     end
 end)
 
-hook.Add("RenderScreenspaceEffects", "MW2_RS_BW", function()
+hook.Add("RenderScreenspaceEffects", "CoDHUD_RS_BW", function()
     if not rs_active then return end
     if sb_open then return end
     if rs_bw <= 0 then return end
@@ -366,7 +235,7 @@ hook.Add("RenderScreenspaceEffects", "MW2_RS_BW", function()
     })
 end)
 
-hook.Add("CreateMove", "MW2_RS_BlockInput", function(cmd)
+hook.Add("CreateMove", "CoDHUD_RS_BlockInput", function(cmd)
     if not rs_movement_locked then return end
     cmd:ClearMovement()
 	

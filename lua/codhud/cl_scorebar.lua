@@ -1,17 +1,5 @@
 ---- [ SCOREBAR ] ----
 
-local BASE_W, BASE_H = 1920, 1080
-
-local function GetUIScale()
-    local scaleX = ScrW() / BASE_W
-    local scaleY = ScrH() / BASE_H
-    return math.max(math.min(scaleX, scaleY), 0.5)
-end
-
-local function S(x)  return math.Round(x * GetUIScale()) end
-local function SX(x) return math.Round(x * GetUIScale()) end
-local function SY(y) return math.Round(y * GetUIScale()) end
-
 local CFG = {
     -- Base Bar
     BAR_W     = 776,
@@ -103,7 +91,7 @@ local function SyncFactionPersistence()
     local saved = cookie.GetString("CoDHUD_SelectedFaction", "rangers")
     if not CoDHUD.Factions["mw2"][saved] then saved = "rangers" end
     lp:SetNW2String("CoDHUD_Faction", saved)
-    RunConsoleCommand("mw2_setfaction", saved)
+    RunConsoleCommand("codhud_setfaction", saved)
 end
 
 hook.Add("InitPostEntity", "MW2_SyncFactionOnJoin", function()
@@ -140,7 +128,7 @@ concommand.Add("set_faction", function(ply, cmd, args)
     if CoDHUD.Factions["mw2"][faction] then
         LocalPlayer():SetNW2String("CoDHUD_Faction", faction)
         cookie.Set("CoDHUD_SelectedFaction", faction)
-        RunConsoleCommand("mw2_setfaction", faction)
+        RunConsoleCommand("codhud_setfaction", faction)
         print("[MW2] Faction set to: " .. CoDHUD.Factions["mw2"][faction].name)
     else
         print("[MW2] Unknown faction. Valid: rangers, taskforce141, seals, ussr, arab, militia")
@@ -207,10 +195,10 @@ hook.Add("HUDPaint", "MW2_ScoreBar", function()
     end
 
     local scrW, scrH = ScrW(), ScrH()
-    local barW, barH = SX(CFG.BAR_W), SY(CFG.BAR_H)
+    local barW, barH = CoDHUD_SX(CFG.BAR_W), CoDHUD_SY(CFG.BAR_H)
     -- Scorebar is anchored to the left edge (X=0 + offset) and bottom edge.
-    local barX = SX(CFG.BAR_X_OFF)
-    local barY = scrH - SY(CFG.BAR_Y_OFF) - barH
+    local barX = CoDHUD_SX(CFG.BAR_X_OFF)
+    local barY = scrH - CoDHUD_SY(CFG.BAR_Y_OFF) - barH
 
     -- 1. Base bar texture
     surface.SetMaterial(MAT_BAR)
@@ -223,7 +211,7 @@ hook.Add("HUDPaint", "MW2_ScoreBar", function()
         local iSize = math.Round(barH * CFG.ICON_SCALE)
         surface.SetMaterial(factionMat)
         surface.SetDrawColor(255, 255, 255, 255)
-        surface.DrawTexturedRect(barX + SX(CFG.ICON_X), barY + SY(CFG.ICON_Y), iSize, iSize)
+        surface.DrawTexturedRect(barX + CoDHUD_SX(CFG.ICON_X), barY + CoDHUD_SY(CFG.ICON_Y), iSize, iSize)
     end
 
     -- 3. Timer
@@ -231,12 +219,12 @@ hook.Add("HUDPaint", "MW2_ScoreBar", function()
     local mins, secs = math.floor(totalSecs / 60), totalSecs % 60
     local timeStr = string.format("%d:%02d", mins, secs)
 
-    local xShift = (#tostring(mins) >= 3 and SX(CFG.TIMER_SHIFT_3DIG)) or (#tostring(mins) >= 2 and SX(CFG.TIMER_SHIFT_2DIG)) or 0
+    local xShift = (#tostring(mins) >= 3 and CoDHUD_SX(CFG.TIMER_SHIFT_3DIG)) or (#tostring(mins) >= 2 and CoDHUD_SX(CFG.TIMER_SHIFT_2DIG)) or 0
     DrawSqueezedText(timeStr, "MW2_Timer",
-        barX + SX(CFG.TIMER_X) + xShift, barY + SY(CFG.TIMER_Y),
+        barX + CoDHUD_SX(CFG.TIMER_X) + xShift, barY + CoDHUD_SY(CFG.TIMER_Y),
         Color(255, 255, 255, 255),
         CFG.SQUEEZE, CFG.SQUEEZE_ONE, 1, CFG.SQUEEZE_ONE_BEFORE,
-        SX(CFG.TIMER_OUTLINE_W)
+        CoDHUD_SX(CFG.TIMER_OUTLINE_W)
     )
 
     -- 4. Status Text (Winning / Losing / Tie)
@@ -259,7 +247,7 @@ hook.Add("HUDPaint", "MW2_ScoreBar", function()
         statusCol  = COL_LOSING
     end
 
-	draw.SimpleTextOutlined( statusText, "MW2_Status", barX + SX(CFG.STATUS_X), barY + SY(CFG.STATUS_Y), statusCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP, outlined and 1 or 0, Color(0,0,0) )
+	draw.SimpleTextOutlined( statusText, "MW2_Status", barX + CoDHUD_SX(CFG.STATUS_X), barY + CoDHUD_SY(CFG.STATUS_Y), statusCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP, outlined and 1 or 0, Color(0,0,0) )
 end)
 
 hook.Add("HUDPaint", "MW2_Scorebar_Merged", function()
@@ -281,30 +269,30 @@ hook.Add("HUDPaint", "MW2_Scorebar_Merged", function()
     local S_CFG = SCORES_CFG
     local scrW, scrH = ScrW(), ScrH()
 
-    -- All sizes/offsets scale uniformly with S(). Positions that sit near the left/top use S() from the edge directly. Positions near the bottom use scrH - S(distance_from_bottom).
-    local baseX     = S(S_CFG.BASE_X)
-    local baseY_raw = scrH - S(BASE_H - S_CFG.BASE_Y)
-    local baseW     = S(S_CFG.BASE_W)
-    local baseH     = S(S_CFG.BASE_H)
-    local baseSlant = S(S_CFG.BASE_SLANT)
-    local baseGap   = S(S_CFG.BASE_GAP)
+    -- All sizes/offsets scale uniformly with CoDHUD_S(). Positions that sit near the left/top use CoDHUD_S() from the edge directly. Positions near the bottom use scrH - CoDHUD_S(distance_from_bottom).
+    local baseX     = CoDHUD_S(S_CFG.BASE_X)
+    local baseY_raw = scrH - CoDHUD_S(1080 - S_CFG.BASE_Y)
+    local baseW     = CoDHUD_S(S_CFG.BASE_W)
+    local baseH     = CoDHUD_S(S_CFG.BASE_H)
+    local baseSlant = CoDHUD_S(S_CFG.BASE_SLANT)
+    local baseGap   = CoDHUD_S(S_CFG.BASE_GAP)
 
-    local capW      = S(S_CFG.CAP_W)
-    local capSlant  = S(S_CFG.CAP_SLANT)
-    local capHOff   = S(S_CFG.CAP_H_OFFSET)
+    local capW      = CoDHUD_S(S_CFG.CAP_W)
+    local capSlant  = CoDHUD_S(S_CFG.CAP_SLANT)
+    local capHOff   = CoDHUD_S(S_CFG.CAP_H_OFFSET)
 
-    local hudX      = S(S_CFG.HUD_X)
-    local hudY_raw  = scrH - S(BASE_H - S_CFG.HUD_Y)
-    local hudWBase  = S(S_CFG.HUD_W_BASE)
-    local hudWMax   = S(S_CFG.HUD_W_MAX)
-    local hudH      = S(S_CFG.HUD_H)
-    local slantSize = S(S_CFG.SLANT_SIZE)
-    local vertGap   = S(S_CFG.VERTICAL_GAP)
-    local shadowOff = S(S_CFG.SHADOW_OFFSET)
+    local hudX      = CoDHUD_S(S_CFG.HUD_X)
+    local hudY_raw  = scrH - CoDHUD_S(1080 - S_CFG.HUD_Y)
+    local hudWBase  = CoDHUD_S(S_CFG.HUD_W_BASE)
+    local hudWMax   = CoDHUD_S(S_CFG.HUD_W_MAX)
+    local hudH      = CoDHUD_S(S_CFG.HUD_H)
+    local slantSize = CoDHUD_S(S_CFG.SLANT_SIZE)
+    local vertGap   = CoDHUD_S(S_CFG.VERTICAL_GAP)
+    local shadowOff = CoDHUD_S(S_CFG.SHADOW_OFFSET)
 
-    local slantW    = S(S_CFG.SLANT_W)
-    local slantHOff = S(S_CFG.SLANT_H_OFFSET)
-    local slantSepW = S(S_CFG.SLANT_SEP_W)
+    local slantW    = CoDHUD_S(S_CFG.SLANT_W)
+    local slantHOff = CoDHUD_S(S_CFG.SLANT_H_OFFSET)
+    local slantSepW = CoDHUD_S(S_CFG.SLANT_SEP_W)
 
     -- Base bars (black backgrounds)
     local BASE_X   = baseX
@@ -456,10 +444,10 @@ hook.Add("HUDPaint", "MW2_Scorebar_Merged", function()
     })
 
 -- Score text
-    local textX   = S(S_CFG.X)
+    local textX   = CoDHUD_S(S_CFG.X)
     -- Calculate Y based on the distance from the HUD_Y bar to maintain the layout
-    local textY   = HUD_Y - S(41) -- Adjust 41 to change vertical distance from the bars
-    local textGap = S(S_CFG.GAP_OFFSET)
+    local textY   = HUD_Y - CoDHUD_S(41) -- Adjust 41 to change vertical distance from the bars
+    local textGap = CoDHUD_S(S_CFG.GAP_OFFSET)
 
     DrawSqueezedText(clientKills,   "MW2_Font", textX, textY,          white, S_CFG.SQUEEZE, S_CFG.SQUEEZE_ONE, 2, S_CFG.SQUEEZE_ONE_BEFORE, S_CFG.OUTLINE_W)
     DrawSqueezedText(topEnemyKills, "MW2_Font", textX, textY + textGap, white, S_CFG.SQUEEZE, S_CFG.SQUEEZE_ONE, 2, S_CFG.SQUEEZE_ONE_BEFORE, S_CFG.OUTLINE_W)
@@ -470,11 +458,11 @@ hook.Add("HUDPaint", "DrawMyCustomArrow", function()
 	if not GetConVar("cl_drawhud"):GetBool() then return end
 
     local scrW, scrH = ScrW(), ScrH()
-    local ax = S(ARROW_CFG.x)
-    local ay = scrH - S(BASE_H - ARROW_CFG.y)
-    local aw = S(ARROW_CFG.w)
-    local ah = S(ARROW_CFG.h)
-    local ao = S(ARROW_CFG.outline)
+    local ax = CoDHUD_S(ARROW_CFG.x)
+    local ay = scrH - CoDHUD_S(1920 - ARROW_CFG.y)
+    local aw = CoDHUD_S(ARROW_CFG.w)
+    local ah = CoDHUD_S(ARROW_CFG.h)
+    local ao = CoDHUD_S(ARROW_CFG.outline)
 
     surface.SetMaterial(ARROW_CFG.material)
 

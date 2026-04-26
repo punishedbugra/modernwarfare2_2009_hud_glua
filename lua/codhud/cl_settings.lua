@@ -235,13 +235,26 @@ local CoDHUD_SETTINGS = {
 
     { name = "#CoDHUD.Server", subtabs = {
             { name = "#CoDHUD.General", categories = {
+                    -- { name = "#CoDHUD.Admin.RestrictType", adminOnly = true, controls = {
+                            -- { type = "combobox", label = "#CoDHUD.Admin.EndScreen.Scorelimit", choices = CoDHUD.GetHUDList(),
+								-- getCurrent = function() return GetConVar("codhud_game"):GetString() end,
+
+								-- onSelect = function(_, data)
+									-- net.Start("CoDHUD_SetGamemode")
+									-- net.WriteString(data)
+									-- net.SendToServer()
+								-- end
+							-- },
+                            -- { type = "label", label = "#CoDHUD.Admin.RestrictType.desc" },
+                        -- }
+                    -- },
                     { name = "#CoDHUD.General", adminOnly = true, controls = {
                             { type = "checkbox", label = "#CoDHUD.Admin.EndScreen", convar = "codhud_enable_roundend", tooltip = "CoDHUD.Admin.EndScreen.desc" },
                             { type = "checkbox", label = "#CoDHUD.Admin.EndScreen.StartNext", convar = "codhud_enable_roundend_startnext", tooltip = "CoDHUD.Admin.EndScreen.StartNext.desc" },
 							{ type = "checkbox", label = "#CoDHUD.Admin.FriendlyFire", convar = "codhud_friendly_fire", tooltip = "CoDHUD.Admin.FriendlyFire.desc" },
-                            { type = "slider", label = "#CoDHUD.Admin.EndScreen.Scorelimit", convar = "codhud_score_limit", tooltip = "CoDHUD.Admin.EndScreen.Scorelimit.desc", min = 100, max = 7500 }
+                            { type = "slider", label = "#CoDHUD.Admin.EndScreen.Scorelimit", convar = "codhud_score_limit", tooltip = "CoDHUD.Admin.EndScreen.Scorelimit.desc", min = 100, max = 7500 },
                         }
-                    }
+                    },
                 }
             },
 			{ name = "#CoDHUD.RoundStart", categories = {

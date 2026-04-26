@@ -1,10 +1,4 @@
 ---- [ MINIMAP ] ----
-
-local BASE_W, BASE_H = 1920, 1080
-local function SX(x) return math.Round(x * (ScrW() / BASE_W)) end
-local function SY(y) return math.Round(y * (ScrH() / BASE_H)) end
-local function S(x)  return math.Round(x * (ScrH() / BASE_H)) end
-
 local MAP_CFG = {
     X = 12,
     Y = 16,
@@ -40,8 +34,8 @@ local MAT_MOVING_SCAN   = Material("minimap/scanlines.png", "smooth")
 local MAT_FRIEND_HOLLOW  = Material("minimap/compassping_green_hollow_mp.png", "smooth")
 local MAT_ENEMY_FIRING   = Material("minimap/compassping_enemyfiring.png", "smooth")
 
-MW2_DeathCache = MW2_DeathCache or {}
-MW2_VisCache = MW2_VisCache or {}
+CoDHUD_DeathCache = CoDHUD_DeathCache or {}
+CoDHUD_VisCache = CoDHUD_VisCache or {}
 
 hook.Add("HUDPaint", "MW2_Minimap_UAV", function()
     local ply = LocalPlayer()
@@ -50,8 +44,8 @@ hook.Add("HUDPaint", "MW2_Minimap_UAV", function()
     if (not GetConVar("codhud_enable_minimap"):GetBool()) or GetConVar("codhud_quickdisable_hud"):GetBool() then return end
 	if not GetConVar("cl_drawhud"):GetBool() then return end
 
-    local x, y = SX(MAP_CFG.X), SY(MAP_CFG.Y)
-    local w, h = S(MAP_CFG.W), S(MAP_CFG.H)
+    local x, y = CoDHUD_SX(MAP_CFG.X), CoDHUD_SY(MAP_CFG.Y)
+    local w, h = CoDHUD_S(MAP_CFG.W), CoDHUD_S(MAP_CFG.H)
     local centerX, centerY = x + (w / 2), y + (h / 2)
 
     -- 1. LAYER: MINIMAP BORDER
@@ -96,9 +90,9 @@ hook.Add("HUDPaint", "MW2_Minimap_UAV", function()
     -- [[ STENCIL END ]]
 
     -- 5. LAYER: THE ICONS
-    local pSize = S(MAP_CFG.SIZE_PLAYER)
-    local fSize = S(MAP_CFG.SIZE_FRIENDLY)
-    local eSize = S(MAP_CFG.SIZE_ENEMY)
+    local pSize = CoDHUD_S(MAP_CFG.SIZE_PLAYER)
+    local fSize = CoDHUD_S(MAP_CFG.SIZE_FRIENDLY)
+    local eSize = CoDHUD_S(MAP_CFG.SIZE_ENEMY)
     
     local localFaction = ply:GetNW2String("CoDHUD_Faction", "")
     local targets = ents.FindByClass("npc_*")
@@ -140,17 +134,17 @@ hook.Add("HUDPaint", "MW2_Minimap_UAV", function()
             end
 
             if isVisibleToTeam and isAlive then
-                MW2_VisCache[entIdx] = CurTime() + MAP_CFG.FADE_TIME_VIS
+                CoDHUD_VisCache[entIdx] = CurTime() + MAP_CFG.FADE_TIME_VIS
             end
         end
 
         local visAlpha = 0
-        if MW2_VisCache[entIdx] then
-            local timeLeft = MW2_VisCache[entIdx] - CurTime()
+        if CoDHUD_VisCache[entIdx] then
+            local timeLeft = CoDHUD_VisCache[entIdx] - CurTime()
             if timeLeft > 0 then
                 visAlpha = math.Clamp(timeLeft / MAP_CFG.FADE_TIME_VIS, 0, 1) * 255
             else
-                MW2_VisCache[entIdx] = nil
+                CoDHUD_VisCache[entIdx] = nil
             end
         end
 
@@ -164,16 +158,16 @@ hook.Add("HUDPaint", "MW2_Minimap_UAV", function()
             if isFriendly then 
                 continue 
             else
-                if not MW2_DeathCache[entIdx] then
-                    MW2_DeathCache[entIdx] = CurTime()
+                if not CoDHUD_DeathCache[entIdx] then
+                    CoDHUD_DeathCache[entIdx] = CurTime()
                 end
                 
-                local timeSinceDeath = CurTime() - MW2_DeathCache[entIdx]
+                local timeSinceDeath = CurTime() - CoDHUD_DeathCache[entIdx]
                 if timeSinceDeath > MAP_CFG.FADE_TIME then continue end
                 alpha = math.min(alpha, 255 * (1 - (timeSinceDeath / MAP_CFG.FADE_TIME)))
             end
         else
-            MW2_DeathCache[entIdx] = nil
+            CoDHUD_DeathCache[entIdx] = nil
         end
 
         if alpha <= 0 then continue end

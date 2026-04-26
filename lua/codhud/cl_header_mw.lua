@@ -9,19 +9,6 @@ CoDHUD_HeaderQueue.Queue = {}
 
 local GLITCH = { "a", "¶", "Ð", "ق", "§", "ð", "œ", "ش", "Ф" }
 
--- [[ RESOLUTION SCALING ]]
-local BASE_W, BASE_H = 1920, 1080
-
-local function GetUIScale()
-    local scaleX = ScrW() / BASE_W
-    local scaleY = ScrH() / BASE_H
-    return math.max(math.min(scaleX, scaleY), 0.5)
-end
-
-local function S(x)  return math.Round(x * GetUIScale()) end
-local function SX(x) return math.Round(x * GetUIScale()) end
-local function SY(y) return math.Round(y * GetUIScale()) end
-
 -- =========================
 -- Constructor
 -- =========================
@@ -37,8 +24,8 @@ function CoDHUD_Header_MW:New(cfg)
 	
 	o.subAlpha     = 255
 
-    o.x          = cfg.x or 960
-    o.y          = cfg.y or 205
+    o.x          = CoDHUD_SX(cfg.x or 960)
+    o.y          = CoDHUD_SY(cfg.y or 205)
 
     o.fonts      = cfg.fonts
 
@@ -229,7 +216,7 @@ function CoDHUD_Header_MW:Update()
 			return
 		end
 
-		local step = self.eraseTime / math.max(1, math.ceil(utf8.len(self.text) / 1))
+		local step = self.eraseTime / math.max(1, math.ceil(utf8.len(self.text) / 2))
 
 		if now >= self.nextErase then
 			self.nextErase = now + step
@@ -284,7 +271,7 @@ function CoDHUD_Header_MW:Draw()
 		local lines = string.Split(self.subtext, "\n")
 
 		for i, line in ipairs(lines) do
-			draw.SimpleTextOutlined( line, self.fonts.sub, self.x, self.y + S(25) + (i - 1) * S(24), col, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, outlined and 1 or 0, Color(0,0,0,col.a) )
+			draw.SimpleTextOutlined( line, self.fonts.sub, self.x, self.y + CoDHUD_S(25) + (i - 1) * CoDHUD_S(24), col, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, outlined and 1 or 0, Color(0,0,0,col.a) )
 		end
 	end
 

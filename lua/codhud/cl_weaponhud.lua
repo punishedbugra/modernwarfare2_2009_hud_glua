@@ -1,18 +1,5 @@
 ---- [ WEAPON HUD ] ----
 
--- [[ RESOLUTION SCALING ]]
-local BASE_W, BASE_H = 1920, 1080
-
-local function GetUIScale()
-    local scaleX = ScrW() / BASE_W
-    local scaleY = ScrH() / BASE_H
-    return math.max(math.min(scaleX, scaleY), 0.5)
-end
-
-local function S(x)  return math.Round(x * GetUIScale()) end
-local function SX(x) return math.Round(x * GetUIScale()) end
-local function SY(y) return math.Round(y * GetUIScale()) end
-
 -- [[ COMPASS CFG ]]
 local MASK = {
     FOV      = 152,
@@ -173,7 +160,7 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
     for i = 1, #str do
         local char     = str:sub(i, i)
         local nextChar = str:sub(i + 1, i + 1)
-        -- draw.SimpleText(char, font, runX + SX(2), y + SY(2), Color(0, 0, 0, color.a * 0.8), 0, 0)
+        -- draw.SimpleText(char, font, runX + CoDHUD_SX(2), y + CoDHUD_SY(2), Color(0, 0, 0, color.a * 0.8), 0, 0)
         -- draw.SimpleText(char, font, runX,         y,         color,                          0, 0)
 		draw.SimpleTextOutlined(char, font, runX, y, color, 0, 0, 1.5, Color(0,0,0, color.a * 0.8))
         local w = surface.GetTextSize(char)
@@ -205,9 +192,9 @@ hook.Add("HUDPaint", "MW2_MergedHUD", function()
     -- ==========================================
     -- 1. COMPASS DRAWING
     -- ==========================================
-    local cX   = scrW - S(104)
-    local cY   = scrH - S(82)
-    local size = S(274)
+    local cX   = scrW - CoDHUD_S(104)
+    local cY   = scrH - CoDHUD_S(82)
+    local size = CoDHUD_S(274)
     local yaw  = ply:EyeAngles().y
     local angle = -(yaw - 90)
 
@@ -260,17 +247,17 @@ hook.Add("HUDPaint", "MW2_MergedHUD", function()
     -- ==========================================
     local grenadeCount = math.Clamp(ply:GetAmmoCount("Grenade") or 0, 0, CFG.GRENADE_MAX)
     if grenadeCount > 0 then
-        local barW = SX(CFG.BAR_W)
-        local barH = SY(CFG.BAR_H)
-        local barX = scrW - SX(CFG.BAR_X_OFF) - barW
-        local barY = scrH - SY(CFG.BAR_Y_OFF) - barH
+        local barW = CoDHUD_SX(CFG.BAR_W)
+        local barH = CoDHUD_SY(CFG.BAR_H)
+        local barX = scrW - CoDHUD_SX(CFG.BAR_X_OFF) - barW
+        local barY = scrH - CoDHUD_SY(CFG.BAR_Y_OFF) - barH
 
-        local iW = S(CFG.GRENADE_ICON_W)
-        local iH = S(CFG.GRENADE_ICON_H)
-        local stackGap = S(CFG.GRENADE_STACK_GAP)
+        local iW = CoDHUD_S(CFG.GRENADE_ICON_W)
+        local iH = CoDHUD_S(CFG.GRENADE_ICON_H)
+        local stackGap = CoDHUD_S(CFG.GRENADE_STACK_GAP)
 
-        local anchorX = (barX + barW) + SX(CFG.GRENADE_X_OFF)
-        local anchorY = (barY + barH) + SY(CFG.GRENADE_Y_OFF)
+        local anchorX = (barX + barW) + CoDHUD_SX(CFG.GRENADE_X_OFF)
+        local anchorY = (barY + barH) + CoDHUD_SY(CFG.GRENADE_Y_OFF)
 
         surface.SetMaterial(MAT_GRENADE)
 
@@ -303,10 +290,10 @@ hook.Add("HUDPaint", "MW2_MergedHUD", function()
     local maxClip = wep:GetMaxClip1()
     local reserve = ply:GetAmmoCount(wep:GetPrimaryAmmoType())
 
-    local barW = SX(CFG.BAR_W)
-    local barH = SY(CFG.BAR_H)
-    local barX = scrW - SX(CFG.BAR_X_OFF) - barW
-    local barY = scrH - SY(CFG.BAR_Y_OFF) - barH
+    local barW = CoDHUD_SX(CFG.BAR_W)
+    local barH = CoDHUD_SY(CFG.BAR_H)
+    local barX = scrW - CoDHUD_SX(CFG.BAR_X_OFF) - barW
+    local barY = scrH - CoDHUD_SY(CFG.BAR_Y_OFF) - barH
 
     surface.SetMaterial(MAT_BAR)
     surface.SetDrawColor(255, 255, 255, 125)
@@ -318,11 +305,11 @@ hook.Add("HUDPaint", "MW2_MergedHUD", function()
             or  Color(255, 255, 255, 255)
 
         if reserve >= 1000 then
-            DrawSqueezedText(reserve, "MW2_Res_4D", barX + barW + SX(CFG.RES4_X), barY + SY(CFG.RES4_Y), resCol, nil, nil, 1)
+            DrawSqueezedText(reserve, "MW2_Res_4D", barX + barW + CoDHUD_SX(CFG.RES4_X), barY + CoDHUD_SY(CFG.RES4_Y), resCol, nil, nil, 1)
         elseif reserve >= 100 then
-            DrawSqueezedText(reserve, "MW2_Res_3D", barX + barW + SX(CFG.RES3_X), barY + SY(CFG.RES3_Y), resCol, nil, nil, 1)
+            DrawSqueezedText(reserve, "MW2_Res_3D", barX + barW + CoDHUD_SX(CFG.RES3_X), barY + CoDHUD_SY(CFG.RES3_Y), resCol, nil, nil, 1)
         else
-            DrawSqueezedText(reserve, "MW2_Res", barX + barW + SX(CFG.RES_X), barY + SY(CFG.RES_Y), resCol, nil, nil, 1)
+            DrawSqueezedText(reserve, "MW2_Res", barX + barW + CoDHUD_SX(CFG.RES_X), barY + CoDHUD_SY(CFG.RES_Y), resCol, nil, nil, 1)
         end
     end
 
@@ -330,9 +317,9 @@ hook.Add("HUDPaint", "MW2_MergedHUD", function()
     if timeSinceSwitch < CFG.WEP_NAME_FADE then
         local alpha = math.Clamp(1 - (timeSinceSwitch / CFG.WEP_NAME_FADE), 0, 1)
         local name  = (wep:GetPrintName() or wep:GetClass()):upper()
-        -- DrawSqueezedText(name, "MW2_Wep_Name", barX + barW + SX(CFG.WEP_NAME_X_OFF), barY + SY(CFG.WEP_NAME_Y_OFF), Color(255, 255, 255, 255 * alpha), CFG.WEP_NAME_SQ, CFG.WEP_NAME_SQ1, 0)
+        -- DrawSqueezedText(name, "MW2_Wep_Name", barX + barW + CoDHUD_SX(CFG.WEP_NAME_X_OFF), barY + CoDHUD_SY(CFG.WEP_NAME_Y_OFF), Color(255, 255, 255, 255 * alpha), CFG.WEP_NAME_SQ, CFG.WEP_NAME_SQ1, 0)
 
-        draw.SimpleTextOutlined(name, "MW2_Wep_Name", barX + barW + SX(CFG.WEP_NAME_X_OFF), barY + SY(CFG.WEP_NAME_Y_OFF), Color(255, 255, 255, 255 * alpha), 2, 0, outlined and 1.5 or 0, Color(0, 0, 0, 255 * alpha))
+        draw.SimpleTextOutlined(name, "MW2_Wep_Name", barX + barW + CoDHUD_SX(CFG.WEP_NAME_X_OFF), barY + CoDHUD_SY(CFG.WEP_NAME_Y_OFF), Color(255, 255, 255, 255 * alpha), 2, 0, outlined and 1.5 or 0, Color(0, 0, 0, 255 * alpha))
     end
 
     if clip >= 0 and maxClip > 0 then
@@ -342,17 +329,17 @@ hook.Add("HUDPaint", "MW2_MergedHUD", function()
 
         local ammoCfg = GetAmmoConfig(wep)
         local ammoKey = GetAmmoKey(ammoCfg)
-        local iW      = S(ammoCfg.w)
-        local iH      = S(ammoCfg.h)
-        local iGap    = S(ammoCfg.gap)
-        local iYOff   = SY(ammoCfg.y_off)
-        local iXStart = SX(ammoCfg.x_start)
+        local iW      = CoDHUD_S(ammoCfg.w)
+        local iH      = CoDHUD_S(ammoCfg.h)
+        local iGap    = CoDHUD_S(ammoCfg.gap)
+        local iYOff   = CoDHUD_SY(ammoCfg.y_off)
+        local iXStart = CoDHUD_SX(ammoCfg.x_start)
 
         surface.SetMaterial(MAT_AMMO[ammoKey])
 
         local isBelt  = (ammoCfg.row_size ~= nil)
         local rowSize = isBelt and ammoCfg.row_size or maxClip
-        local rowGap  = isBelt and S(ammoCfg.row_gap) or 0
+        local rowGap  = isBelt and CoDHUD_S(ammoCfg.row_gap) or 0
 
         for i = 0, maxClip - 1 do
             local isSpent = (i >= clip)
@@ -387,10 +374,10 @@ hook.Add("HUDPaint", "MW2_MergedHUD", function()
 
         surface.SetMaterial(MAT_ALT)
         surface.SetDrawColor(255, 255, 255, 255)
-        surface.DrawTexturedRect(barX + barW + SX(CFG.ALT_ICON_X), barY + SY(CFG.ALT_ICON_Y), S(CFG.ALT_ICON_SIZE), S(CFG.ALT_ICON_SIZE))
+        surface.DrawTexturedRect(barX + barW + CoDHUD_SX(CFG.ALT_ICON_X), barY + CoDHUD_SY(CFG.ALT_ICON_Y), CoDHUD_S(CFG.ALT_ICON_SIZE), CoDHUD_S(CFG.ALT_ICON_SIZE))
 
         local altCol = (altCount > 0) and Color(255, 255, 255, 255) or Color(255, 120, 120, 255)
-        DrawSqueezedText(altCount, "MW2_Ammo_Alt", barX + barW + SX(CFG.ALT_TEXT_X), barY + SY(CFG.ALT_TEXT_Y), altCol, CFG.ALT_TEXT_SQ, CFG.ALT_TEXT_SQ1, 1)
+        DrawSqueezedText(altCount, "MW2_Ammo_Alt", barX + barW + CoDHUD_SX(CFG.ALT_TEXT_X), barY + CoDHUD_SY(CFG.ALT_TEXT_Y), altCol, CFG.ALT_TEXT_SQ, CFG.ALT_TEXT_SQ1, 1)
     end
 
     if clip >= 0 and maxClip > 0 then
@@ -415,7 +402,7 @@ hook.Add("HUDPaint", "MW2_MergedHUD", function()
 
         if statText ~= "" then
             local cx   = scrW / 2
-            local cy   = (scrH / 2) + SY(CFG.STAT_Y_OFF)
+            local cy   = (scrH / 2) + CoDHUD_SY(CFG.STAT_Y_OFF)
             local sine = (math.sin(CurTime() * CFG.STAT_FLASH_SPD) + 1) / 2
 
             local finalCol = table.Copy(statCol)
@@ -427,10 +414,10 @@ hook.Add("HUDPaint", "MW2_MergedHUD", function()
                 finalCol.a = 100 + (sine * 155)
             end
 
-            -- draw.SimpleText(statText, "MW2_Stat_Font", cx + SX(2), cy + SY(2), Color(0, 0, 0, finalCol.a * 0.8), 1, 1)
+            -- draw.SimpleText(statText, "MW2_Stat_Font", cx + CoDHUD_SX(2), cy + CoDHUD_SY(2), Color(0, 0, 0, finalCol.a * 0.8), 1, 1)
             -- draw.SimpleText(statText, "MW2_Stat_Font", cx,         cy,         finalCol,                          1, 1)
 			
-            draw.SimpleTextOutlined(statText, "MW2_Stat_Font", cx + SX(2), cy + SY(2), finalCol, 1, 1, 1.5, Color(0, 0, 0, finalCol.a * 0.8))
+            draw.SimpleTextOutlined(statText, "MW2_Stat_Font", cx + CoDHUD_SX(2), cy + CoDHUD_SY(2), finalCol, 1, 1, 1.5, Color(0, 0, 0, finalCol.a * 0.8))
         end
     end
 end)

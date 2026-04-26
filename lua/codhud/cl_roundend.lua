@@ -1,21 +1,6 @@
 ---- [ CLIENT ROUND END ] ----
 
 -- ============================================================
---  Scale helpers
--- ============================================================
-local BASE_W, BASE_H = 1920, 1080
-
-local function GetUIScale()
-    local scaleX = ScrW() / BASE_W
-    local scaleY = ScrH() / BASE_H
-    return math.max(math.min(scaleX, scaleY), 0.5)
-end
-
-local function S(x)  return math.Round(x * GetUIScale()) end
-local function SX(x) return math.Round(x * GetUIScale()) end
-local function SY(y) return math.Round(y * GetUIScale()) end
-
--- ============================================================
 --  Config
 -- ============================================================
 local CFG = {
@@ -212,16 +197,16 @@ net.Receive("CoDHUD_RoundEnd", function()
 
 	CoDHUD_HeaderQueue.Push({
 		teams = teams,
-		x = SX(CFG.ICON_X),
-		y = SY(CFG.ICON_Y),
+		x = CoDHUD_SX(CFG.ICON_X),
+		y = CoDHUD_SY(CFG.ICON_Y),
 		multiple = true,
 		persist = true,
 		endTime = CFG.SCOREBOARD_DELAY,
 
-		iconSize = S(CFG.ICON_SIZE),
-		iconGap  = S(CFG.ICON_GAP),
+		iconSize = CoDHUD_S(CFG.ICON_SIZE),
+		iconGap  = CoDHUD_S(CFG.ICON_GAP),
 
-		scoreY = SY(CFG.SCORE_Y),
+		scoreY = CoDHUD_SY(CFG.SCORE_Y),
 
 		fonts = {
 			score_pri = "MW2_RE_Sc_Pri",
@@ -233,8 +218,8 @@ net.Receive("CoDHUD_RoundEnd", function()
 	-- Text
 	CoDHUD_HeaderQueue.Push({
 		text = ws_result,
-		x = SX(CFG.RESULT_X),
-		y = SY(CFG.RESULT_Y),
+		x = CoDHUD_SX(CFG.RESULT_X),
+		y = CoDHUD_SY(CFG.RESULT_Y),
 		color = re_result_glow,
 		multiple = true,
 		skipErase = true,
@@ -250,8 +235,8 @@ net.Receive("CoDHUD_RoundEnd", function()
 
 	CoDHUD_HeaderQueue.Push({
 		text = ws_limit,
-		x = SX(CFG.LIMIT_X),
-		y = SY(CFG.LIMIT_Y),
+		x = CoDHUD_SX(CFG.LIMIT_X),
+		y = CoDHUD_SY(CFG.LIMIT_Y),
 		color = Color(135, 135, 180),
 		multiple = true,
 		skipErase = true,
@@ -345,5 +330,5 @@ hook.Add("DrawOverlay", "MW2_RE_Draw", function()
 
     local iconAlpha = math.floor(math.Clamp(el / CFG.ICON_FADE_TIME, 0, 1) * 255)
 
-	draw.SimpleTextOutlined( string.format( language.GetPhrase("MW2_MP_MATCH_BONUS_IS"), tostring(re_match_bonus) ), "MW2_RE_Bonus", SX(CFG.BONUS_X), SY(CFG.BONUS_Y), Color(240, 250, 110, iconAlpha), 1, 1, outlined and 1 or 0, Color(0,0,0, iconAlpha) )
+	draw.SimpleTextOutlined( string.format( language.GetPhrase("MW2_MP_MATCH_BONUS_IS"), tostring(re_match_bonus) ), "MW2_RE_Bonus", CoDHUD_SX(CFG.BONUS_X), CoDHUD_SY(CFG.BONUS_Y), Color(240, 250, 110, iconAlpha), 1, 1, outlined and 1 or 0, Color(0,0,0, iconAlpha) )
 end)

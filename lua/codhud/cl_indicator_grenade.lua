@@ -2,7 +2,7 @@
 
 CoDHUD = CoDHUD or {}
 
-CreateClientConVar("codhud_enable_grenadeindicator", "1", true, false, "Enable MW2 grenade indicator")
+CreateClientConVar("codhud_enable_grenadeindicator", "1", true, false, "Enable CoD HUD grenade indicator")
 
 CoDHUD.GrenadeList = {
     ["npc_grenade_frag"] = true,

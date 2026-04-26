@@ -21,22 +21,22 @@ function CoDHUD_GetAnnouncerSound(basePath, keys)
         faction = cookie.GetString("CoDHUD_SelectedFaction", "rangers")
     end
 
-    if not CoDHUD.Factions["mw2"] or not CoDHUD.Factions["mw2"][faction] then
+	local hudtype = GetConVar("codhud_game"):GetString() or "mw2"
+
+    if not CoDHUD.Factions[hudtype] or not CoDHUD.Factions[hudtype][faction] then
         return nil
     end
 
-    local voice = CoDHUD.Factions["mw2"][faction].voice
+	local voice = CoDHUD.Factions[hudtype][faction].voicepath
     local lang = GetConVar("gmod_language"):GetString() or "en"
 
     local function tryLang(l)
         for _, key in ipairs(keys) do
-
+		
             -- suffix search
             for i = 1, 5 do
                 local suffix = (i < 10 and "0" .. i or tostring(i))
-                local path = "announcer/" .. l .. "/" .. voice .. "/mp/" .. voice .. "_1mc_" .. key .. "_" .. suffix .. ".wav"
-
-				-- print("[ANNOUNCER] CHECKING:", path)
+				local path = "announcer/" .. hudtype .. "/" .. l .. "/" .. CoDHUD.Factions[hudtype][faction].voicepath .. key .. "_" .. suffix .. ".wav"
 
                 if file.Exists("sound/" .. path, "GAME") then
                     return path
@@ -44,7 +44,7 @@ function CoDHUD_GetAnnouncerSound(basePath, keys)
             end
 
             -- fallback no suffix
-            local path = "announcer/" .. l .. "/" .. voice .. "/mp/" .. voice .. "_1mc_" .. key .. ".wav"
+            local path = "announcer/" .. hudtype .. "/" .. l .. "/" .. CoDHUD.Factions[hudtype][faction].voicepath .. key .. ".wav"
 
             if file.Exists("sound/" .. path, "GAME") then
                 return path

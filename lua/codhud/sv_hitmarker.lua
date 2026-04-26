@@ -1,7 +1,7 @@
 ---- [ SERVER HITMARKER & XP ] ----
 
 -- Network Strings
-util.AddNetworkString("MW2_HitNotification")
+util.AddNetworkString("CoDHUD_HitNotification")
 
 -- ==========================================
 -- CONFIGURATION: REWARDS
@@ -39,7 +39,7 @@ hook.Add("PostEntityTakeDamage", "MW2_Server_Hitmarker_Logic", function(target, 
             -- 4. NOTIFY CLIENT
             -- Tells the client to play the hitmarker sound, draw the X, 
             -- and update the visual score (+100)
-            net.Start("MW2_HitNotification")
+            net.Start("CoDHUD_HitNotification")
                 net.WriteBool(isKill)
                 net.WriteInt(isKill and XP_PER_KILL or XP_PER_HIT, 32)
             net.Send(attacker)

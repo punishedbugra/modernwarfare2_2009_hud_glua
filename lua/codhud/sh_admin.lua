@@ -15,3 +15,5 @@ if SERVER then
         end
     end)
 end
+
+CreateConVar("codhud_game", "mw2", {FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "Which CoD game factions and UI should utilize.")

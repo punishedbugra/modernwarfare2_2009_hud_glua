@@ -6,19 +6,6 @@ _G.CoDHUD_MedalsActive = _G.CoDHUD_MedalsActive or false
 _G.CoDHUD_MedalSystem = _G.CoDHUD_MedalSystem or {}
 
 if CLIENT then
-    -- [[ RESOLUTION SCALING ]]
-    -- Uniform scale: takes the smaller axis ratio so nothing stretches on
-    -- ultrawide (21:9) or narrow (4:3) screens. Matches cl_vgui's GetUIScale().
-    local BASE_W, BASE_H = 1920, 1080
-
-    local function GetUIScale()
-        local scaleX = ScrW() / BASE_W
-        local scaleY = ScrH() / BASE_H
-        return math.max(math.min(scaleX, scaleY), 0.5)
-    end
-
-    local function S(x) return math.Round(x * GetUIScale()) end
-
     -- [[ TINKERING MENU ]]
     local MEDAL_CFG = {
         X_OFFSET = 0,    -- Horizontal offset from center
@@ -173,8 +160,8 @@ if CLIENT then
 			scale = Lerp(progress, 1.0, 3.0)
 		end
 
-		local cx = (ScrW() / 2) + S(MEDAL_CFG.X_OFFSET)
-		local cy = (ScrH() / 2) + S(MEDAL_CFG.Y_OFFSET)
+		local cx = (ScrW() / 2) + CoDHUD_S(MEDAL_CFG.X_OFFSET)
+		local cy = (ScrH() / 2) + CoDHUD_S(MEDAL_CFG.Y_OFFSET)
 
 		local colWhite      = Color(255, 255, 255, alpha)
 		local colBlack      = Color(0, 0, 0, alpha * 0.8)
@@ -193,7 +180,7 @@ if CLIENT then
 			if activeMedal.hasIcon then
 				surface.SetDrawColor(255, 255, 255, alpha)
 				surface.SetMaterial(Material("icons/crosshair_red.png", "smooth"))
-				surface.DrawTexturedRect(cx - S(60), cy - S(120), S(120), S(120))
+				surface.DrawTexturedRect(cx - CoDHUD_S(60), cy - CoDHUD_S(120), CoDHUD_S(120), CoDHUD_S(120))
 			end
 
 			-- TEXT
@@ -207,7 +194,7 @@ if CLIENT then
 				local localizedDesc = language.GetPhrase("MW2_" .. activeMedal.desc)
 
 				if activeMedal.isSpecial then
-					draw.SimpleTextOutlined( localizedDesc, "MW2_MedalDesc", cx, cy + S(35), colWhite, 1, 1, outlined and 1 or 0, colBlack )
+					draw.SimpleTextOutlined( localizedDesc, "MW2_MedalDesc", cx, cy + CoDHUD_S(35), colWhite, 1, 1, outlined and 1 or 0, colBlack )
 				else
 					local descText     = localizedDesc .. " ("
 					local pointsText   = "+" .. activeMedal.points
@@ -220,12 +207,12 @@ if CLIENT then
 
 					local startX = cx - (totalW / 2)
 
-					draw.SimpleTextOutlined( descText, "MW2_MedalDesc", startX, cy + S(35), colWhite, 0, 1, outlined and 1 or 0, colBlack )
-					draw.SimpleTextOutlined( pointsText, "MW2_MedalDesc", startX + w1, cy + S(35), colYellow, 0, 1, outlined and 1 or 0, colBlack )
-					draw.SimpleTextOutlined( bracketClose, "MW2_MedalDesc", startX + w1 + w2, cy + S(35), colWhite, 0, 1, outlined and 1 or 0, colBlack )
+					draw.SimpleTextOutlined( descText, "MW2_MedalDesc", startX, cy + CoDHUD_S(35), colWhite, 0, 1, outlined and 1 or 0, colBlack )
+					draw.SimpleTextOutlined( pointsText, "MW2_MedalDesc", startX + w1, cy + CoDHUD_S(35), colYellow, 0, 1, outlined and 1 or 0, colBlack )
+					draw.SimpleTextOutlined( bracketClose, "MW2_MedalDesc", startX + w1 + w2, cy + CoDHUD_S(35), colWhite, 0, 1, outlined and 1 or 0, colBlack )
 				end
 			else
-				draw.SimpleTextOutlined( "+" .. activeMedal.points, "MW2_MedalDesc", cx, cy + S(35), colYellow, 1, 1, outlined and 1 or 0, colBlack )
+				draw.SimpleTextOutlined( "+" .. activeMedal.points, "MW2_MedalDesc", cx, cy + CoDHUD_S(35), colYellow, 1, 1, outlined and 1 or 0, colBlack )
 			end
 
 		cam.PopModelMatrix()
