@@ -72,6 +72,8 @@ net.Receive("CoDHUD_RoundEnd", function()
     local loserFac  = net.ReadString()
     local winnerSc  = net.ReadInt(32)
     local loserSc   = net.ReadInt(32)
+	
+	local str = CoDHUD[CoDHUD_GetHUDType()].TextStrings
 
 	if _G.CoDHUD_MedalSystem then _G.CoDHUD_MedalSystem.Clear() end -- Clears kill messages
 
@@ -109,19 +111,19 @@ net.Receive("CoDHUD_RoundEnd", function()
 
     -- Result text + glow color
     if winnerFac == "" then
-        ws_result = "MW2_MP_DRAW"
+        ws_result = str.re.draw or "MW2_MP_DRAW"
         re_result_glow = Color(255, 255, 255)
     elseif isVictory then
-        ws_result = "MW2_MP_VICTORY"
+        ws_result = str.re.win or "MW2_MP_VICTORY"
         re_result_glow = Color(0, 220, 80)
     else
-        ws_result = "MW2_MP_DEFEAT"
+        ws_result = str.re.lose or "MW2_MP_DEFEAT"
         re_result_glow = Color(220, 60, 60)
     end
 
     -- Write-in state reset
     ws_result = language.GetPhrase(ws_result)
-    ws_limit = language.GetPhrase("MW2_MP_SCORE_LIMIT_REACHED")
+    ws_limit = language.GetPhrase(str.re.result.score or "MW2_MP_SCORE_LIMIT_REACHED")
 
     -- Music
 	timer.Simple( CFG.MUSIC_DELAY, function()

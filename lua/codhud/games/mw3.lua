@@ -125,7 +125,24 @@ CoDHUD.Factions[hudtype] = {
 
 -- [[ TEXT STRINGS & VOICE CALLOUTS ]]
 CoDHUD[hudtype].TextStrings = {
+	connected = "MW2_MP_CONNECTED",
+	disconnected = "MW2_MP_DISCONNECTED",
+	leftgame = "MW2_EXE_LEFTGAME",
 	
+	re = {
+		draw = "MW2_MP_DRAW",
+		win = "MW2_MP_VICTORY",
+		lose = "MW2_MP_DEFEAT",
+		result = {
+			score = "MW2_MP_SCORE_LIMIT_REACHED",
+			time = "???"
+		}
+	},
+	scorebar = {
+		tied = "MW2_MPUI_TIED_CAPS",
+		winning = "MW2_MPUI_WINNING_CAPS",
+		losing = "MW2_MPUI_LOSING_CAPS"
+	},
 }
 
 CoDHUD[hudtype].VoiceCallouts = {
@@ -156,25 +173,25 @@ end
 
 -- [[ GAMEMODES ]]
 CoDHUD.Gamemodes[hudtype] = {
-	{ "#MW3_MPUI_WAR", "war" },
-	{ "#MW3_MPUI_DEATHMATCH", "dm" },
-	{ "#MW3_MPUI_DOMINATION", "dom" },
-	{ "#MW3_MPUI_SEARCH_AND_DESTROY", "sd" },
-	{ "#MW3_MPUI_SABOTAGE", "sab" },
-	{ "#MW3_MPUI_CAPTURE_THE_FLAG", "ctf" },
-	{ "#MW3_MPUI_HEADQUARTERS", "hq" },
-	{ "#MW3_MPUI_DD", "dd" },
+	{ "#MW2_MPUI_WAR", "war" },
+	{ "#MW2_MPUI_DEATHMATCH", "dm" },
+	{ "#MW2_MPUI_DOMINATION", "dom" },
+	{ "#MW2_MPUI_SEARCH_AND_DESTROY", "sd" },
+	{ "#MW2_MPUI_SABOTAGE", "sab" },
+	{ "#MW2_MPUI_CAPTURE_THE_FLAG", "ctf" },
+	{ "#MW2_MPUI_HEADQUARTERS", "hq" },
+	{ "#MW2_MPUI_DD", "dd" },
 }
 
 CoDHUD.Gamemodes[hudtype].Hints = {
-    ["war"] = "MW3_OBJECTIVES_WAR_HINT", -- TDM
-    ["dm"] = "MW3_OBJECTIVES_DM_HINT", -- FFA
-    ["dom"] = "MW3_OBJECTIVES_DOM_HINT", -- Domination
-    ["sd"] = "MW3_OBJECTIVES_SD_ATTACKER_HINT", -- Search & Destroy
-    ["sab"] = "MW3_OBJECTIVES_SAB_HINT", -- Sabotage
-    ["ctf"] = "MW3_OBJECTIVES_CTF_HINT", -- Capture the Flag
-    ["hq"] = "MW3_OBJECTIVES_KOTH_HINT", -- Headquarters
-    ["dd"] = "MW3_OBJECTIVES_SD_ATTACKER_HINT", -- Demolition
+    ["war"] = "MW2_MP_OBJ_WAR_HINT", -- TDM
+    ["dm"] = "MW2_MP_OBJ_DM_HINT", -- FFA
+    ["dom"] = "MW2_OBJECTIVES_DOM_HINT", -- Domination
+    ["sd"] = "MW2_OBJECTIVES_SD_ATTACKER_HINT", -- Search & Destroy
+    ["sab"] = "MW2_OBJECTIVES_SAB_HINT", -- Sabotage
+    ["ctf"] = "MW2_OBJECTIVES_CTF_HINT", -- Capture the Flag
+    ["hq"] = "MW2_OBJECTIVES_KOTH_HINT", -- Headquarters
+    ["dd"] = "MW2_OBJECTIVES_SD_ATTACKER_HINT", -- Demolition
 }
 
 CoDHUD.Gamemodes[hudtype].Callouts = {
@@ -393,31 +410,42 @@ end
 CoDHUD[hudtype].RoundStartTimer = rs_timer
 
 local function re_teams( ... )
-	local teams = select(1, ...)
-	local ws_result = select(2, ...)
-	local ws_limit = select(3, ...)
-	local re_result_glow = select(4, ...)
-	local CFG = select(5, ...)
+    local teams = select(1, ...)
+    local ws_result = select(2, ...)
+    local ws_limit = select(3, ...)
+    local re_result_glow = select(4, ...)
+    local CFG = select(5, ...)
 
-	-- Teams
-	CoDHUD_HeaderQueue.Push({
-		teams = teams,
-		x = CoDHUD_SX(960),
-		y = CoDHUD_SY(400),
-		multiple = true,
-		persist = true,
-		endTime = CFG.SCOREBOARD_DELAY,
+    local multiplier = 100
 
-		iconSize = CoDHUD_S(184),
-		iconGap  = CoDHUD_S(80),
-		scoreY = CoDHUD_SY(620),
+    -- Apply visual scaling only
+    local scaledTeams = {}
+    for k, v in ipairs(teams) do
+        scaledTeams[k] = {
+            fac = v.fac,
+            score = (v.score or 0) * multiplier
+        }
+    end
 
-		fonts = {
-			score_pri = "MW2_RE_Sc_Pri",
-			score_sec = "MW2_RE_Sc_Sec",
-			score_shd = "MW2_RE_Sc_Shd",
-		}
-	})
+    -- Teams
+    CoDHUD_HeaderQueue.Push({
+        teams = scaledTeams, -- use scaled version
+        x = CoDHUD_SX(960),
+        y = CoDHUD_SY(400),
+        multiple = true,
+        persist = true,
+        endTime = CFG.SCOREBOARD_DELAY,
+
+        iconSize = CoDHUD_S(184),
+        iconGap  = CoDHUD_S(80),
+        scoreY = CoDHUD_SY(620),
+
+        fonts = {
+            score_pri = "MW2_RE_Sc_Pri",
+            score_sec = "MW2_RE_Sc_Sec",
+            score_shd = "MW2_RE_Sc_Shd",
+        }
+    })
 
 	-- Text
 	CoDHUD_HeaderQueue.Push({
@@ -1028,7 +1056,7 @@ local function scorebar(data)
 	local CFG = {
 		-- Base Bar
 		BAR_W     = 776,
-		BAR_H     = 96,
+		BAR_H     = 66,
 		BAR_X_OFF = 0,
 		BAR_Y_OFF = 44,
 
@@ -1038,15 +1066,15 @@ local function scorebar(data)
 		ICON_Y     = 8,
 
 		-- Timer
-		TIMER_X          = 86,
-		TIMER_Y          = -32,
+		TIMER_X          = 77.5,
+		TIMER_Y          = -30,
 		TIMER_SHIFT_2DIG = -10,
 		TIMER_SHIFT_3DIG = -12,
 		TIMER_OUTLINE_W  = 1.5,
 
 		-- Winning / Losing / Tie Text Position
-		STATUS_X = 150,
-		STATUS_Y = 5,
+		STATUS_X = 5,
+		STATUS_Y = 6,
 
 		-- Squeeze Values
 		SQUEEZE            = -2,
@@ -1056,52 +1084,52 @@ local function scorebar(data)
 
 	local SCORES_CFG = {
 		-- Text Config
-		X = 162,
+		X = 28,
 		Y = 974,
-		GAP_OFFSET = 32,
+		GAP_OFFSET = 33,
 		SQUEEZE = -4,
 		SQUEEZE_ONE = -10,
 		SQUEEZE_ONE_BEFORE = -10,
 		OUTLINE_W = 1.5,
 
 		-- Score Limit for Bar Scaling
-		SCORE_LIMIT = 7500,
+		SCORE_LIMIT = 75,
 
 		-- Active Bar Config (Green/Red)
-		HUD_X = 200,
-		HUD_Y = 1015,
-		HUD_W_BASE = 14,
+		HUD_X = 47,
+		HUD_Y = 1042.5,
+		HUD_W_BASE = 15,
 		HUD_W_MAX = 282,
 		HUD_H = 10,
-		SLANT_SIZE = 11,
-		VERTICAL_GAP = 10,
+		SLANT_SIZE = 0,
+		VERTICAL_GAP = 6,
 		SHADOW_OFFSET = 2,
 
 		-- Base Bar Config (Black Backgrounds)
-		BASE_X = 190,
-		BASE_Y = 1012,
+		BASE_X = 31,
+		BASE_Y = 1042,
 		BASE_W = 298,
 		BASE_H = 11,
-		BASE_SLANT = 10,
+		BASE_SLANT = 0,
 		BASE_GAP = 4,
 
 		-- End Cap Config
 		CAP_W = 3,
 		CAP_H_OFFSET = 2,
-		CAP_SLANT = 10,
-		CAP_COLOR = Color(255, 255, 255, 155),
+		CAP_SLANT = 0,
+		CAP_COLOR = Color(0, 0, 0, 155),
 
 		-- Active Slant Config
-		SLANT_W = 7,
-		SLANT_H_OFFSET = 0.4,
+		SLANT_W = 3,
+		SLANT_H_OFFSET = 0.40,
 		SLANT_SEP_W = 1,
 		SLANT_Y_OFFSET_TOP = 0,
 		SLANT_COLOR = Color(255, 255, 255, 220),
 	}
 
 	local ARROW_CFG = {
-		x = 140,
-		y = 978,
+		x = 8,
+		y = 1005,
 		w = 27,
 		h = 31,
 		outline = 4,
@@ -1133,10 +1161,6 @@ local function scorebar(data)
     local barX = CoDHUD_SX(CFG.BAR_X_OFF)
     local barY = scrH - CoDHUD_SY(CFG.BAR_Y_OFF) - barH
 
-    surface.SetMaterial(Material(hudtype .. "/hud/hud_scorebar.png", "smooth"))
-    surface.SetDrawColor(255, 255, 255, 155)
-    surface.DrawTexturedRect(barX, barY, barW, barH)
-
 	local factionData = CoDHUD.Factions[hudtype] and CoDHUD.Factions[hudtype][currentFaction]
 	local factionMat = factionData and factionData.scoreIcon
 
@@ -1144,18 +1168,6 @@ local function scorebar(data)
 	if not factionData then
 		currentFaction = "rangers"
 		factionData = CoDHUD.Factions[hudtype][currentFaction]
-	end
-	
-	if factionMat then
-		local iSize = math.Round(barH * CFG.ICON_SCALE)
-		surface.SetMaterial(Material(factionMat, "smooth"))
-		surface.SetDrawColor(255, 255, 255, 255)
-		surface.DrawTexturedRect(
-			barX + CoDHUD_SX(CFG.ICON_X),
-			barY + CoDHUD_SY(CFG.ICON_Y),
-			iSize,
-			iSize
-		)
 	end
 
     -- TIMER (NOW FROM DATA)
@@ -1174,7 +1186,7 @@ local function scorebar(data)
 	data.winningCol = Color(215, 110, 120, 255)
 	data.losingCol = Color(230, 230, 110, 255)
 
-    draw.SimpleTextOutlined( data.statusText, "MW2_Status", barX + CoDHUD_SX(CFG.STATUS_X), barY + CoDHUD_SY(CFG.STATUS_Y), data.statusCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP, outlined and 1 or 0, Color(0,0,0) )
+    draw.SimpleTextOutlined( language.GetPhrase(data.statusText), "MW2_Status", barX + CoDHUD_SX(CFG.STATUS_X), barY + CoDHUD_SY(CFG.STATUS_Y), data.statusCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP, outlined and 1 or 0, Color(0,0,0) )
 
     -- SCORE BARS (UNCHANGED)
     local clientKills   = data.clientScore
@@ -1257,10 +1269,12 @@ local function scorebar(data)
         local val = cv_limit:GetInt()
         if val > 0 then liveScoreLimit = val end
     end
+	
+	liveScoreLimit = liveScoreLimit * 100
 
     local maxAddedWidth = hudWMax - hudWBase
-    local client_w = math.Round(hudWBase + math.Clamp(((clientKills) / liveScoreLimit) * maxAddedWidth, 0, maxAddedWidth))
-    local enemy_w  = math.Round(hudWBase + math.Clamp(((topEnemyKills) / liveScoreLimit) * maxAddedWidth, 0, maxAddedWidth))
+    local client_w = math.Round(hudWBase + math.Clamp(((clientKills * 100) / liveScoreLimit) * maxAddedWidth, 0, maxAddedWidth))
+    local enemy_w  = math.Round(hudWBase + math.Clamp(((topEnemyKills * 100) / liveScoreLimit) * maxAddedWidth, 0, maxAddedWidth))
 
     local HUD_X = hudX
     local HUD_Y = hudY_raw
@@ -2051,14 +2065,14 @@ local function weaponinfo(...)
         local isReloadText  = false
 
         if clip == 0 and reserve == 0 then
-            statText = "#MW3_WEAPON_NO_AMMO"
+            statText = "#MW2_WEAPON_NO_AMMO"
             isNoAmmo = true
         elseif clip > 0 and reserve == 0 then
-            statText = "#MW3_PLATFORM_LOW_AMMO_NO_RELOAD"
+            statText = "#MW2_PLATFORM_LOW_AMMO_NO_RELOAD"
             statCol  = Color(255, 230, 0)
             isLowAmmo = true
         elseif perc <= CFG.STAT_LOW_PERC and reserve > 0 then
-            statText = "#MW3_PLATFORM_RELOAD"
+            statText = "#MW2_PLATFORM_RELOAD"
             isReloadText = true
         end
 

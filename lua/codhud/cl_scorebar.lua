@@ -80,6 +80,7 @@ end
 local function GetScorebarData()
     local ply = LocalPlayer()
     if not IsValid(ply) then return end
+	local str = CoDHUD[CoDHUD_GetHUDType()].TextStrings
 
     local data = {}
 
@@ -111,14 +112,14 @@ local function GetScorebarData()
 	local COL_LOSING  = Color(215, 110, 120, 255)
 	local COL_TIE     = Color(230, 230, 110, 255)
 
-	data.statusText = "#MW2_MPUI_TIED_CAPS"
+	data.statusText = str.scorebar.tied or "MW2_MPUI_TIED_CAPS"
 	data.statusCol  = COL_TIE
 
 	if clientScore > topEnemyScore then
-		data.statusText = "#MW2_MPUI_WINNING_CAPS"
+		data.statusText = str.scorebar.winning or "MW2_MPUI_WINNING_CAPS"
 		data.statusCol  = COL_WINNING
 	elseif clientScore < topEnemyScore then
-		data.statusText = "#MW2_MPUI_LOSING_CAPS"
+		data.statusText = str.scorebar.losing or "MW2_MPUI_LOSING_CAPS"
 		data.statusCol  = COL_LOSING
 	end
 

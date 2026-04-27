@@ -117,7 +117,24 @@ CoDHUD.Factions[hudtype] = {
 
 -- [[ TEXT STRINGS & VOICE CALLOUTS ]]
 CoDHUD[hudtype].TextStrings = {
+	connected = "MW2_MP_CONNECTED",
+	disconnected = "MW2_MP_DISCONNECTED",
+	leftgame = "MW2_EXE_LEFTGAME",
 	
+	re = {
+		draw = "MW2_MP_DRAW",
+		win = "MW2_MP_VICTORY",
+		lose = "MW2_MP_DEFEAT",
+		result = {
+			score = "MW2_MP_SCORE_LIMIT_REACHED",
+			time = "???"
+		}
+	},
+	scorebar = {
+		tied = "MW2_MPUI_TIED_CAPS",
+		winning = "MW2_MPUI_WINNING_CAPS",
+		losing = "MW2_MPUI_LOSING_CAPS"
+	},
 }
 
 CoDHUD[hudtype].VoiceCallouts = {
@@ -397,31 +414,42 @@ end
 CoDHUD[hudtype].RoundStartTimer = rs_timer
 
 local function re_teams( ... )
-	local teams = select(1, ...)
-	local ws_result = select(2, ...)
-	local ws_limit = select(3, ...)
-	local re_result_glow = select(4, ...)
-	local CFG = select(5, ...)
+    local teams = select(1, ...)
+    local ws_result = select(2, ...)
+    local ws_limit = select(3, ...)
+    local re_result_glow = select(4, ...)
+    local CFG = select(5, ...)
 
-	-- Teams
-	CoDHUD_HeaderQueue.Push({
-		teams = teams,
-		x = CoDHUD_SX(960),
-		y = CoDHUD_SY(400),
-		multiple = true,
-		persist = true,
-		endTime = CFG.SCOREBOARD_DELAY,
+    local multiplier = 100
 
-		iconSize = CoDHUD_S(184),
-		iconGap  = CoDHUD_S(80),
-		scoreY = CoDHUD_SY(620),
+    -- Apply visual scaling only
+    local scaledTeams = {}
+    for k, v in ipairs(teams) do
+        scaledTeams[k] = {
+            fac = v.fac,
+            score = (v.score or 0) * multiplier
+        }
+    end
 
-		fonts = {
-			score_pri = "MW2_RE_Sc_Pri",
-			score_sec = "MW2_RE_Sc_Sec",
-			score_shd = "MW2_RE_Sc_Shd",
-		}
-	})
+    -- Teams
+    CoDHUD_HeaderQueue.Push({
+        teams = scaledTeams, -- use scaled version
+        x = CoDHUD_SX(960),
+        y = CoDHUD_SY(400),
+        multiple = true,
+        persist = true,
+        endTime = CFG.SCOREBOARD_DELAY,
+
+        iconSize = CoDHUD_S(184),
+        iconGap  = CoDHUD_S(80),
+        scoreY = CoDHUD_SY(620),
+
+        fonts = {
+            score_pri = "MW2_RE_Sc_Pri",
+            score_sec = "MW2_RE_Sc_Sec",
+            score_shd = "MW2_RE_Sc_Shd",
+        }
+    })
 
 	-- Text
 	CoDHUD_HeaderQueue.Push({
@@ -1068,7 +1096,7 @@ local function scorebar(data)
 		OUTLINE_W = 1.5,
 
 		-- Score Limit for Bar Scaling
-		SCORE_LIMIT = 7500,
+		SCORE_LIMIT = 75,
 
 		-- Active Bar Config (Green/Red)
 		HUD_X = 200,
@@ -1177,7 +1205,7 @@ local function scorebar(data)
 	data.winningCol = Color(215, 110, 120, 255)
 	data.losingCol = Color(230, 230, 110, 255)
 
-    draw.SimpleTextOutlined( data.statusText, "MW2_Status", barX + CoDHUD_SX(CFG.STATUS_X), barY + CoDHUD_SY(CFG.STATUS_Y), data.statusCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP, outlined and 1 or 0, Color(0,0,0) )
+    draw.SimpleTextOutlined( language.GetPhrase(data.statusText), "MW2_Status", barX + CoDHUD_SX(CFG.STATUS_X), barY + CoDHUD_SY(CFG.STATUS_Y), data.statusCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP, outlined and 1 or 0, Color(0,0,0) )
 
     -- SCORE BARS (UNCHANGED)
     local clientKills   = data.clientScore
@@ -1899,11 +1927,11 @@ local function weaponinfo(...)
             or  Color(255, 255, 255, 255)
 
         if reserve >= 1000 then
-            DrawSqueezedText(reserve, "MW2_Res_4D", barX + barW + CoDHUD_SX(CFG.RES4_X), barY + CoDHUD_SY(CFG.RES4_Y), resCol, -6, 0, 1)
+            DrawSqueezedText(reserve, "MW2_Res_4D", barX + barW + CoDHUD_SX(CFG.RES4_X), barY + CoDHUD_SY(CFG.RES4_Y), resCol, -6, -12, 1)
         elseif reserve >= 100 then
-            DrawSqueezedText(reserve, "MW2_Res_3D", barX + barW + CoDHUD_SX(CFG.RES3_X), barY + CoDHUD_SY(CFG.RES3_Y), resCol, -4, 0, 1)
+            DrawSqueezedText(reserve, "MW2_Res_3D", barX + barW + CoDHUD_SX(CFG.RES3_X), barY + CoDHUD_SY(CFG.RES3_Y), resCol, -4, -12, 1)
         else
-            DrawSqueezedText(reserve, "MW2_Res", barX + barW + CoDHUD_SX(CFG.RES_X), barY + CoDHUD_SY(CFG.RES_Y), resCol, 0, 0, 1)
+            DrawSqueezedText(reserve, "MW2_Res", barX + barW + CoDHUD_SX(CFG.RES_X), barY + CoDHUD_SY(CFG.RES_Y), resCol, -6, -16, 1)
         end
     end
 

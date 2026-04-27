@@ -79,14 +79,26 @@ hook.Add("AddDeathNotice", "CoDHUD_Killfeed_Core", function(attacker, team1, inf
 end)
 
 -- Meta Events
+local str = CoDHUD[CoDHUD_GetHUDType()].TextStrings
+
 gameevent.Listen("player_connect")
 hook.Add("player_connect", "CoDHUD_Feed_Join", function(data)
-    table.insert(KillFeed, { type = "meta", msg = string.format( language.GetPhrase("MW2_MP_CONNECTED"), data.name ), spawnTime = CurTime(), dieTime = CurTime() + CFG.LIFETIME })
+    table.insert(KillFeed, { 
+		type = "meta", 
+		msg = string.format( language.GetPhrase(str.connected or "MW2_MP_CONNECTED"), data.name ), 
+		spawnTime = CurTime(), 
+		dieTime = CurTime() + CFG.LIFETIME
+	})
 end)
 
 gameevent.Listen("player_disconnect")
 hook.Add("player_disconnect", "CoDHUD_Feed_Leave", function(data)
-    table.insert(KillFeed, { type = "meta", msg = string.format( language.GetPhrase("MW2_EXE_LEFTGAME"), data.name ), spawnTime = CurTime(), dieTime = CurTime() + CFG.LIFETIME })
+    table.insert(KillFeed, {
+		type = "meta",
+		msg = string.format( language.GetPhrase(str.leftgame or "MW2_EXE_LEFTGAME"), data.name ),
+		spawnTime = CurTime(),
+		dieTime = CurTime() + CFG.LIFETIME
+	})
 end)
 
 -- [[ RENDERING ]]

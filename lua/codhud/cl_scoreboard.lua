@@ -2,14 +2,12 @@
 
 CoDHUD_ScoreboardOpened = false
 
-local hudtype = GetConVar("codhud_game"):GetString() or "mw2"
-
 hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
     if not CoDHUD_ScoreboardOpened then return end
 	if (not GetConVar("codhud_enable_scoreboard"):GetBool()) or GetConVar("codhud_quickdisable_hud"):GetBool() then return end
 
-	if CoDHUD[hudtype] and CoDHUD[hudtype].Scoreboard then
-		CoDHUD[hudtype].Scoreboard()
+	if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].Scoreboard then
+		CoDHUD[CoDHUD_GetHUDType()].Scoreboard()
 	end
 
     -- Manually call the custom chat hook so it draws while the rest of the HUD is suppressed
