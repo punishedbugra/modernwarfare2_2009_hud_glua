@@ -16,12 +16,9 @@ hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
     end
 
     if not CoDHUD.Factions[CoDHUD_GetHUDType()] or not CoDHUD.Factions[CoDHUD_GetHUDType()][currentFaction] then return end
-    
-    local factionVoice = CoDHUD.Factions[CoDHUD_GetHUDType()][currentFaction].voice
-    local basePath = "announcer/" .. factionVoice .. "/" .. factionVoice .. "_"
 
     -- 2. Calculate Scores
-    local lpScore = math.max(0, ply:Frags()) * 100
+    local lpScore = math.max(0, ply:Frags())
     local topEnemyScore = 0
 
     for _, p in ipairs(player.GetAll()) do
@@ -42,14 +39,14 @@ hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
 
     -- 4. Get Replicated Score Limit
     local limit = GetConVar("codhud_score_limit"):GetInt()
-    if not limit or limit <= 0 then limit = 7500 end
+    if not limit or limit <= 0 then limit = 75 end
 
     -- 5. Music Trigger (Passing 'true' to indicate this is music)
     if not MusicTriggered then
-        if (limit - lpScore) <= 300 and lpScore > topEnemyScore and lpScore > 0 then
+        if (limit - lpScore) <= 3 and lpScore > topEnemyScore and lpScore > 0 then
             MusicTriggered = true
             CoDHUD_PlayAnnouncerSound(voicefile.winningmusic, true)
-        elseif (limit - topEnemyScore) <= 300 and topEnemyScore > lpScore and topEnemyScore > 0 then
+        elseif (limit - topEnemyScore) <= 3 and topEnemyScore > lpScore and topEnemyScore > 0 then
             MusicTriggered = true
             CoDHUD_PlayAnnouncerSound(voicefile.losingmusic, true)
         end
@@ -57,13 +54,13 @@ hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
 
     -- 6. Near End Announcer
     if not NearEndTriggered then
-        if (limit - lpScore) <= 300 and lpScore > topEnemyScore and lpScore > 0 then
+        if (limit - lpScore) <= 3 and lpScore > topEnemyScore and lpScore > 0 then
             NearEndTriggered = true
 			local sound = CoDHUD_GetAnnouncerSound(voicefile.winningfight)
 
 			if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
 
-        elseif (limit - topEnemyScore) <= 300 and topEnemyScore > lpScore and topEnemyScore > 0 then
+        elseif (limit - topEnemyScore) <= 3 and topEnemyScore > lpScore and topEnemyScore > 0 then
             NearEndTriggered = true
 			local sound = CoDHUD_GetAnnouncerSound(voicefile.losingfight)
 			if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
@@ -80,7 +77,7 @@ hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
 
     if currentState ~= LastScoreState then
         if currentState == "winning" then
-            if lpScore == 100 and topEnemyScore == 0 then
+            if lpScore == 1 and topEnemyScore == 0 then
 				local sound = CoDHUD_GetAnnouncerSound(voicefile.leadtaken)
 				if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
             else

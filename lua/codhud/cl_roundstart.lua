@@ -36,7 +36,7 @@ local rs_glow       = Color(255, 255, 255)
 local rs_icon_mat   = nil
 local rs_icon_alpha = 0
 
-local rs_remaining = COUNTDOWN_DURATION
+local rs_remaining = 0
 local rs_last_dig  = -1
 local rs_dig_scale = 1.0
 
@@ -87,13 +87,15 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
     end
 end
 
-local function MW2_RS_Start(gamemode)
+local function CoDHUD_RS_Start(gamemode, timestart)
     local lp = LocalPlayer()
     if not IsValid(lp) then return end
 
     local fkey = lp:GetNW2String("CoDHUD_Faction", "rangers")
     if not CoDHUD.Factions[CoDHUD_GetHUDType()][fkey] then fkey = "rangers" end
     local fdata = CoDHUD.Factions[CoDHUD_GetHUDType()][fkey]
+
+	local matchtimestart = timestart
 
     rs_active      = true
     rs_movement_locked = true
@@ -113,7 +115,7 @@ local function MW2_RS_Start(gamemode)
     rs_icon_mat   = Material(fdata.spawnIcon, "smooth")
     rs_icon_alpha = 0
 
-    rs_remaining = COUNTDOWN_DURATION
+    rs_remaining = matchtimestart
     rs_last_dig  = -1
     rs_dig_scale = 1.0
 
@@ -133,7 +135,7 @@ local function MW2_RS_Start(gamemode)
 	end)
 end
 
-local function MW2_RS_End()
+local function CoDHUD_RS_End()
     rs_active     = false
     rs_movement_locked = false
     rs_phase      = "idle"
@@ -154,10 +156,8 @@ hook.Add("Think", "CoDHUD_RS_Think", function()
 	end
 
     if rs_phase == "faction" then
-        local elapsed = now - rs_seq_start
-        rs_remaining  = math.max(0, COUNTDOWN_DURATION - math.floor(elapsed))
-        
-        local exact_time_left = COUNTDOWN_DURATION - elapsed
+		local elapsed = now - rs_seq_start
+		local exact_time_left = math.max(0, rs_remaining - elapsed)
 
         if exact_time_left > 3 then
             rs_bw = 1
@@ -167,7 +167,7 @@ hook.Add("Think", "CoDHUD_RS_Think", function()
             rs_bw = 0
         end
 
-        if elapsed >= COUNTDOWN_DURATION then
+        if exact_time_left <= 0 then
             rs_phase       = "erase_faction"
             rs_phase_start = now
             rs_movement_locked = false
@@ -194,7 +194,7 @@ hook.Add("Think", "CoDHUD_RS_Think", function()
 
 	elseif rs_phase == "objective" then
 		if rs_objective and rs_objective:IsDone() then
-			MW2_RS_End()
+			CoDHUD_RS_End()
 		end
 	end
 end)
@@ -206,7 +206,8 @@ hook.Add("HUDPaint", "CoDHUD_RS_Draw", function()
 	local outlined = GetConVar("codhud_enable_outlinedtext"):GetBool()
 
     if rs_phase == "faction" then
-        local disp = math.max(0, rs_remaining)
+        local elapsed = CurTime() - rs_seq_start
+		local disp = math.max(0, math.ceil(rs_remaining - elapsed))
 
 		if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].RoundStartTimer then
 			CoDHUD[CoDHUD_GetHUDType()].RoundStartTimer(disp)
@@ -252,7 +253,8 @@ end)
 
 net.Receive("CoDHUD_RoundStart", function()
     local gamemode = net.ReadString()
+    local timestart = net.ReadInt(6)
     timer.Simple(0, function()
-        MW2_RS_Start(gamemode)
+        CoDHUD_RS_Start(gamemode, timestart)
     end)
 end)

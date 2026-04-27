@@ -92,12 +92,12 @@ local function GetScorebarData()
     data.mins = mins
 
     -- SCORES (unchanged logic)
-    local clientScore = math.max(0, ply:Frags()) * 100
+    local clientScore = math.max(0, ply:Frags())
     local topEnemyScore = 0
 
     for _, p in ipairs(player.GetAll()) do
         if p == ply then continue end
-        local score = math.max(0, p:Frags()) * 100
+        local score = math.max(0, p:Frags())
         if score > topEnemyScore then
             topEnemyScore = score
         end

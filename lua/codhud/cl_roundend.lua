@@ -151,7 +151,7 @@ net.Receive("CoDHUD_RoundEnd", function()
 				score = 0
 			}
 
-			teamsMap[fac].score = teamsMap[fac].score + math.max(0, p:Frags() * 100)
+			teamsMap[fac].score = teamsMap[fac].score + math.max(0, p:Frags())
 		end
 	end
 

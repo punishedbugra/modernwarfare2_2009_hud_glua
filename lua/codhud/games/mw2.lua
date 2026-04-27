@@ -1025,11 +1025,6 @@ local function minimap( ... )
 end
 CoDHUD[hudtype].Minimap = minimap
 
--- local FACTION_MATS = {}
--- for key, data in pairs(CoDHUD.Factions[hudtype]) do
-    -- FACTION_MATS[key] = Material(data.scoreIcon, "smooth")
--- end
-
 local MAT_GRADIENT = Material("vgui/gradient-r")
 
 local function scorebar(data)
@@ -1267,8 +1262,8 @@ local function scorebar(data)
     end
 
     local maxAddedWidth = hudWMax - hudWBase
-    local client_w = math.Round(hudWBase + math.Clamp((clientKills / liveScoreLimit) * maxAddedWidth, 0, maxAddedWidth))
-    local enemy_w  = math.Round(hudWBase + math.Clamp((topEnemyKills / liveScoreLimit) * maxAddedWidth, 0, maxAddedWidth))
+    local client_w = math.Round(hudWBase + math.Clamp(((clientKills * 100) / liveScoreLimit) * maxAddedWidth, 0, maxAddedWidth))
+    local enemy_w  = math.Round(hudWBase + math.Clamp(((topEnemyKills * 100) / liveScoreLimit) * maxAddedWidth, 0, maxAddedWidth))
 
     local HUD_X = hudX
     local HUD_Y = hudY_raw
@@ -1358,8 +1353,8 @@ local function scorebar(data)
 		{ x = bx2 + slantSepW,          y = by2 + (slantHOff / 2) },
 	})
 
-    DrawSqueezedText(clientKills,   "MW2_Font", CoDHUD_S(S_CFG.X), HUD_Y - CoDHUD_S(41),          white, S_CFG.SQUEEZE, S_CFG.SQUEEZE_ONE, 2, S_CFG.SQUEEZE_ONE_BEFORE, S_CFG.OUTLINE_W)
-    DrawSqueezedText(topEnemyKills, "MW2_Font", CoDHUD_S(S_CFG.X), HUD_Y - CoDHUD_S(41) + CoDHUD_S(S_CFG.GAP_OFFSET), white, S_CFG.SQUEEZE, S_CFG.SQUEEZE_ONE, 2, S_CFG.SQUEEZE_ONE_BEFORE, S_CFG.OUTLINE_W)
+    DrawSqueezedText(clientKills * 100,   "MW2_Font", CoDHUD_S(S_CFG.X), HUD_Y - CoDHUD_S(41),          white, S_CFG.SQUEEZE, S_CFG.SQUEEZE_ONE, 2, S_CFG.SQUEEZE_ONE_BEFORE, S_CFG.OUTLINE_W)
+    DrawSqueezedText(topEnemyKills * 100, "MW2_Font", CoDHUD_S(S_CFG.X), HUD_Y - CoDHUD_S(41) + CoDHUD_S(S_CFG.GAP_OFFSET), white, S_CFG.SQUEEZE, S_CFG.SQUEEZE_ONE, 2, S_CFG.SQUEEZE_ONE_BEFORE, S_CFG.OUTLINE_W)
 
     local ax = CoDHUD_S(ARROW_CFG.x)
     local ay = scrH - CoDHUD_S(1080 - ARROW_CFG.y)
@@ -1550,7 +1545,7 @@ local function scoreboard( ... )
 	for fi, facData in ipairs(factionList) do
 		local players = facData.players
 		local facKey = facData.key
-		local fData = CoDHUD.Factions["mw2"] and CoDHUD.Factions["mw2"][facKey] or {
+		local fData = CoDHUD.Factions[hudtype] and CoDHUD.Factions[hudtype][facKey] or {
 			name = facKey,
 			short = facKey,
 			color = Color(120,120,120)
@@ -1625,7 +1620,7 @@ local function scoreboard( ... )
 		local players = fac.players
 		local score = fac.score or 0
 
-		local fData = CoDHUD.Factions["mw2"] and CoDHUD.Factions["mw2"][key] or {
+		local fData = CoDHUD.Factions[hudtype] and CoDHUD.Factions[hudtype][key] or {
 			short = key,
 			color = Color(150,150,150)
 		}
@@ -1682,8 +1677,6 @@ local function deathicon( ... )
 	end
 end
 CoDHUD[hudtype].DeathIcon = deathicon
-
-local hudtype = GetConVar("codhud_game"):GetString() or "mw2"
 
 local function friendorfoe( ... )
 	local displayName = select(1, ...)

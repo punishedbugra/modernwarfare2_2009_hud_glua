@@ -26,13 +26,13 @@ hook.Add("PostEntityTakeDamage", "MW2_Server_Hitmarker_Logic", function(target, 
             -- We give XP on the server so the client cannot fake it.
             if isKill then
                 -- Global function from sv_mw2_progression.lua
-                if _G.MW2_GiveXP then
-                    _G.MW2_GiveXP(attacker, XP_PER_KILL)
+                if _G.CoDHUD_GiveXP then
+                    _G.CoDHUD_GiveXP(attacker, XP_PER_KILL)
                 end
             elseif XP_PER_HIT > 0 then
                 -- Optional: Give small XP for chips/hits
-                if _G.MW2_GiveXP then
-                    _G.MW2_GiveXP(attacker, XP_PER_HIT)
+                if _G.CoDHUD_GiveXP then
+                    _G.CoDHUD_GiveXP(attacker, XP_PER_HIT)
                 end
             end
 

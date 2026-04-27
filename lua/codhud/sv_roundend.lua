@@ -25,12 +25,12 @@ hook.Add("Think", "CoDHUD_RoundEnd_ScoreCheck", function()
     local limitCV = GetConVar("codhud_score_limit")
     if not limitCV then return end
     local scoreLimit = limitCV:GetInt()
-    if scoreLimit <= 0 then scoreLimit = 7500 end
+    if scoreLimit <= 0 then scoreLimit = 75 end
 
     local winnerFaction = nil
     for _, ply in ipairs(player.GetAll()) do
         if not IsValid(ply) then continue end
-        if math.max(0, ply:Frags()) * 100 >= scoreLimit then
+        if math.max(0, ply:Frags()) >= scoreLimit then
             winnerFaction = ply:GetNW2String("CoDHUD_Faction", "rangers")
             break
         end
@@ -44,7 +44,7 @@ hook.Add("Think", "CoDHUD_RoundEnd_ScoreCheck", function()
     for _, ply in ipairs(player.GetAll()) do
         if not IsValid(ply) then continue end
         local faction = ply:GetNW2String("CoDHUD_Faction", "rangers")
-        local score   = math.max(0, ply:Frags()) * 100
+        local score   = math.max(0, ply:Frags())
         factionScores[faction] = (factionScores[faction] or 0) + score
     end
 

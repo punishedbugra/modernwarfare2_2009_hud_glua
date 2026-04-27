@@ -32,6 +32,12 @@ function CoDHUD_GetAnnouncerSound(keys)
 	local voice = CoDHUD.Factions[CoDHUD_GetHUDType()][faction].voicepath
     local lang = GetConVar("gmod_language"):GetString() or "en"
 
+	local forceEnglish = GetConVar("codhud_enable_announcer_english"):GetBool()
+
+	if forceEnglish then
+		lang = "en"
+	end
+
     local function tryLang(l)
         for _, key in ipairs(keys) do
 		
@@ -56,7 +62,5 @@ function CoDHUD_GetAnnouncerSound(keys)
         return nil
     end
 
-    local result = tryLang(lang) or tryLang("en")
-
-    return result
+	return tryLang(lang) or tryLang("en")
 end

@@ -1,11 +1,12 @@
 ---- [ SETTINGS FILE ] ----
 
 -- [[ CLIENT CONVARS ]]
-CreateClientConVar("codhud_quickdisable_hud", "0", true, false, "Quickly disable all MW2 HUD options.")
-CreateClientConVar("codhud_quickdisable_audio", "0", true, false, "Quickly disable all MW2 Audio options.")
+CreateClientConVar("codhud_quickdisable_hud", "0", true, false, "Quickly disable all HUD options.")
+CreateClientConVar("codhud_quickdisable_audio", "0", true, false, "Quickly disable all Audio options.")
 
-CreateClientConVar("codhud_enable_announcer", "1", true, false, "Enable or disable the MW2 announcer voices.")
-CreateClientConVar("codhud_enable_music", "1", true, false, "Enable or disable the MW2 end-game music.")
+CreateClientConVar("codhud_enable_announcer", "1", true, false, "Enable or disable the announcer voices.")
+CreateClientConVar("codhud_enable_announcer_english", "0", true, false, "Force the announcer voice to use English ones, regardless of language.")
+CreateClientConVar("codhud_enable_music", "1", true, false, "Enable or disable the end-game music.")
 CreateClientConVar("codhud_enable_suspense", "1", true, false, "Enable or disable the ambient music.")
 
 CreateClientConVar("codhud_enable_medals", "1", true, false, "Enable or disable Kill Medals.")
@@ -27,9 +28,6 @@ CreateClientConVar("codhud_enable_deathicon", "1", true, false, "Show death icon
 CreateClientConVar("codhud_enable_outlinedtext", "0", true, false, "Enable or disable outlines on certain HUD texts.")
 
 CreateClientConVar("codhud_fullscreen", "0", true, false, "MW2 HUD Settings open in fullscreen.")
-
--- Temporary legacy
-CreateClientConVar("mw2_enable_medal_outlines", "0", true, false, "Enable or disable Kill Medal text outlines.")
 
 -- [[ MENU POPULATION ]] -- Only done to present button to open proper menu
 hook.Add("PopulateToolMenu", "CoDHUD_SETTINGSMenu", function()
@@ -208,7 +206,7 @@ local CoDHUD_SETTINGS = {
 			{ name = "#CoDHUD.Audio", categories = {
 					{ name = "#CoDHUD.Audio.Announcer", controls = {
 							{ type = "checkbox", label = "#CoDHUD.Audio.Announcer.Enable", convar = "codhud_enable_announcer", tooltip = "#CoDHUD.Audio.Announcer.Enable.desc" },
-							-- { type = "checkbox", label = "#CoDHUD.Audio.Announcer.English", convar = "codhud_enable_announcer_english", tooltip = "#CoDHUD.Audio.Announcer.English.desc" },
+							{ type = "checkbox", label = "#CoDHUD.Audio.Announcer.English", convar = "codhud_enable_announcer_english", tooltip = "#CoDHUD.Audio.Announcer.English.desc" },
 						}
 					},
 					{ name = "#CoDHUD.Audio.Music", controls = {
@@ -230,7 +228,43 @@ local CoDHUD_SETTINGS = {
 	},
 
     { name = "#CoDHUD.Server", subtabs = {
-            { name = "#CoDHUD.General", categories = {
+            { name = "#CoDHUD.Server", categories = {
+                    { name = "#CoDHUD.General", adminOnly = true, controls = {
+                            { type = "checkbox", label = "#CoDHUD.Admin.EndScreen", convar = "codhud_enable_roundend", tooltip = "CoDHUD.Admin.EndScreen.desc" },
+                            { type = "checkbox", label = "#CoDHUD.Admin.EndScreen.StartNext", convar = "codhud_enable_roundend_startnext", tooltip = "CoDHUD.Admin.EndScreen.StartNext.desc" },
+							{ type = "checkbox", label = "#CoDHUD.Admin.FriendlyFire", convar = "codhud_friendly_fire", tooltip = "CoDHUD.Admin.FriendlyFire.desc" },
+                            { type = "slider", label = "#CoDHUD.Admin.EndScreen.Scorelimit", convar = "codhud_score_limit", tooltip = "CoDHUD.Admin.EndScreen.Scorelimit.desc", min = 1, max = 150 },
+                            { type = "slider", label = "#CoDHUD.RoundStart.Timer", convar = "codhud_matchstart_timer", tooltip = "CoDHUD.RoundStart.Timer.desc", min = 0, max = 15 },
+                        }
+                    },
+					
+					{ name = "#CoDHUD.RoundStart", adminOnly = true, controls = {
+							
+							{ type = "label", label = "#CoDHUD.RoundStart.Info" },
+							{ type = "combobox", label = "#CoDHUD.RoundStart.Gamemode",
+								choices = function() return CoDHUD.Gamemodes[CoDHUD_GetHUDType()] or {} end,
+								getCurrent = function() return GetConVar("codhud_selected_gamemode"):GetString() end,
+								onSelect = function(_, data)
+									net.Start("CoDHUD_SetGamemode")
+									net.WriteString(data)
+									net.SendToServer()
+								end
+							},
+							{ type = "button", label = "#CoDHUD.RoundStart.Start", 
+								func = function()
+									local lp = LocalPlayer()
+									if not IsValid(lp) or not lp:IsAdmin() then return end
+
+									CoDHUD_RS_OpenConfirm()
+
+									if IsValid(codhud_menu_frame) then
+										codhud_menu_frame:SetVisible(false)
+									end
+								end
+							}
+						}
+					},
+					
                     { name = "#CoDHUD.Admin.RestrictType", adminOnly = true, controls = {
                             { type = "combobox", label = "#CoDHUD.Admin.EndScreen.Scorelimit", choices = CoDHUD.GetHUDList(),
 								getCurrent = function() return GetConVar("codhud_game"):GetString() end,
@@ -252,41 +286,8 @@ local CoDHUD_SETTINGS = {
                             { type = "label", label = "#CoDHUD.Admin.RestrictType.desc" },
                         }
                     },
-                    { name = "#CoDHUD.General", adminOnly = true, controls = {
-                            { type = "checkbox", label = "#CoDHUD.Admin.EndScreen", convar = "codhud_enable_roundend", tooltip = "CoDHUD.Admin.EndScreen.desc" },
-                            { type = "checkbox", label = "#CoDHUD.Admin.EndScreen.StartNext", convar = "codhud_enable_roundend_startnext", tooltip = "CoDHUD.Admin.EndScreen.StartNext.desc" },
-							{ type = "checkbox", label = "#CoDHUD.Admin.FriendlyFire", convar = "codhud_friendly_fire", tooltip = "CoDHUD.Admin.FriendlyFire.desc" },
-                            { type = "slider", label = "#CoDHUD.Admin.EndScreen.Scorelimit", convar = "codhud_score_limit", tooltip = "CoDHUD.Admin.EndScreen.Scorelimit.desc", min = 100, max = 7500 },
-                        }
-                    },
                 }
-            },
-			{ name = "#CoDHUD.RoundStart", categories = {
-				{ name = "#CoDHUD.RoundStart", adminOnly = true, controls = {
-						
-                        { type = "label", label = "#CoDHUD.RoundStart.Info" },
-						{ type = "combobox", label = "#CoDHUD.RoundStart.Gamemode",
-							choices = function() return CoDHUD.Gamemodes[CoDHUD_GetHUDType()] or {} end,
-							getCurrent = function() return GetConVar("codhud_selected_gamemode"):GetString() end,
-							onSelect = function(_, data)
-								net.Start("CoDHUD_SetGamemode")
-								net.WriteString(data)
-								net.SendToServer()
-							end
-						},
-							{ type = "button", label = "#CoDHUD.RoundStart.Start", func = function()
-								local lp = LocalPlayer()
-								if not IsValid(lp) or not lp:IsAdmin() then return end
-
-								CoDHUD_RS_OpenConfirm()
-
-								if IsValid(codhud_menu_frame) then
-									codhud_menu_frame:SetVisible(false)
-								end
-							end}
-					}
-				}
-			}}
+            }
         }
     }
 }
@@ -334,10 +335,10 @@ local function CreateSlider(parent, data)
 
     -- Snap example (optional)
     slider.OnValueChanged = function(self, val)
-        local snapped = math.Round(val / 100) * 100
-        if snapped ~= val then
-            self:SetValue(snapped)
-        end
+        -- local snapped = math.Round(val / 100) * 100
+        -- if snapped ~= val then
+            self:SetValue(val)
+        -- end
     end
 end
 

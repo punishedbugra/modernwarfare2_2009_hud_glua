@@ -28,6 +28,7 @@ net.Receive("CoDHUD_StartRound", function(len, ply)
     end
 
     local gamemode = GetConVar("codhud_selected_gamemode"):GetString()
+	local timer = GetConVar("codhud_matchstart_timer"):GetInt()
 
     for _, p in ipairs(player.GetAll()) do
         p:SetFrags(0)
@@ -37,5 +38,6 @@ net.Receive("CoDHUD_StartRound", function(len, ply)
 
     net.Start("CoDHUD_RoundStart")
         net.WriteString(gamemode)
+        net.WriteInt(timer, 6)
     net.Broadcast()
 end)
