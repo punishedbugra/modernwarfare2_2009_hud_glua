@@ -10,6 +10,6 @@ hook.Add("HUDPaint", "MW2_Minimap_UAV", function()
 	if not GetConVar("cl_drawhud"):GetBool() then return end
 
 	if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].Minimap then
-		CoDHUD[CoDHUD_GetHUDType()].Minimap()
+		CoDHUD[CoDHUD_GetHUDType()].Minimap(ply)
 	end
 end)

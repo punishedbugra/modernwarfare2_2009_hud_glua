@@ -275,7 +275,7 @@ local function DrawSqueezedScore(val, x, y, alpha)
 	end
 end
 
-local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, align, squeezeOneBefore, outlineW)
+local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, align, squeezeOneBefore, outlineW, outlineCol)
     local str = tostring(text)
     surface.SetFont(font)
 
@@ -297,7 +297,7 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
         local char     = str:sub(i, i)
         local nextChar = str:sub(i + 1, i + 1)
         local o        = outlineW or 0
-        local outlineCol = Color(0, 0, 0, color.a)
+        local outlineCol = outlineCol or Color(0, 0, 0, color.a)
 
 		draw.SimpleTextOutlined( char, font, runX, y, color, 0, 0, o, outlineCol )
 
@@ -717,44 +717,51 @@ local function killfeed( ... )
 		local vCol = Color(vColBase.r, vColBase.g, vColBase.b, finalTxtAlpha)
 
         if data.type == "kill" then
-			-- Check kill icon size
+			local ICON_BOX_W = iconW
+			local ICON_BOX_H = iconH
+
 			local cls = data.isHeadshot and "CoDHUD_MW2_Headshot" or data.weaponClass
 			local w, h = killicon.GetSize(cls)
-
-			local currentY = baseY - ((#KillFeed - i) * h) + yOffset
 
 			if not w or w <= 0 then w = ICON_BOX_W end
 			if not h or h <= 0 then h = ICON_BOX_H end
 
-            -- 1. Attacker
-            if data.attackerName != "" then
-                draw.SimpleText(data.attackerName, "MW2_KillfeedFont", x, currentY, aCol)
-                -- draw.SimpleTextOutlined( data.attackerName, "MW2_KillfeedFont", x, currentY, aCol, 0, 0, outlined and 1 or 0, Color(0, 0, 0, math.Clamp(finalTxtAlpha, 0, 50)) )
+			local currentY = baseY - ((#KillFeed - i) * spacing) + yOffset
 
-                local tw, _ = surface.GetTextSize(data.attackerName)
-                x = x + tw + gap_name
-            end
+			local isSmall = w < CoDHUD_S(20)
 
-            -- 2. Icon
-			local iconBoxX = x
-			local iconBoxY = currentY
+			local gapL = isSmall and CoDHUD_S(-5) or gap_name
+			local gapR = isSmall and CoDHUD_S(15) or gap_name
+
+			-- 1. Attacker
+			if data.attackerName != "" then
+				draw.SimpleText(data.attackerName, "MW2_KillfeedFont", x, currentY, aCol)
+
+				local tw, _ = surface.GetTextSize(data.attackerName)
+				x = x + tw + gapL
+			end
+
+			-- 2. Icon
+			local iconX = x
+			local iconY = currentY + (ICON_BOX_H - h) * 0.5
 
 			local alpha = math.min(165 * fadeFactor, 255)
 
-			-- local drawX = iconBoxX + (ICON_BOX_W - w) * 0.5
-			local drawX = iconBoxX + w
-			local drawY = iconBoxY + (ICON_BOX_H - h) * 0.5
+			local offsetX = 0
+			local offsetY = 0
 
-			killicon.Draw(drawX - w, drawY, cls, alpha)
+			if cls == "CoDHUD_MW2_Headshot" then
+				offsetY = CoDHUD_S(-2)
+			end
 
-			x = iconBoxX + w + gap_name
+			killicon.Draw(iconX + offsetX, iconY + offsetY, cls, alpha)
 
-            -- 3. Victim
-            draw.SimpleText(data.victimName, "MW2_KillfeedFont", x, currentY, vCol)
-            -- draw.SimpleTextOutlined( data.victimName, "MW2_KillfeedFont", x, currentY, vCol, 0, 0, outlined and 1 or 0, Color(0, 0, 0, math.Clamp(finalTxtAlpha, 0, 50)) )
+			x = x + w + gapR
+
+			-- 3. Victim
+			draw.SimpleText(data.victimName, "MW2_KillfeedFont", x, currentY, vCol)
         else
             draw.SimpleText(data.msg, "MW2_KillfeedFont", x, currentY, Color(255, 255, 255, finalTxtAlpha))
-            -- draw.SimpleTextOutlined( data.msg, "MW2_KillfeedFont", x, currentY, Color(255, 255, 255, finalTxtAlpha), 0, 0, outlined and 1 or 0, Color(0, 0, 0, math.Clamp(finalTxtAlpha, 0, 50)) )
         end
     end
 end
@@ -858,7 +865,7 @@ CoDHUD[hudtype].Medals = medals
 CoDHUD[hudtype].MedalsSound = "hud/hud_medal.mp3"
 
 local function minimap( ... )
-	local KillFeed = select(1, ...)
+	local ply = select(1, ...)
 	
 	local MAP_CFG = {
 		X = 12,
