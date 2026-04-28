@@ -1,6 +1,7 @@
 ---- [ SHARED CONVARS & FRIENDLY FIRE ] ----
 
 CreateConVar("codhud_score_limit", "75", {FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "Sets the score limit for the HUD, measured in kills.")
+CreateConVar("codhud_time_limit", "10", {FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "Sets the match time limit, measured in minutes.")
 CreateConVar("codhud_matchstart_timer", "10", {FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "Sets the match start timer.")
 CreateConVar("codhud_friendly_fire", "0", {FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_NOTIFY}, "If 0, players on the same faction cannot damage each other.")
 

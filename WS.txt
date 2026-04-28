@@ -1,0 +1,59 @@
+A sequel, improvement and rewrite of landocalrissian's original [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3704210589]Call of Duty: Modern Warfare 2 2009 HUD[/url], now with many new features, improvements and much more.
+
+[h3] Regarding localized voicelines [/h3]
+To reduce the size of the addon, it will only contain the necessary elements, including materials, code, localization and English voicelines.
+The addon, just like the original, does support localized voicelines. You can get them here: [url=https://steamcommunity.com/workshop/filedetails/?id=1587455087]Workshop Link[/url]
+
+[hr][/hr]
+[h1] Features [/h1]
+[h3] Brand New Features [/h3]
+[list]
+	[*] Customizable HUD Types; Switch to another game's HUD and its factions
+	[*] Round End now supports Time Limits
+	[*] Reworked settings menu and options
+	[*] And so many minor things
+[/list]
+
+[h3] Original features carried over [/h3]
+Full HUD functionality, including, but not limited to:
+[list]
+	[*] Score counter
+	[*] Weapon information
+	[*] Scoreboard
+	[*] Killfeed
+	[*] Medals ("Double Kill", "Headshot", etc.)
+	[*] Round start & Round end
+	[*] Full customizability on what to show and/or hide
+	[*] Localization support:
+	[table]
+		[tr]
+			[th]Text + Voice[/th]
+			[th]Text Only[/th]
+		[/tr]
+		[tr]
+			[td]
+			English
+			German
+			French
+			Spanish
+			Italian
+			Russian
+			Japanese
+			[/td]
+			[td]
+			Polish
+			Swedish*
+			Turkish*
+			[/td]
+		[/tr]
+	[/table]
+	*Unofficial
+[/list]
+
+[hr][/hr]
+[h3] Credits [/h3]
+[list]
+[*][b]Moka[/b] - Rewrite & new additions
+[*][b]landocalrissian[/b] - Original addon author
+[*][b]cosmicpuppy[/b] - Original addon contributor
+[/list]

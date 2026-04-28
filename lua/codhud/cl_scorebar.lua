@@ -80,17 +80,31 @@ end
 local function GetScorebarData()
     local ply = LocalPlayer()
     if not IsValid(ply) then return end
-	local str = CoDHUD[CoDHUD_GetHUDType()].TextStrings
 
+    local str = CoDHUD[CoDHUD_GetHUDType()].TextStrings
     local data = {}
 
-    -- TIMER (unchanged logic)
-    local totalSecs = math.floor(CurTime())
-    local mins = math.floor(totalSecs / 60)
-    local secs = totalSecs % 60
+    -- RAW TIME (use this for logic)
+    local remaining = math.max(0, CoDHUD_RoundEndTime - CurTime())
+    data.timeRaw = remaining -- precise float for comparisons
+    data.timeAlive = remaining > 0 -- simple boolean check
 
-    data.timeStr = string.format("%d:%02d", mins, secs)
-    data.mins = mins
+    -- DISPLAY TIME
+	local mins = math.floor(remaining / 60)
+	local secs = math.floor(remaining % 60)
+
+	-- base string (always mm:ss)
+	local baseTime = string.format("%d:%02d", mins, secs)
+
+	-- add tenths when under 30 seconds
+	if remaining < 30 and remaining > 0 then
+		local tenths = math.floor((remaining % 1) * 10)
+		data.timeStr = string.format("%s.%d", baseTime, tenths)
+	else
+		data.timeStr = baseTime
+	end
+
+	data.mins = mins
 
     -- SCORES (unchanged logic)
     local clientScore = math.max(0, ply:Frags())
@@ -107,21 +121,21 @@ local function GetScorebarData()
     data.clientScore = clientScore
     data.enemyScore  = topEnemyScore
 
-	-- STATUS COLORS (define here, not in scorebar)
-	local COL_WINNING = Color(110, 220, 120, 255)
-	local COL_LOSING  = Color(215, 110, 120, 255)
-	local COL_TIE     = Color(230, 230, 110, 255)
+    -- STATUS COLORS
+    local COL_WINNING = Color(110, 220, 120, 255)
+    local COL_LOSING  = Color(215, 110, 120, 255)
+    local COL_TIE     = Color(230, 230, 110, 255)
 
-	data.statusText = str.scorebar.tied or "MW2_MPUI_TIED_CAPS"
-	data.statusCol  = COL_TIE
+    data.statusText = str.scorebar.tied or "MW2_MPUI_TIED_CAPS"
+    data.statusCol  = COL_TIE
 
-	if clientScore > topEnemyScore then
-		data.statusText = str.scorebar.winning or "MW2_MPUI_WINNING_CAPS"
-		data.statusCol  = COL_WINNING
-	elseif clientScore < topEnemyScore then
-		data.statusText = str.scorebar.losing or "MW2_MPUI_LOSING_CAPS"
-		data.statusCol  = COL_LOSING
-	end
+    if clientScore > topEnemyScore then
+        data.statusText = str.scorebar.winning or "MW2_MPUI_WINNING_CAPS"
+        data.statusCol  = COL_WINNING
+    elseif clientScore < topEnemyScore then
+        data.statusText = str.scorebar.losing or "MW2_MPUI_LOSING_CAPS"
+        data.statusCol  = COL_LOSING
+    end
 
     return data
 end

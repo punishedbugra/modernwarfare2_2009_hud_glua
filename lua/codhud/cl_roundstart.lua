@@ -1,4 +1,4 @@
----- [ ROUND START ] ----
+---- [ CLIENT ROUND START ] ----
 
 local CFG = {
     HEADER_X         = 960,
@@ -47,6 +47,9 @@ local rs_gamemode	= "war"
 
 local rs_header = nil
 local rs_objective = nil
+
+CoDHUD_RoundEndTime = 0
+CoDHUD_MatchMaxTime = 0
 
 local sb_open = false
 
@@ -179,8 +182,10 @@ hook.Add("Think", "CoDHUD_RS_Think", function()
 
         if not rs_boost_done then
             rs_boost_done = true
-			local sound = CoDHUD_GetAnnouncerSound({ CoDHUD.Gamemodes[CoDHUD_GetHUDType()].Boosts[rs_gamemode] or CoDHUD.Gamemodes[CoDHUD_GetHUDType()].Boosts["war"] })
-			if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
+			timer.Simple( 0.1, function()
+				local sound = CoDHUD_GetAnnouncerSound({ CoDHUD.Gamemodes[CoDHUD_GetHUDType()].Boosts[rs_gamemode] or CoDHUD.Gamemodes[CoDHUD_GetHUDType()].Boosts["war"] })
+				if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
+			end)
         end
 
         if elapsed >= erase_t then
@@ -254,6 +259,12 @@ end)
 net.Receive("CoDHUD_RoundStart", function()
     local gamemode = net.ReadString()
     local timestart = net.ReadInt(6)
+    local maxtimer = net.ReadInt(32)
+
+    CoDHUD_RoundEndTime = net.ReadFloat()
+
+    CoDHUD_MatchMaxTime = maxtimer * 60 -- convert once, store once
+
     timer.Simple(0, function()
         CoDHUD_RS_Start(gamemode, timestart)
     end)

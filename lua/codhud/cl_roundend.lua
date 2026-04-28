@@ -123,7 +123,13 @@ net.Receive("CoDHUD_RoundEnd", function()
 
     -- Write-in state reset
     ws_result = language.GetPhrase(ws_result)
-    ws_limit = language.GetPhrase(str.re.result.score or "MW2_MP_SCORE_LIMIT_REACHED")
+    if CoDHUD_RoundEndTime > 0 then
+		ws_limit = language.GetPhrase("MW2_MP_TIME_LIMIT_REACHED")
+	else
+		ws_limit = language.GetPhrase(str.re.result.score or "MW2_MP_SCORE_LIMIT_REACHED")
+	end
+
+	CoDHUD_RoundEndTime = 0 -- Reset to 0
 
     -- Music
 	timer.Simple( CFG.MUSIC_DELAY, function()

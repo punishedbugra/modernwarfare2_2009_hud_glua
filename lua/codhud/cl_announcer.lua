@@ -1,14 +1,49 @@
 ---- [ ANNOUNCER & MUSIC ] ----
 
+-- Queue system
+CoDHUD_AnnouncerQueue = CoDHUD_AnnouncerQueue or {}
+CoDHUD_AnnouncerPlaying = CoDHUD_AnnouncerPlaying or false
+CoDHUD_AnnouncerNextTime = CoDHUD_AnnouncerNextTime or 0
+
+local ANNOUNCER_COOLDOWN = 1 -- small gap between lines
+
+local function CoDHUD_ProcessAnnouncerQueue()
+    if CoDHUD_AnnouncerPlaying then return end
+    if #CoDHUD_AnnouncerQueue == 0 then return end
+
+    if CurTime() < CoDHUD_AnnouncerNextTime then return end
+
+    local entry = table.remove(CoDHUD_AnnouncerQueue, 1)
+    if not entry then return end
+
+    CoDHUD_AnnouncerPlaying = true
+
+    surface.PlaySound(entry.path)
+
+    -- estimate duration
+    local duration = SoundDuration(entry.path) or 2
+
+    timer.Simple(duration, function()
+        CoDHUD_AnnouncerPlaying = false
+        CoDHUD_AnnouncerNextTime = CurTime() + ANNOUNCER_COOLDOWN
+    end)
+end
+
+hook.Add("Think", "CoDHUD_AnnouncerQueue_Think", CoDHUD_ProcessAnnouncerQueue)
+
 -- Helper to play sounds with toggle checks
 function CoDHUD_PlayAnnouncerSound(path, isMusic)
     if isMusic then
         if not GetConVar("codhud_enable_music"):GetBool() then return end
+        surface.PlaySound(path)
+        return
     else
         if not GetConVar("codhud_enable_announcer"):GetBool() then return end
     end
 
-    surface.PlaySound(path)
+    table.insert(CoDHUD_AnnouncerQueue, {
+        path = path
+    })
 end
 
 -- Resolve announcer sound with language + suffix fallback

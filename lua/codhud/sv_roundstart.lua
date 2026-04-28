@@ -22,13 +22,18 @@ net.Receive("CoDHUD_SetGamemode", function(len, ply)
 end)
 
 net.Receive("CoDHUD_StartRound", function(len, ply)
-    if not IsValid(ply) or not ply:IsAdmin() then
-        ply:PrintMessage(HUD_PRINTTALK, "[MW2] You must be an admin to start the round.")
-        return
-    end
+    if not IsValid(ply) or not ply:IsAdmin() then return end
 
     local gamemode = GetConVar("codhud_selected_gamemode"):GetString()
-	local timer = GetConVar("codhud_matchstart_timer"):GetInt()
+    local matchtimer = GetConVar("codhud_matchstart_timer"):GetInt()
+    local maxtimer = GetConVar("codhud_time_limit"):GetFloat()
+
+    -- NEW: set round timer (convert minutes → seconds)
+	if maxtimer > 0 then
+		CoDHUD_RoundEndTimeSV = CurTime() + (matchtimer + 1) + (maxtimer * 60)
+	else
+		CoDHUD_RoundEndTimeSV = nil
+	end
 
     for _, p in ipairs(player.GetAll()) do
         p:SetFrags(0)
@@ -36,8 +41,10 @@ net.Receive("CoDHUD_StartRound", function(len, ply)
         p:Spawn()
     end
 
-    net.Start("CoDHUD_RoundStart")
-        net.WriteString(gamemode)
-        net.WriteInt(timer, 6)
-    net.Broadcast()
+	net.Start("CoDHUD_RoundStart")
+		net.WriteString(gamemode)
+		net.WriteInt(matchtimer, 6)
+		net.WriteInt(maxtimer, 32)
+		net.WriteFloat(CoDHUD_RoundEndTimeSV or 0) -- NEW
+	net.Broadcast()
 end)

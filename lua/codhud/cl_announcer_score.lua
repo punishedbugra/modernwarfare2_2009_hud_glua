@@ -4,10 +4,16 @@ local LastScoreState = "tied"
 local NearEndTriggered = false
 local MusicTriggered = false
 local voicefile = CoDHUD[CoDHUD_GetHUDType()].VoiceCallouts
+CoDHUD_HadAbove60 = CoDHUD_HadAbove60 or false
+CoDHUD_HadAbove30 = CoDHUD_HadAbove30 or false
+CoDHUD_LowTimeTriggered = CoDHUD_LowTimeTriggered or false
+CoDHUD_TimerLastPlay = CoDHUD_TimerLastPlay or 0
+CoDHUD_ActiveTimerTier = CoDHUD_ActiveTimerTier or nil
 
 hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
     local ply = LocalPlayer()
     if not IsValid(ply) then return end
+	if not voicefile then return end
 
     -- 1. Retrieve current faction and voice tag
     local currentFaction = ply:GetNW2String("CoDHUD_Faction", "")
@@ -93,5 +99,127 @@ hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
         end
         
         LastScoreState = currentState
+    end
+end)
+
+hook.Add("Think", "CoDHUD_Announcer_Time_Think", function()
+    local ply = LocalPlayer()
+    if not IsValid(ply) then return end
+	if not voicefile then return end
+
+    -- 1. Retrieve current faction and voice tag
+    local currentFaction = ply:GetNW2String("CoDHUD_Faction", "")
+    if currentFaction == "" then
+        currentFaction = cookie.GetString("CoDHUD_SelectedFaction", "rangers")
+    end
+
+	local timeLeft = (CoDHUD_RoundEndTime or 0) - CurTime()
+	local matchTime = CoDHUD_MatchMaxTime or 0
+	local timeAnnouncersEnabled = (matchTime > 0)
+	local has60Callout = (matchTime > 60)
+	
+	if not timeAnnouncersEnabled then return end
+	
+	-- Track crossing of 60 seconds threshold
+	if has60Callout and timeLeft >= 60 then
+		CoDHUD_HadAbove60 = true
+	end
+
+	if has60Callout and CoDHUD_HadAbove60 and timeLeft < 60 then
+		CoDHUD_HadAbove60 = false
+
+		local lpScore = math.max(0, LocalPlayer():Frags())
+		local topEnemyScore = 0
+
+		for _, p in ipairs(player.GetAll()) do
+			if p == LocalPlayer() then continue end
+			local score = math.max(0, p:Frags())
+			if score > topEnemyScore then
+				topEnemyScore = score
+			end
+		end
+
+		local sound = nil
+
+		if not MusicTriggered then
+			if lpScore > topEnemyScore then
+				-- winning
+				sound = CoDHUD_GetAnnouncerSound(voicefile.winningfight)
+				if voicefile.winningmusic then
+					MusicTriggered = true
+					CoDHUD_PlayAnnouncerSound(voicefile.winningmusic, true)
+				end
+			else
+				-- losing (includes tie fallback)
+				sound = CoDHUD_GetAnnouncerSound(voicefile.losingfight)
+				if voicefile.losingmusic then
+					MusicTriggered = true
+					CoDHUD_PlayAnnouncerSound(voicefile.losingmusic, true)
+				end
+			end
+		end
+
+		if sound then
+			CoDHUD_PlayAnnouncerSound(sound, false)
+		end
+	end
+	
+	-- Track crossing of 30 seconds threshold
+	if timeLeft >= 30 then
+		CoDHUD_HadAbove30 = true
+		CoDHUD_LowTimeTriggered = false
+	end
+
+	if CoDHUD_HadAbove30 and timeLeft < 30 and not CoDHUD_LowTimeTriggered then
+		CoDHUD_LowTimeTriggered = true
+		CoDHUD_HadAbove30 = false
+
+		local sound = CoDHUD_GetAnnouncerSound(voicefile.lowtime)
+
+		if sound then
+			CoDHUD_PlayAnnouncerSound(sound, false)
+		end
+	end
+end)
+
+hook.Add("Think", "CoDHUD_Timer_Tick", function()
+    local ply = LocalPlayer()
+    if not IsValid(ply) then return end
+
+    local hudtype = CoDHUD_GetHUDType()
+    local timerData = CoDHUD[hudtype] and CoDHUD[hudtype].Timer
+    if not timerData or not timerData.sound then return end
+
+    local timeLeft = (CoDHUD_RoundEndTime or 0) - CurTime()
+    if timeLeft <= 0 then return end
+
+    local now = CurTime()
+
+    -- 1. Find best active tier (lowest threshold that is still active)
+    local activeThreshold = nil
+    local activeInterval = nil
+
+    for threshold, interval in pairs(timerData.timings or {}) do
+        if timeLeft <= threshold then
+            if not activeThreshold or threshold < activeThreshold then
+                activeThreshold = threshold
+                activeInterval = interval
+            end
+        end
+    end
+
+    if not activeThreshold then return end
+
+    -- 2. Switch tier if needed (reset timing when entering new phase)
+    if CoDHUD_ActiveTimerTier ~= activeThreshold then
+        CoDHUD_ActiveTimerTier = activeThreshold
+        CoDHUD_TimerLastPlay = 0
+    end
+
+    -- 3. Interval trigger
+    if (now - CoDHUD_TimerLastPlay) >= activeInterval then
+        CoDHUD_TimerLastPlay = now
+
+        surface.PlaySound(timerData.sound)
     end
 end)

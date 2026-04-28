@@ -146,11 +146,12 @@ CoDHUD[hudtype].TextStrings = {
 }
 
 CoDHUD[hudtype].VoiceCallouts = {
-	winningmusic = "music/hz_mp_opfor_victory.mp3",
-	losingmusic = "music/hz_mp_time_out_losing.mp3",
+	winningmusic = "music/mw3/bt_mp_winning_03.mp3",
+	losingmusic = "music/mw3/bt_mp_timerunningout_01b.mp3",
 	
-	winningfight = { "winning" },
-	losingfight = { "losing" },
+	winningfight = "winning",
+	losingfight = "losing",
+	lowtime = "timesup",
 	
 	leadtaken = "lead_taken",
 	leadlost = "lead_lost",
@@ -158,6 +159,14 @@ CoDHUD[hudtype].VoiceCallouts = {
 	
 	missionwin = "mission_success",
 	missionlose = "mission_fail",
+}
+
+CoDHUD[hudtype].Timer = {
+	sound = "hud/ui_mp_countdown_v1.mp3",
+	timings = {
+		[30] = 2,
+		[10] = 1
+	}
 }
 
 local function GetFactionColor(ent)
@@ -262,7 +271,7 @@ local function DrawSqueezedScore(val, x, y, alpha)
 	end
 end
 
-local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, align, squeezeOneBefore, outlineW)
+local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, align, squeezeOneBefore, outlineW, outlineCol)
     local str = tostring(text)
     surface.SetFont(font)
 
@@ -284,7 +293,7 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
         local char     = str:sub(i, i)
         local nextChar = str:sub(i + 1, i + 1)
         local o        = outlineW or 0
-        local outlineCol = Color(0, 0, 0, color.a)
+        local outlineCol = outlineCol or Color(0, 0, 0, color.a)
 
 		draw.SimpleTextOutlined( char, font, runX, y, color, 0, 0, o, outlineCol )
 
@@ -1066,7 +1075,7 @@ local function scorebar(data)
 		ICON_Y     = 8,
 
 		-- Timer
-		TIMER_X          = 77.5,
+		TIMER_X          = 28,
 		TIMER_Y          = -30,
 		TIMER_SHIFT_2DIG = -10,
 		TIMER_SHIFT_3DIG = -12,
@@ -1177,10 +1186,23 @@ local function scorebar(data)
     local xShift =
         (#tostring(mins) >= 3 and CoDHUD_SX(CFG.TIMER_SHIFT_3DIG)) or
         (#tostring(mins) >= 2 and CoDHUD_SX(CFG.TIMER_SHIFT_2DIG)) or 0
-
-    DrawSqueezedText( timeStr, "MW2_Timer", barX + CoDHUD_SX(CFG.TIMER_X) + xShift, barY + CoDHUD_SY(CFG.TIMER_Y), Color(255, 255, 255, 255), CFG.SQUEEZE, CFG.SQUEEZE_ONE, 1, CFG.SQUEEZE_ONE_BEFORE, CoDHUD_SX(CFG.TIMER_OUTLINE_W) )
-
 	
+	local timecol = Color(255,255,255)
+	
+	if data.timeRaw > 30 and data.timeRaw < 60 then
+		timecol = Color(218,136,43)
+	elseif data.timeRaw < 30 then
+		timecol = Color(255,100,100)
+	end
+
+	local shouldDrawTimer =
+    data.timeRaw > 0.1 and
+    (CoDHUD_MatchMaxTime <= 0 or data.timeRaw <= CoDHUD_MatchMaxTime)
+
+	if shouldDrawTimer then
+		DrawSqueezedText( timeStr, "MW2_Timer", barX + CoDHUD_SX(CFG.TIMER_X) + xShift, barY + CoDHUD_SY(CFG.TIMER_Y), timecol, CFG.SQUEEZE, CFG.SQUEEZE_ONE, 2, CFG.SQUEEZE_ONE_BEFORE, CoDHUD_SX(CFG.TIMER_OUTLINE_W) )
+	end
+
 	-- Status Colors
 	data.tiedCol = Color(110, 220, 120, 255)
 	data.winningCol = Color(215, 110, 120, 255)

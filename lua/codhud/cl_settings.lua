@@ -233,14 +233,16 @@ local CoDHUD_SETTINGS = {
                             { type = "checkbox", label = "#CoDHUD.Admin.EndScreen", convar = "codhud_enable_roundend", tooltip = "CoDHUD.Admin.EndScreen.desc" },
                             { type = "checkbox", label = "#CoDHUD.Admin.EndScreen.StartNext", convar = "codhud_enable_roundend_startnext", tooltip = "CoDHUD.Admin.EndScreen.StartNext.desc" },
 							{ type = "checkbox", label = "#CoDHUD.Admin.FriendlyFire", convar = "codhud_friendly_fire", tooltip = "CoDHUD.Admin.FriendlyFire.desc" },
-                            { type = "slider", label = "#CoDHUD.Admin.EndScreen.Scorelimit", convar = "codhud_score_limit", tooltip = "CoDHUD.Admin.EndScreen.Scorelimit.desc", min = 1, max = 150 },
-                            { type = "slider", label = "#CoDHUD.RoundStart.Timer", convar = "codhud_matchstart_timer", tooltip = "CoDHUD.RoundStart.Timer.desc", min = 0, max = 15 },
                         }
                     },
 					
 					{ name = "#CoDHUD.RoundStart", adminOnly = true, controls = {
 							
 							{ type = "label", label = "#CoDHUD.RoundStart.Info" },
+							
+                            { type = "slider", label = "#CoDHUD.Scorelimit", convar = "codhud_score_limit", tooltip = "CoDHUD.Scorelimit.desc", min = 1, max = 150 },
+                            { type = "slider", label = "#CoDHUD.Timelimit", convar = "codhud_time_limit", tooltip = "CoDHUD.Timelimit.desc", min = 0, max = 30 },
+                            { type = "slider", label = "#CoDHUD.RoundStart.Timer", convar = "codhud_matchstart_timer", tooltip = "CoDHUD.RoundStart.Timer.desc", min = 0, max = 15 },
 							{ type = "combobox", label = "#CoDHUD.RoundStart.Gamemode",
 								choices = function() return CoDHUD.Gamemodes[CoDHUD_GetHUDType()] or {} end,
 								getCurrent = function() return GetConVar("codhud_selected_gamemode"):GetString() end,
