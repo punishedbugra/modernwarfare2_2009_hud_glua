@@ -551,6 +551,7 @@ CoDHUD[hudtype].XP = xp
 
 local function dmg_dir( ... )
 	local attackers = select(1, ...)
+	local ply = select(2, ...)
 
     local cx, cy = ScrW() / 2, ScrH() / 2
 	local matDamage = Material(hudtype .. "/icons/hit_direction.png", "mips smooth")
@@ -598,6 +599,7 @@ CoDHUD[hudtype].DamageDirection = dmg_dir
 local function grenade_dir( ... )
 	local showIcon = select(1, ...)
 	local nearEnts = select(2, ...)
+	local ply = select(3, ...)
 
     local cx, cy = ScrW() / 2, ScrH() / 2
 
@@ -724,10 +726,8 @@ local function killfeed( ... )
 
 			local currentY = baseY - ((#KillFeed - i) * spacing) + yOffset
 
-			local isSmall = w < CoDHUD_S(20)
-
-			local gapL = isSmall and CoDHUD_S(-5) or gap_name
-			local gapR = isSmall and CoDHUD_S(15) or gap_name
+			local gapL = CoDHUD_S(25)
+			local gapR = CoDHUD_S(25)
 
 			-- 1. Attacker
 			if data.attackerName != "" then
@@ -738,8 +738,8 @@ local function killfeed( ... )
 			end
 
 			-- 2. Icon
-			local iconX = x
-			local iconY = currentY + (ICON_BOX_H - h) * 0.5
+			local iconX = math.floor(x)
+			local iconY = math.floor(currentY + (ICON_BOX_H - h) * 0.5)
 
 			local alpha = math.min(165 * fadeFactor, 255)
 
@@ -750,9 +750,9 @@ local function killfeed( ... )
 				offsetY = CoDHUD_S(-2)
 			end
 
-			killicon.Draw(iconX + offsetX, iconY + offsetY, cls, alpha)
+			killicon.Draw(x, currentY, cls, alpha)
 
-			x = x + w + gapR
+			x = math.floor(x + w + gapR)
 
 			-- 3. Victim
 			draw.SimpleText(data.victimName, "MW2_KillfeedFont", x, currentY, vCol)
@@ -1139,7 +1139,7 @@ local function scorebar(data)
 		CAP_W = 3,
 		CAP_H_OFFSET = 2,
 		CAP_SLANT = 0,
-		CAP_COLOR = Color(0, 0, 0, 155),
+		CAP_COLOR = Color(255, 255, 255, 200),
 
 		-- Active Slant Config
 		SLANT_W = 3,
@@ -1755,7 +1755,10 @@ CoDHUD[hudtype].IFF = friendorfoe
 local ICON_ON = Material(hudtype .. "/icons/voice_on.png", "noclamp smooth")
 local ICON_DIM = Material(hudtype .. "/icons/voice_on_dim.png", "noclamp smooth")
 
-local function voice(yOffset)
+local function voice( ... )
+	local yOffset = select(1, ...)
+	local ply = select(2, ...)
+	
 	-- Positioning Config
 	local VOICE_X = 22
 	local VOICE_Y_START = ScrH() * 0.30 

@@ -34,6 +34,6 @@ hook.Add("HUDPaint", "CoDHUD_Grenade_Indicator", function()
     local nearEnts = ents.FindInSphere(ply:GetPos(), 250) 
 
 	if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].GrenadeIndicator then
-		CoDHUD[CoDHUD_GetHUDType()].GrenadeIndicator(showIcon, nearEnts)
+		CoDHUD[CoDHUD_GetHUDType()].GrenadeIndicator(showIcon, nearEnts, ply)
 	end
 end)

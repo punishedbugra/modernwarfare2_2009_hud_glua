@@ -1,28 +1,21 @@
 [h3] !! READ !! [/h3]
 This addon exclusively adds additional language voicelines for [url=https://steamcommunity.com/workshop/filedetails/?id=1587455087]this HUD addon[/url]!
 
+[h1] MW2 [/h1]
 [list]
-	[table]
-		[tr]
-			[th]MW2[/th]
-			[th]MW3[/th]
-		[/tr]
-		[tr]
-			[td]
-			German
-			French
-			Spanish
-			Italian
-			Russian
-			Japanese
-			[/td]
-			[td]
-			German
-			French
-			Spanish
-			Italian
-			Russian
-			[/td]
-		[/tr]
-	[/table]
+	[*] Deutsch
+	[*] Español
+	[*] Français
+	[*] Italiano
+	[*] 日本語
+	[*] Русский
+[/list]
+
+[h1] MW3 [/h1]
+[list]
+	[*] Deutsch
+	[*] Español
+	[*] Français
+	[*] Italiano
+	[*] Русский
 [/list]

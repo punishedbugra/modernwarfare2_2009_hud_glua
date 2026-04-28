@@ -555,6 +555,7 @@ CoDHUD[hudtype].XP = xp
 
 local function dmg_dir( ... )
 	local attackers = select(1, ...)
+	local ply = select(2, ...)
 
     local cx, cy = ScrW() / 2, ScrH() / 2
 	local matDamage = Material(hudtype .. "/icons/hit_direction.png", "mips smooth")
@@ -602,6 +603,7 @@ CoDHUD[hudtype].DamageDirection = dmg_dir
 local function grenade_dir( ... )
 	local showIcon = select(1, ...)
 	local nearEnts = select(2, ...)
+	local ply = select(3, ...)
 
     local cx, cy = ScrW() / 2, ScrH() / 2
 
@@ -1774,7 +1776,10 @@ CoDHUD[hudtype].IFF = friendorfoe
 local ICON_ON = Material(hudtype .. "/icons/voice_on.png", "noclamp smooth")
 local ICON_DIM = Material(hudtype .. "/icons/voice_on_dim.png", "noclamp smooth")
 
-local function voice(yOffset)
+local function voice( ... )
+	local yOffset = select(1, ...)
+	local ply = select(2, ...)
+	
 	-- Positioning Config
 	local VOICE_X = 22
 	local VOICE_Y_START = ScrH() * 0.30 

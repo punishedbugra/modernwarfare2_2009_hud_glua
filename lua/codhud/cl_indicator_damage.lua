@@ -54,7 +54,7 @@ if CLIENT then
         end
 
 		if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].DamageDirection then
-			CoDHUD[CoDHUD_GetHUDType()].DamageDirection(attackers)
+			CoDHUD[CoDHUD_GetHUDType()].DamageDirection(attackers, ply)
 		end
     end)
 end

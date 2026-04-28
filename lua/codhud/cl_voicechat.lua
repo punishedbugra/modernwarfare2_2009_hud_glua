@@ -21,7 +21,7 @@ hook.Add("HUDPaint", "CoDHUD_DrawVoiceChat", function()
         end
 
 		if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].VoiceChat then
-			CoDHUD[CoDHUD_GetHUDType()].VoiceChat(yOffset)
+			CoDHUD[CoDHUD_GetHUDType()].VoiceChat(yOffset, ply)
 		end
     end
 end)
