@@ -3,7 +3,6 @@
 local LastScoreState = "tied"
 local NearEndTriggered = false
 local MusicTriggered = false
-local voicefile = CoDHUD[CoDHUD_GetHUDType()].VoiceCallouts
 CoDHUD_HadAbove60 = CoDHUD_HadAbove60 or false
 CoDHUD_HadAbove30 = CoDHUD_HadAbove30 or false
 CoDHUD_LowTimeTriggered = CoDHUD_LowTimeTriggered or false
@@ -13,6 +12,7 @@ CoDHUD_ActiveTimerTier = CoDHUD_ActiveTimerTier or nil
 hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
     local ply = LocalPlayer()
     if not IsValid(ply) then return end
+	local voicefile = CoDHUD[CoDHUD_GetHUDType()].VoiceCallouts
 	if not voicefile then return end
 
     -- 1. Retrieve current faction and voice tag
@@ -105,6 +105,7 @@ end)
 hook.Add("Think", "CoDHUD_Announcer_Time_Think", function()
     local ply = LocalPlayer()
     if not IsValid(ply) then return end
+	local voicefile = CoDHUD[CoDHUD_GetHUDType()].VoiceCallouts
 	if not voicefile then return end
 
     -- 1. Retrieve current faction and voice tag

@@ -534,9 +534,9 @@ local function xp( ... )
 
 	local outlined = GetConVar("codhud_enable_outlinedtext"):GetBool()
 
-	local cx, cy = ScrW() / 2, ScrH() / 2
+	local cx, cy = ScrW() * 0.525, ScrH() * 0.5
 	local drawAlpha = (currentPulseAlpha / 255) * finalAlpha
-	local drawY     = cy - CoDHUD_SY(140)
+	local drawY     = cy - CoDHUD_SY(124)
 
 	local mat = Matrix()
 	mat:Translate(Vector(cx, drawY, 0))
@@ -655,9 +655,11 @@ local function killfeed( ... )
     local cx, cy = ScrW() / 2, ScrH() / 2
 	local ct = CurTime()
 
+	local outlined = GetConVar("codhud_enable_outlinedtext"):GetBool()
+
     local xPos = CoDHUD_S(10)
     local yPos = CoDHUD_S(210)
-    local spacing = CoDHUD_S(26)
+    local spacing = CoDHUD_S(36)
     local iconW = CoDHUD_S(32)
     local iconH = CoDHUD_S(32)
     local iconOffY = CoDHUD_S(0)
@@ -694,7 +696,7 @@ local function killfeed( ... )
 
         -- Vertical Offset Logic: Start lower and rise up
         local yOffset = (1 - animProgress) * CoDHUD_S(ANIM_RISE)
-		local currentY = baseY - ((#KillFeed - i) * spacing) + yOffset
+		-- local currentY = baseY - ((#KillFeed - i) * spacing) + yOffset
 
         local x = xPos
         local finalTxtAlpha = 155 * fadeFactor
@@ -715,36 +717,40 @@ local function killfeed( ... )
 			local cls = data.isHeadshot and "CoDHUD_MW2_Headshot" or data.weaponClass
 			local w, h = killicon.GetSize(cls)
 
+			local currentY = baseY - ((#KillFeed - i) * h) + yOffset
+
+			if not w or w <= 0 then w = ICON_BOX_W end
+			if not h or h <= 0 then h = ICON_BOX_H end
+
             -- 1. Attacker
             if data.attackerName != "" then
                 draw.SimpleText(data.attackerName, "MW2_KillfeedFont", x, currentY, aCol)
-                -- draw.SimpleTextOutlined( data.attackerName, "MW2_KillfeedFont", x, currentY, aCol, 0, 0, 1, Color(0, 0, 0, math.Clamp(finalTxtAlpha, 0, 50)) )
+                -- draw.SimpleTextOutlined( data.attackerName, "MW2_KillfeedFont", x, currentY, aCol, 0, 0, outlined and 1 or 0, Color(0, 0, 0, math.Clamp(finalTxtAlpha, 0, 50)) )
 
                 local tw, _ = surface.GetTextSize(data.attackerName)
                 x = x + tw + gap_name
             end
 
             -- 2. Icon
-			local iconBoxX = x + gap_extra
+			local iconBoxX = x
 			local iconBoxY = currentY
 
 			local alpha = math.min(165 * fadeFactor, 255)
 
-			w = w or ICON_BOX_W
-			h = h or ICON_BOX_H
-
-			local drawX = iconBoxX + (ICON_BOX_W - w) * 0.5
+			-- local drawX = iconBoxX + (ICON_BOX_W - w) * 0.5
+			local drawX = iconBoxX + w
 			local drawY = iconBoxY + (ICON_BOX_H - h) * 0.5
 
-			killicon.Draw(drawX, drawY, cls, alpha)
+			killicon.Draw(drawX - w, drawY, cls, alpha)
 
-			x = iconBoxX + ICON_BOX_W + gap_icon + gap_extra
+			x = iconBoxX + w + gap_name
 
             -- 3. Victim
             draw.SimpleText(data.victimName, "MW2_KillfeedFont", x, currentY, vCol)
-            -- draw.SimpleTextOutlined( data.victimName, "MW2_KillfeedFont", x, currentY, vCol, 0, 0, 1, Color(0, 0, 0, math.Clamp(finalTxtAlpha, 0, 50)) )
+            -- draw.SimpleTextOutlined( data.victimName, "MW2_KillfeedFont", x, currentY, vCol, 0, 0, outlined and 1 or 0, Color(0, 0, 0, math.Clamp(finalTxtAlpha, 0, 50)) )
         else
             draw.SimpleText(data.msg, "MW2_KillfeedFont", x, currentY, Color(255, 255, 255, finalTxtAlpha))
+            -- draw.SimpleTextOutlined( data.msg, "MW2_KillfeedFont", x, currentY, Color(255, 255, 255, finalTxtAlpha), 0, 0, outlined and 1 or 0, Color(0, 0, 0, math.Clamp(finalTxtAlpha, 0, 50)) )
         end
     end
 end
