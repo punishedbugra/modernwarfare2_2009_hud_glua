@@ -155,6 +155,6 @@ hook.Add("HUDPaint", "MW2_MergedHUD", function()
 
     local scrW, scrH = ScrW(), ScrH()
 	if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].WeaponInfo then
-		CoDHUD[CoDHUD_GetHUDType()].WeaponInfo(MASK, CFG)
+		CoDHUD[CoDHUD_GetHUDType()].WeaponInfo(MASK, CFG, ply)
 	end
 end)

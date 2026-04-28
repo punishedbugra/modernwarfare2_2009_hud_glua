@@ -1792,8 +1792,9 @@ local function weaponinfo(...)
 		surface.DrawTexturedRect(0, 0, ScrW(), ScrH())
 	end
 
-
 	local MASK = select(1, ...)
+	local ply = select(3, ...)
+
 	local CFG = {
 		-- Base Bar
 		BAR_W       = 355,

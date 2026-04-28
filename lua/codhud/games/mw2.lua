@@ -1803,6 +1803,7 @@ CoDHUD[hudtype].VoiceChat = voice
 local function weaponinfo(...)
 	local MASK = select(1, ...)
 	local CFG = select(2, ...)
+	local ply = select(3, ...)
 
 	local AMMO = {
 		["default"] = { mat = "mw2/hud/ammo_counter_bullet_mp.png",      w = 3,  h = 20, gap = 1, y_off = 62, x_start = -294, dim = 75 },
