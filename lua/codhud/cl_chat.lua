@@ -76,6 +76,19 @@ hook.Add("PlayerBindPress", "CoDHUD_Chat_BindPress", function(ply, bind, pressed
     elseif bind == "messagemode2" then OpenCoDHUDChat(true) return true end
 end)
 
+local function GetFactionColor(ply)
+    if not IsValid(ply) then return COL_WHITE end
+
+    local fac = ply:GetNW2String("CoDHUD_Faction", "rangers")
+    local hudType = CoDHUD_GetHUDType and CoDHUD_GetHUDType()
+
+    local factions = CoDHUD and CoDHUD.Factions
+    local hudData  = factions and hudType and factions[hudType]
+    local facData  = hudData and hudData[fac]
+
+    return (facData and facData.killfeedcol) or COL_WHITE
+end
+
 -- [[ RENDERING ]]
 hook.Add("HUDPaint", "CoDHUD_DrawChat", function()
     if (not GetConVar("codhud_enable_chat"):GetBool()) or GetConVar("codhud_quickdisable_hud"):GetBool() then return end
@@ -122,13 +135,10 @@ hook.Add("HUDPaint", "CoDHUD_DrawChat", function()
 
             -- Determine Name Color based on Server Faction (NW2String)
             local nameCol = COL_WHITE
+			local fac = data.ply:GetNW2String("CoDHUD_Faction", "rangers")
+			
             if IsValid(data.ply) then
-                local fac = data.ply:GetNW2String("CoDHUD_Faction", "rangers")
-                if fac == "rangers" or fac == "taskforce141" or fac == "seals" then
-                    nameCol = COL_FACTION_WEST
-                elseif fac == "ussr" or fac == "arab" or fac == "militia" then
-                    nameCol = COL_FACTION_EAST
-                end
+				nameCol = GetFactionColor(ply)
             end
 
             -- Prefix format: (Faction)Player:
