@@ -89,13 +89,30 @@ end)
 
 -- Ensure the faction persists through death/respawn on the server side
 hook.Add("PlayerSpawn", "CoDHUD_Chat_PersistenceSync", function(ply)
-    -- If we already know their faction from this session, re-apply it immediately
-    if ply.CoDHUD_StoredFaction then
-        ply:SetNW2String("CoDHUD_Faction", ply.CoDHUD_StoredFaction)
-    else
-        -- Default to rangers ONLY if we haven't received a client sync yet
-        ply:SetNW2String("CoDHUD_Faction", "rangers")
+    local game = GetConVar("codhud_game")
+    game = game and game:GetString() or "mw2"
+
+    local factionTable = validfactions[game] or validfactions["mw2"]
+
+    local currentFaction = ply.CoDHUD_StoredFaction or ply:GetNW2String("CoDHUD_Faction", "rangers")
+
+    if factionTable[currentFaction] then
+        ply.CoDHUD_StoredFaction = currentFaction
+        ply:SetNW2String("CoDHUD_Faction", currentFaction)
+        return
     end
+
+    local keys = {}
+    for k, _ in pairs(factionTable) do
+        table.insert(keys, k)
+    end
+
+    local newFaction = keys[math.random(#keys)]
+
+    ply.CoDHUD_StoredFaction = newFaction
+    ply:SetNW2String("CoDHUD_Faction", newFaction)
+
+    print("[CoDHUD] " .. ply:Nick() .. " had invalid faction, reassigned to " .. GetFactionName(newFaction))
 end)
 
 -- [[ 2. CHAT INTERCEPTION ]]
