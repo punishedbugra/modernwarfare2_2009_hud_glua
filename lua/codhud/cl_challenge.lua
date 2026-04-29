@@ -131,6 +131,9 @@ concommand.Add("codhud_challenge_debug", function(ply, cmd, args)
 		["ghillie2"] = { "GHILLIE", 2, "DESC_GHILLIE", 100, 2500},
 		["ghillie3"] = { "GHILLIE", 3, "DESC_GHILLIE", 200, 5000},
 		["flyswatter"] = { "FLYSWATTER", nil, "SHOOT_DOWN_AN_ENEMY_HELICOPTER", nil, 5000},
+		
+		-- ["2header"] = { "Challenge Complete!\nVery Long Title to Test If Header Works", nil, nil, nil, 1},
+		-- ["3header"] = { "Challenge Complete!\nVery Long Title to Test If Header Works\nGood job!", nil, nil, nil, 1},
     }
 	
     if challenges[key] then QueueNotification("debug", challenges[key][1], challenges[key][2], challenges[key][3], challenges[key][4], challenges[key][5]) end

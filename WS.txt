@@ -9,9 +9,13 @@ The addon, just like the original, does support localized voicelines. You can ge
 [h3] Brand New Features [/h3]
 [list]
 	[*] Customizable HUD Types; Switch to another game's HUD and its factions
-	[*] Round End now supports Time Limits
+	[*] Round End now supports Time Limits:
+	[list]
+		[*] HUD Timers will now count down
+		[*] Will be hidden if no time limit is set
+	[/list]
 	[*] Reworked settings menu and options
-	[*] And so many minor things
+	[*] And so many major and minor additions and fixes
 [/list]
 
 [h3] Original features carried over [/h3]
@@ -38,7 +42,7 @@ Full HUD functionality, including, but not limited to:
 			Spanish
 			Italian
 			Russian
-			Japanese
+			Japanese**
 			[/td]
 			[td]
 			Polish
@@ -48,6 +52,7 @@ Full HUD functionality, including, but not limited to:
 		[/tr]
 	[/table]
 	*Unofficial
+	**Not in MW3
 [/list]
 
 [hr][/hr]

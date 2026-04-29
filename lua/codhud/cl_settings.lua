@@ -504,7 +504,7 @@ end
 if CLIENT then
     list.Set("DesktopWindows", "CoDHUDMenu", {
         title = "#CoDHUD.Title",
-        icon  = "factions/faction_128_taskforce141.png",
+        icon  = "mw2/factions/faction_128_taskforce141_fade.png",
         init = function(icon, window)
 			RunConsoleCommand("codhud_openmenu")
         end
