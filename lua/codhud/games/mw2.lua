@@ -702,6 +702,7 @@ local function killfeed( ... )
 
         -- Vertical Offset Logic: Start lower and rise up
         local yOffset = (1 - animProgress) * CoDHUD_S(ANIM_RISE)
+		-- local currentY = baseY - ((#KillFeed - i) * spacing) + yOffset
 
         local x = xPos
         local finalTxtAlpha = 155 * fadeFactor
@@ -729,61 +730,36 @@ local function killfeed( ... )
 
 			local currentY = baseY - ((#KillFeed - i) * spacing) + yOffset
 
-			local isSmall = w < CoDHUD_S(20)
+			local gap = CoDHUD_S(10)
 
-			local gapL = isSmall and CoDHUD_S(-5) or gap_name
-			local gapR = isSmall and CoDHUD_S(15) or gap_name
-
-			-- Base anchor (deadzone)
-			local deadzone = CoDHUD_S(0) -- tweak this freely
-			local baseX = xPos + deadzone
-
-			local atkW, atkH = 0, 0
+			-- 1. Attacker
 			if data.attackerName != "" then
-				atkW, atkH = surface.GetTextSize(data.attackerName)
+				draw.SimpleText(data.attackerName, "MW2_KillfeedFont", x, currentY, aCol)
+
+				local tw, _ = surface.GetTextSize(data.attackerName)
+				x = x + tw
 			end
 
-			local vicW, vicH = surface.GetTextSize(data.victimName)
-
-			w = (w and w > 0) and w or ICON_BOX_W
-			h = (h and h > 0) and h or ICON_BOX_H
-
-			local textH = select(2, surface.GetTextSize("Hg"))
-			local centerY = currentY + textH * 0.5
-			local iconY = centerY - h * 0.5
-
-			-- Gaps
-			local gap = CoDHUD_S(8)
-
-			local iconX = baseX + atkW + (data.attackerName != "" and gap or 0)
-
-			local screenPadding = CoDHUD_S(5) -- safe margin from screen edge
-
-			local attackerLeft = iconX - gap - atkW
-
-			if attackerLeft < screenPadding then
-				local shift = screenPadding - attackerLeft
-				iconX = iconX + shift
-			end
-
-			if data.attackerName != "" then
-				draw.SimpleText( data.attackerName, "MW2_KillfeedFont", iconX - gap, currentY, aCol, TEXT_ALIGN_RIGHT )
-			end
+			-- 2. Icon
+			local iconY = currentY + (ICON_BOX_H - h) * 0.5
 
 			local alpha = math.min(165 * fadeFactor, 255)
 
+			local offsetX = 0
 			local offsetY = 0
+
 			if cls == "CoDHUD_MW2_Headshot" then
 				offsetY = CoDHUD_S(-2)
 			end
 
-			killicon.Draw(iconX, iconY + offsetY, cls, alpha)
+			killicon.Draw(x + (w * 0.5) + gap, iconY + (h * 0.33) + offsetY, cls, alpha)
 
-			local victimX = iconX + w + gap
+			x = x + w + (gap * 2)
 
-			draw.SimpleText( data.victimName, "MW2_KillfeedFont", victimX, currentY, vCol, TEXT_ALIGN_LEFT )
+			-- 3. Victim
+			draw.SimpleText(data.victimName, "MW2_KillfeedFont", x, currentY, vCol)
         else
-            draw.SimpleText( data.msg, "MW2_KillfeedFont", x, currentY, Color(255, 255, 255, finalTxtAlpha) )
+            draw.SimpleText(data.msg, "MW2_KillfeedFont", x, currentY, Color(255, 255, 255, finalTxtAlpha))
         end
     end
 end
