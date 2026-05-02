@@ -91,7 +91,12 @@ end
 local function ProcessQueue()
 
     if CoDHUD_HeaderQueue.IsBusy() then return end
-	if _G.CoDHUD_MedalsActive then return end
+	local hud = CoDHUD[CoDHUD_GetHUDType()]
+
+	if hud and hud.MedalsBlockChallenges and _G.CoDHUD_MedalsActive then
+		return
+	end
+
     if #notificationQueue == 0 then return end
 
     local n = table.remove(notificationQueue, 1)

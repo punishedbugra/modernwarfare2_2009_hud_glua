@@ -12,8 +12,6 @@ if SERVER then
     util.AddNetworkString("CoDHUD_Medal_Comeback")
     util.AddNetworkString("CoDHUD_Medal_Payback")
 
-    local CoDHUD_FirstBloodOccurred = false
-
     -- Track Headshots
     local function MarkHeadshot(ent, hitgroup, dmginfo)
         if not IsValid(ent) then return end

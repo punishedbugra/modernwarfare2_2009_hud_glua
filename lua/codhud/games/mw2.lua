@@ -312,6 +312,8 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
 end
 
 -- [[ HUD ELEMENTS ]]
+CoDHUD[hudtype].MedalsBlockChallenges = true   -- medals pause challenges
+
 local function challengecomplete( ... )
     local header = select(1, ...)
     local level = select(2, ...)
@@ -905,6 +907,7 @@ local function minimap( ... )
     local x, y = CoDHUD_SX(MAP_CFG.X), CoDHUD_SY(MAP_CFG.Y)
     local w, h = CoDHUD_S(MAP_CFG.W), CoDHUD_S(MAP_CFG.H)
     local centerX, centerY = x + (w / 2), y + (h / 2)
+	local radar = CoDHUD_GetRadar()
 
     -- 1. LAYER: MINIMAP BORDER
     surface.SetMaterial(MAT_BORDER)
@@ -927,10 +930,21 @@ local function minimap( ... )
     render.SetStencilCompareFunction(STENCIL_EQUAL)
     render.SetStencilPassOperation(STENCIL_KEEP)
 
-        -- 2. LAYER: COMPASS MAP BACKGROUND
-        surface.SetMaterial(MAT_MAP_BG)
-        surface.SetDrawColor(255, 255, 255, MAP_CFG.ALPHA_MAP_BG)
-        surface.DrawTexturedRect(x, y, w, h)
+		-- 2. LAYER: RADAR BACKGROUND
+		if radar then -- If GMinimap exists
+			radar:SetDimensions(x, y, w, h)
+			radar.origin = ply:GetPos()
+			radar.rotation = Angle(0, ply:EyeAngles().y, 0)
+
+			radar.ratio = 10
+
+			radar:UpdateLayout()
+			radar:Draw()
+		else -- fallback if GMinimap missing
+			surface.SetMaterial(MAT_MAP_BG)
+			surface.SetDrawColor(255, 255, 255, MAP_CFG.ALPHA_MAP_BG)
+			surface.DrawTexturedRect(x, y, w, h)
+		end
         
         -- 3. LAYER: STATIC SCANLINES
         surface.SetMaterial(MAT_STATIC_SCAN)
@@ -1031,30 +1045,66 @@ local function minimap( ... )
         if alpha <= 0 then continue end
 
         -- Relative Position Math
-        local relPos = ent:GetPos() - ply:GetPos()
-        local dist = relPos:Length() / 8 
-        
-        local posAngle = relPos:Angle()
-        posAngle.y = posAngle.y - ply:EyeAngles().y + 90
-        
-        local rad = math.rad(posAngle.y)
-        local offsetX = math.cos(rad) * dist
-        local offsetY = -math.sin(rad) * dist
+		local targetX, targetY
 
-        -- Square clamp logic using the tinkering variable
-        local boundsX = (w / 2) - MAP_CFG.EDGE_PADDING
-        local boundsY = (h / 2) - MAP_CFG.EDGE_PADDING
+		if radar then
+			local pos = ent:GetPos()
+			local origin = ply:EyePos()
 
-        if math.abs(offsetX) > boundsX or math.abs(offsetY) > boundsY then
-            local scaleX = boundsX / math.max(0.0001, math.abs(offsetX))
-            local scaleY = boundsY / math.max(0.0001, math.abs(offsetY))
-            local scale = math.min(scaleX, scaleY)
-            offsetX = offsetX * scale
-            offsetY = offsetY * scale
-        end
+			local delta = pos - origin
 
-        local targetX = centerX + offsetX
-        local targetY = centerY + offsetY
+			local yaw = ply:EyeAngles().y
+			local rad = math.rad(yaw + 180)
+
+			local cos, sin = math.cos(rad), math.sin(rad)
+
+			local x2 = delta.y * cos - delta.x * sin
+			local y2 = delta.y * sin + delta.x * cos
+
+			x2 = x2 / radar.ratio
+			y2 = y2 / radar.ratio
+
+			local boundsX = (w / 2) - MAP_CFG.EDGE_PADDING
+			local boundsY = (h / 2) - MAP_CFG.EDGE_PADDING
+
+			if math.abs(x2) > boundsX or math.abs(y2) > boundsY then
+				local scaleX = boundsX / math.max(0.0001, math.abs(x2))
+				local scaleY = boundsY / math.max(0.0001, math.abs(y2))
+				local scale = math.min(scaleX, scaleY)
+
+				x2 = x2 * scale
+				y2 = y2 * scale
+			end
+
+			targetX = centerX + x2
+			targetY = centerY + y2
+
+		else
+			local relPos = ent:GetPos() - ply:GetPos()
+			local dist = relPos:Length() / 8 
+
+			local posAngle = relPos:Angle()
+			posAngle.y = posAngle.y - ply:EyeAngles().y + 90
+
+			local rad = math.rad(posAngle.y)
+			local offsetX = math.cos(rad) * dist
+			local offsetY = -math.sin(rad) * dist
+
+			local boundsX = (w / 2) - MAP_CFG.EDGE_PADDING
+			local boundsY = (h / 2) - MAP_CFG.EDGE_PADDING
+
+			if math.abs(offsetX) > boundsX or math.abs(offsetY) > boundsY then
+				local scaleX = boundsX / math.max(0.0001, math.abs(offsetX))
+				local scaleY = boundsY / math.max(0.0001, math.abs(offsetY))
+				local scale = math.min(scaleX, scaleY)
+
+				offsetX = offsetX * scale
+				offsetY = offsetY * scale
+			end
+
+			targetX = centerX + offsetX
+			targetY = centerY + offsetY
+		end
 
         if isFriendly then
             local rotation = ent:EyeAngles().y - ply:EyeAngles().y
@@ -1860,7 +1910,7 @@ local function weaponinfo(...)
     local cY   = ScrH() - CoDHUD_S(82)
     local size = CoDHUD_S(274)
     local yaw  = ply:EyeAngles().y
-    local angle = -(yaw - 90)
+    local angle = -(yaw - 0)
 
     local halfFOV = MASK.FOV / 2.2
     local fadeDeg = MASK.FADE_DEG

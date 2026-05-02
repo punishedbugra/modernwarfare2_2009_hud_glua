@@ -308,6 +308,8 @@ local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, al
 end
 
 -- [[ HUD ELEMENTS ]]
+CoDHUD[hudtype].MedalsBlockChallenges = false   -- medals pause challenges
+
 local function challengecomplete( ... )
     local header = select(1, ...)
     local level = select(2, ...)
@@ -765,101 +767,67 @@ CoDHUD[hudtype].Killfeed = killfeed
 
 local function medals( ... )
 
-	local speedMul = select(1, ...)
-	local activeMedal = select(2, ...)
-	local age = (CurTime() - activeMedal.start) / speedMul
+    local speedMul   = select(1, ...)
+    local activeMedal = select(2, ...)
+    local age        = (CurTime() - activeMedal.start) / speedMul
 
-	local outlined = GetConVar("codhud_enable_outlinedtext"):GetBool()
-    local cx, cy = ScrW() / 2, ScrH() / 2
+    local outlined = GetConVar("codhud_enable_outlinedtext"):GetBool()
+
+    -- TIMING
     local MEDAL_DURATION = 1.25
-    local FADE_IN_TIME   = 0.125
-    local EXIT_DURATION  = 0.125
-    local FADE_OUT_START = MEDAL_DURATION - EXIT_DURATION
+    local FADE_IN_TIME   = 0
+    local FADE_OUT_TIME  = 0.25
 
-    local COL_POINTS = Color(255, 255, 50)
+    if age > MEDAL_DURATION then
+        return true
+    end
 
-    local MEDAL_CFG = {
-        X_OFFSET = 0,    -- Horizontal offset from center
-        Y_OFFSET = -250, -- Vertical offset (Match this with cl_mw2_challenge.lua)
-    }
+    -- ALPHA
+    local alpha = 255
 
-	if age > MEDAL_DURATION then
-		return true
-	end
+    if age < FADE_IN_TIME then
+        alpha = (age / FADE_IN_TIME) * 255
+    elseif age > (MEDAL_DURATION - FADE_OUT_TIME) then
+        local t = (age - (MEDAL_DURATION - FADE_OUT_TIME)) / FADE_OUT_TIME
+        alpha = (1 - t) * 255
+    end
 
-	-- VISUALS
-	local alpha = 255
-	local scale = 1
+    -- POSITION (match XP)
+    local cx = ScrW() * 0.525
+    local baseY = ScrH() * 0.5 - CoDHUD_SY(124)
 
-	if age < FADE_IN_TIME then
-		local progress = age / FADE_IN_TIME
-		alpha = progress * 255
-		scale = Lerp(progress, 3.5, 1.0)
+    -- place medal BELOW XP
+    local y = baseY + CoDHUD_S(40)
 
-	elseif age > FADE_OUT_START then
-		local progress = (age - FADE_OUT_START) / EXIT_DURATION
-		alpha = math.Clamp((1 - progress) * 255, 0, 255)
-		scale = Lerp(progress, 1.0, 3.0)
-	end
+    -- COLORS
+    local colWhite  = Color(255, 255, 255, alpha)
+    local colBlack  = Color(0, 0, 0, alpha * 0.8)
+    local colYellow = Color(255, 255, 50, alpha)
 
-	local cx = (ScrW() / 2) + CoDHUD_S(MEDAL_CFG.X_OFFSET)
-	local cy = (ScrH() / 2) + CoDHUD_S(MEDAL_CFG.Y_OFFSET)
+    -- TEXT
+    local localizedText = language.GetPhrase("MW2_" .. activeMedal.text)
 
-	local colWhite      = Color(255, 255, 255, alpha)
-	local colBlack      = Color(0, 0, 0, alpha * 0.8)
-	local colYellow     = Color(COL_POINTS.r, COL_POINTS.g, COL_POINTS.b, alpha)
-	local colRedGlow    = Color(195, 110, 115, alpha * 0.5)
-	local colRedOutline = Color(180, 0, 0, alpha * 0.8)
+    draw.SimpleTextOutlined( localizedText, "MW2_Score_Main", cx, y, colYellow, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, outlined and 1 or 0, colBlack )
 
-	local mat = Matrix()
-	mat:Translate(Vector(cx, cy, 0))
-	mat:Scale(Vector(scale, scale, 1))
-	mat:Translate(Vector(-cx, -cy, 0))
+    -- DESC / POINTS
+    -- if activeMedal.desc then
+        -- local localizedDesc = language.GetPhrase("MW2_" .. activeMedal.desc)
 
-	cam.PushModelMatrix(mat)
-		-- ICON
-		if activeMedal.hasIcon then
-			surface.SetDrawColor(255, 255, 255, alpha)
-			surface.SetMaterial(Material(hudtype .. "/icons/crosshair_red.png", "smooth"))
-			surface.DrawTexturedRect(cx - CoDHUD_S(60), cy - CoDHUD_S(120), CoDHUD_S(120), CoDHUD_S(120))
-		end
+        -- if activeMedal.isSpecial then
+            -- draw.SimpleTextOutlined( localizedDesc, "MW2_MedalDesc", cx, y + CoDHUD_S(22), colWhite, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, outlined and 1 or 0, colBlack )
+        -- else
+            -- local text = localizedDesc .. " (+" .. activeMedal.points .. ")"
 
-		-- TEXT
-		local localizedText = language.GetPhrase("MW2_" .. activeMedal.text)
-
-		draw.SimpleTextOutlined( localizedText, "MW2_MedalGlow", cx, cy, Color(0,0,0,0), 1, 1, 0.75, colRedGlow )
-		draw.SimpleTextOutlined( localizedText, "MW2_MedalPrimary", cx, cy, colWhite, 1, 1, 0, colRedOutline )
-
-		-- DESC / POINTS
-		if activeMedal.desc then
-			local localizedDesc = language.GetPhrase("MW2_" .. activeMedal.desc)
-
-			if activeMedal.isSpecial then
-				draw.SimpleTextOutlined( localizedDesc, "MW2_MedalDesc", cx, cy + CoDHUD_S(35), colWhite, 1, 1, outlined and 1 or 0, colBlack )
-			else
-				local descText     = localizedDesc .. " ("
-				local pointsText   = "+" .. activeMedal.points
-				local bracketClose = ")"
-
-				surface.SetFont("MW2_MedalDesc")
-				local w1 = surface.GetTextSize(descText)
-				local w2 = surface.GetTextSize(pointsText)
-				local totalW = w1 + w2 + surface.GetTextSize(bracketClose)
-
-				local startX = cx - (totalW / 2)
-
-				draw.SimpleTextOutlined( descText, "MW2_MedalDesc", startX, cy + CoDHUD_S(35), colWhite, 0, 1, outlined and 1 or 0, colBlack )
-				draw.SimpleTextOutlined( pointsText, "MW2_MedalDesc", startX + w1, cy + CoDHUD_S(35), colYellow, 0, 1, outlined and 1 or 0, colBlack )
-				draw.SimpleTextOutlined( bracketClose, "MW2_MedalDesc", startX + w1 + w2, cy + CoDHUD_S(35), colWhite, 0, 1, outlined and 1 or 0, colBlack )
-			end
-		else
-			draw.SimpleTextOutlined( "+" .. activeMedal.points, "MW2_MedalDesc", cx, cy + CoDHUD_S(35), colYellow, 1, 1, outlined and 1 or 0, colBlack )
-		end
-	cam.PopModelMatrix()
+            -- draw.SimpleTextOutlined( text, "MW2_MedalDesc", cx, y + CoDHUD_S(22), colYellow, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, outlined and 1 or 0, colBlack )
+        -- end
+    -- else
+        -- draw.SimpleTextOutlined( "+" .. activeMedal.points, "MW2_MedalDesc", cx, y + CoDHUD_S(22), colYellow, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, outlined and 1 or 0, colBlack )
+    -- end
 
 end
+
 CoDHUD[hudtype].Medals = medals
-CoDHUD[hudtype].MedalsSound = "hud/hud_medal.mp3"
+CoDHUD[hudtype].MedalsSound = nil
 
 local function minimap( ... )
 	local ply = select(1, ...)
@@ -895,6 +863,8 @@ local function minimap( ... )
 	local MAT_PLAYER        = Material(hudtype .. "/minimap/compassping_player.png", "smooth")
 	local MAT_STATIC_SCAN   = Material(hudtype .. "/minimap/minimap_scanlines.png", "smooth")
 	local MAT_MOVING_SCAN   = Material(hudtype .. "/minimap/scanlines.png", "smooth")
+	
+	local MAT_COMPASS   = Material(hudtype .. "/minimap/minimap_tickertape_256x16.png", "smooth noclamp")
 
 	local MAT_FRIEND_HOLLOW  = Material(hudtype .. "/minimap/compassping_green_hollow_mp.png", "smooth")
 	local MAT_ENEMY_FIRING   = Material(hudtype .. "/minimap/compassping_enemyfiring.png", "smooth")
@@ -902,6 +872,7 @@ local function minimap( ... )
     local x, y = CoDHUD_SX(MAP_CFG.X), CoDHUD_SY(MAP_CFG.Y)
     local w, h = CoDHUD_S(MAP_CFG.W), CoDHUD_S(MAP_CFG.H)
     local centerX, centerY = x + (w / 2), y + (h / 2)
+	local radar = CoDHUD_GetRadar()
 
     -- 1. LAYER: MINIMAP BORDER
     surface.SetMaterial(MAT_BORDER)
@@ -924,10 +895,21 @@ local function minimap( ... )
     render.SetStencilCompareFunction(STENCIL_EQUAL)
     render.SetStencilPassOperation(STENCIL_KEEP)
 
-        -- 2. LAYER: COMPASS MAP BACKGROUND
-        surface.SetMaterial(MAT_MAP_BG)
-        surface.SetDrawColor(255, 255, 255, MAP_CFG.ALPHA_MAP_BG)
-        surface.DrawTexturedRect(x, y, w, h)
+		-- 2. LAYER: RADAR BACKGROUND
+		if radar then -- If GMinimap exists
+			radar:SetDimensions(x, y, w, h)
+			radar.origin = ply:GetPos()
+			radar.rotation = Angle(0, ply:EyeAngles().y, 0)
+
+			radar.ratio = 10
+
+			radar:UpdateLayout()
+			radar:Draw()
+		else -- fallback if GMinimap missing
+			surface.SetMaterial(MAT_MAP_BG)
+			surface.SetDrawColor(255, 255, 255, MAP_CFG.ALPHA_MAP_BG)
+			surface.DrawTexturedRect(x, y, w, h)
+		end
         
         -- 3. LAYER: STATIC SCANLINES
         surface.SetMaterial(MAT_STATIC_SCAN)
@@ -941,6 +923,28 @@ local function minimap( ... )
         surface.DrawTexturedRect(x, y - moveOffset, w, h)
         surface.DrawTexturedRect(x, y - moveOffset + h, w, h)
 
+		-- 5. LAYER: HORIZONTAL COMPASS (SCROLLING)
+		local yaw = (ply:EyeAngles().y + 90) % 360
+		local u = 1 - (yaw / 360)
+
+		local compassH = h * 0.1
+		local scale = 0.5
+
+		surface.SetMaterial(MAT_COMPASS)
+		surface.SetDrawColor(255, 255, 255, MAP_CFG.ALPHA_MAP_BG)
+
+		local uEnd = u + scale
+
+		if uEnd <= 1 then
+			surface.DrawTexturedRectUV(x, y, w, compassH, u, 0, uEnd, 1)
+		else
+			local overflow = uEnd - 1
+			local split = (1 - u) / scale
+
+			surface.DrawTexturedRectUV( x, y, w * split, compassH, u, 0, 1, 1 )
+			surface.DrawTexturedRectUV( x + (w * split), y, w * (1 - split), compassH, 0, 0, overflow, 1 )
+		end
+        
     render.SetStencilEnable(false)
     -- [[ STENCIL END ]]
 
@@ -1028,30 +1032,66 @@ local function minimap( ... )
         if alpha <= 0 then continue end
 
         -- Relative Position Math
-        local relPos = ent:GetPos() - ply:GetPos()
-        local dist = relPos:Length() / 8 
-        
-        local posAngle = relPos:Angle()
-        posAngle.y = posAngle.y - ply:EyeAngles().y + 90
-        
-        local rad = math.rad(posAngle.y)
-        local offsetX = math.cos(rad) * dist
-        local offsetY = -math.sin(rad) * dist
+		local targetX, targetY
 
-        -- Square clamp logic using the tinkering variable
-        local boundsX = (w / 2) - MAP_CFG.EDGE_PADDING
-        local boundsY = (h / 2) - MAP_CFG.EDGE_PADDING
+		if radar then
+			local pos = ent:GetPos()
+			local origin = ply:EyePos()
 
-        if math.abs(offsetX) > boundsX or math.abs(offsetY) > boundsY then
-            local scaleX = boundsX / math.max(0.0001, math.abs(offsetX))
-            local scaleY = boundsY / math.max(0.0001, math.abs(offsetY))
-            local scale = math.min(scaleX, scaleY)
-            offsetX = offsetX * scale
-            offsetY = offsetY * scale
-        end
+			local delta = pos - origin
 
-        local targetX = centerX + offsetX
-        local targetY = centerY + offsetY
+			local yaw = ply:EyeAngles().y
+			local rad = math.rad(yaw + 180)
+
+			local cos, sin = math.cos(rad), math.sin(rad)
+
+			local x2 = delta.y * cos - delta.x * sin
+			local y2 = delta.y * sin + delta.x * cos
+
+			x2 = x2 / radar.ratio
+			y2 = y2 / radar.ratio
+
+			local boundsX = (w / 2) - MAP_CFG.EDGE_PADDING
+			local boundsY = (h / 2) - MAP_CFG.EDGE_PADDING
+
+			if math.abs(x2) > boundsX or math.abs(y2) > boundsY then
+				local scaleX = boundsX / math.max(0.0001, math.abs(x2))
+				local scaleY = boundsY / math.max(0.0001, math.abs(y2))
+				local scale = math.min(scaleX, scaleY)
+
+				x2 = x2 * scale
+				y2 = y2 * scale
+			end
+
+			targetX = centerX + x2
+			targetY = centerY + y2
+
+		else
+			local relPos = ent:GetPos() - ply:GetPos()
+			local dist = relPos:Length() / 8 
+
+			local posAngle = relPos:Angle()
+			posAngle.y = posAngle.y - ply:EyeAngles().y + 90
+
+			local rad = math.rad(posAngle.y)
+			local offsetX = math.cos(rad) * dist
+			local offsetY = -math.sin(rad) * dist
+
+			local boundsX = (w / 2) - MAP_CFG.EDGE_PADDING
+			local boundsY = (h / 2) - MAP_CFG.EDGE_PADDING
+
+			if math.abs(offsetX) > boundsX or math.abs(offsetY) > boundsY then
+				local scaleX = boundsX / math.max(0.0001, math.abs(offsetX))
+				local scaleY = boundsY / math.max(0.0001, math.abs(offsetY))
+				local scale = math.min(scaleX, scaleY)
+
+				offsetX = offsetX * scale
+				offsetY = offsetY * scale
+			end
+
+			targetX = centerX + offsetX
+			targetY = centerY + offsetY
+		end
 
         if isFriendly then
             local rotation = ent:EyeAngles().y - ply:EyeAngles().y

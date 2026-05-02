@@ -498,7 +498,15 @@ end
 
 hook.Add("DrawOverlay", "CoDHUD_Header_MW_Draw", function()
     if not GetConVar("cl_drawhud"):GetBool() then return end
-    if _G.CoDHUD_MedalSystem and _G.CoDHUD_MedalSystem.IsBusy() then return end
+	
+	local hud = CoDHUD[CoDHUD_GetHUDType()]
+
+	if hud and hud.MedalsBlockChallenges and _G.CoDHUD_MedalsActive then
+		return
+	end
+
+    -- if _G.CoDHUD_MedalSystem and _G.CoDHUD_MedalSystem.IsBusy() then return end
+	
     if CoDHUD_ShouldHideHUD() then return end
 
     if not CoDHUD_HeaderQueue.Active then return end

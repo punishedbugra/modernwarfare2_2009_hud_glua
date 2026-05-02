@@ -178,7 +178,7 @@ net.Receive("CoDHUD_RoundEnd", function()
 	print(CoDHUD_RoundEndTime - CurTime())
 
     -- Write-in state reset
-	if (CoDHUD_RoundEndTime - CurTime()) <= 0.1 then
+	if (CoDHUD_MatchMaxTime > 0) and (CoDHUD_RoundEndTime - CurTime()) <= 0.1 then
 		ws_limit = language.GetPhrase(str.re.result.time or "MW2_MP_TIME_LIMIT_REACHED")
 	else
 		ws_limit = language.GetPhrase(str.re.result.score or "MW2_MP_SCORE_LIMIT_REACHED")

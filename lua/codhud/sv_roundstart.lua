@@ -34,6 +34,8 @@ net.Receive("CoDHUD_StartRound", function(len, ply)
 	else
 		CoDHUD_RoundEndTimeSV = nil
 	end
+	
+	CoDHUD_FirstBloodOccurred = false
 
     for _, p in ipairs(player.GetAll()) do
         p:SetFrags(0)
