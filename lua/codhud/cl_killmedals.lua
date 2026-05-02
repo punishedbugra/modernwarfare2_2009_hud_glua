@@ -1,4 +1,4 @@
----- [ MEDALS ] ----
+---- [ CLIENT MEDALS ] ----
 
 -- [[ GLOBALS ]]
 -- Global flag for the Challenge System to read

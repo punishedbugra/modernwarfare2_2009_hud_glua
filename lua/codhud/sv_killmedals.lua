@@ -83,30 +83,40 @@ if SERVER then
             victim.LastMW2DmgData = nil 
         end
 
-        -- 7. MULTI-KILLS (Time based)
-        local ct = CurTime()
-        attacker.codhud_KillCount = attacker.codhud_KillCount or 0
-        attacker.codhud_lastKill  = attacker.codhud_lastKill or 0
+		-- 7. MULTI-KILLS (Delayed evaluation)
+		local delay = 0.75
+		attacker.codhud_KillCount = attacker.codhud_KillCount or 0
 
-        if (ct - attacker.codhud_lastKill) < 2.0 then
-            attacker.codhud_KillCount = attacker.codhud_KillCount + 1
-        else
-            attacker.codhud_KillCount = 1
-        end
-        attacker.codhud_lastKill = ct
+		-- Increment kills
+		attacker.codhud_KillCount = attacker.codhud_KillCount + 1
 
-        if attacker.codhud_KillCount == 2 then
-            net.Start("CoDHUD_Medal_DoubleKill")
-            net.Send(attacker)
-        elseif attacker.codhud_KillCount == 3 then
-            net.Start("CoDHUD_Medal_TripleKill")
-            net.Send(attacker)
-        elseif attacker.codhud_KillCount >= 4 then
-            net.Start("CoDHUD_Medal_MultiKill")
-            net.Send(attacker)
-            -- Reset multi-kill count every 4 kills to allow cycling
-            if attacker.codhud_KillCount == 4 then attacker.codhud_KillCount = 0 end 
-        end
+		-- Unique timer name per player
+		local timerName = "CoDHUD_MultiKillTimer_" .. attacker:EntIndex()
+
+		-- Reset timer every kill
+		timer.Remove(timerName)
+
+		timer.Create(timerName, delay, 1, function()
+			if not IsValid(attacker) then return end
+
+			local count = attacker.codhud_KillCount or 0
+
+			if count == 2 then
+				net.Start("CoDHUD_Medal_DoubleKill")
+				net.Send(attacker)
+
+			elseif count == 3 then
+				net.Start("CoDHUD_Medal_TripleKill")
+				net.Send(attacker)
+
+			elseif count >= 4 then
+				net.Start("CoDHUD_Medal_MultiKill")
+				net.Send(attacker)
+			end
+
+			-- Reset after evaluation
+			attacker.codhud_KillCount = 0
+		end)
     end
 
     -- Hook for Player Deaths
