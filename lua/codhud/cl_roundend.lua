@@ -37,6 +37,8 @@ local re_active       = false
 local re_lock_time    = 0
 local re_bw           = 0
 
+_G.CoDHUD_IsRoundEnding = _G.CoDHUD_IsRoundEnding or false
+
 local re_match_bonus  = 0
 
 -- Write-in states
@@ -62,6 +64,7 @@ local function RE_End()
     timer.Remove("MW2_RE_Voice")
     timer.Remove("MW2_RE_Board")
     timer.Remove("MW2_RE_Done")
+	_G.CoDHUD_IsRoundEnding = false
 end
 
 -- ============================================================
@@ -72,7 +75,7 @@ net.Receive("CoDHUD_RoundEnd", function()
     local loserFac  = net.ReadString()
     local winnerSc  = net.ReadInt(32)
     local loserSc   = net.ReadInt(32)
-	
+
 	local str = CoDHUD[CoDHUD_GetHUDType()].TextStrings
 
 	if _G.CoDHUD_MedalSystem then _G.CoDHUD_MedalSystem.Clear() end -- Clears kill messages
@@ -108,45 +111,8 @@ net.Receive("CoDHUD_RoundEnd", function()
     re_match_bonus = CalcMatchBonus(kills)
     re_mvlock      = true
     re_locked_ang  = nil
-
-    -- Result text + glow color
-    if winnerFac == "" then
-        ws_result = str.re.draw or "MW2_MP_DRAW"
-        re_result_glow = Color(255, 255, 255)
-    elseif isVictory then
-        ws_result = str.re.win or "MW2_MP_VICTORY"
-        re_result_glow = Color(0, 220, 80)
-    else
-        ws_result = str.re.lose or "MW2_MP_DEFEAT"
-        re_result_glow = Color(220, 60, 60)
-    end
-
-    -- Write-in state reset
-    ws_result = language.GetPhrase(ws_result)
-    if CoDHUD_RoundEndTime > 0 then
-		ws_limit = language.GetPhrase("MW2_MP_TIME_LIMIT_REACHED")
-	else
-		ws_limit = language.GetPhrase(str.re.result.score or "MW2_MP_SCORE_LIMIT_REACHED")
-	end
-
-	CoDHUD_RoundEndTime = 0 -- Reset to 0
-
-    -- Music
-	timer.Simple( CFG.MUSIC_DELAY, function()
-		local theme = isVictory and fdata.victorytheme or fdata.defeattheme
-
-		if GetConVar("codhud_enable_music"):GetBool() and theme then
-			surface.PlaySound("music/" .. CoDHUD_GetHUDType() .. "/" .. theme)
-		end
-	end)
 	
-    -- Voiceline
-	timer.Simple( CFG.VOICE_DELAY, function()
-		local victoryvoice = isVictory and voicefile.missionwin or voicefile.missionlose
-
-		local sound = CoDHUD_GetAnnouncerSound(victoryvoice)
-		if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
-	end)
+	_G.CoDHUD_IsRoundEnding = true
 
 	-- Team Scores
 	local teamsMap = {}
@@ -177,9 +143,83 @@ net.Receive("CoDHUD_RoundEnd", function()
 		return (a.score or 0) > (b.score or 0)
 	end)
 
+	-- ============================================================
+	--  Draw detection
+	-- ============================================================
+	local isDraw = false
+
+	if #teams <= 1 then
+		-- Only one (or zero) team exists
+		if teams[1] and teams[1].score == 0 then
+			isDraw = true
+		end
+	else
+		-- Check if top two teams have same score
+		if teams[1].score == teams[2].score then
+			isDraw = true
+		end
+	end
+
+    -- Result text + glow color
+	if isDraw or winnerFac == "" then
+		ws_result = str.re.draw or "MW2_MP_DRAW"
+		re_result_glow = Color(255, 255, 255)
+	elseif isVictory then
+		ws_result = str.re.win or "MW2_MP_VICTORY"
+		re_result_glow = Color(0, 220, 80)
+
+	else
+		ws_result = str.re.lose or "MW2_MP_DEFEAT"
+		re_result_glow = Color(220, 60, 60)
+	end
+	
+    ws_result = language.GetPhrase(ws_result)
+
+	print(CoDHUD_RoundEndTime - CurTime())
+
+    -- Write-in state reset
+	if (CoDHUD_RoundEndTime - CurTime()) <= 0.1 then
+		ws_limit = language.GetPhrase(str.re.result.time or "MW2_MP_TIME_LIMIT_REACHED")
+	else
+		ws_limit = language.GetPhrase(str.re.result.score or "MW2_MP_SCORE_LIMIT_REACHED")
+	end
+
+	-- Only reset AFTER everything that depends on it is done
+	timer.Simple(0.1, function() CoDHUD_RoundEndTime = 0 end)
+
 	if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].RoundEnd then
 		CoDHUD[CoDHUD_GetHUDType()].RoundEnd(teams, ws_result, ws_limit, re_result_glow, CFG)
 	end
+
+    -- Music
+	timer.Simple( CFG.MUSIC_DELAY, function()
+		local theme
+
+		if isDraw then
+			theme = voicefile.drawmusic
+			print(voicefile.drawmusic)
+		else
+			theme = "music/" .. CoDHUD_GetHUDType() .. "/" .. (isVictory and fdata.victorytheme or fdata.defeattheme)
+		end
+
+		if GetConVar("codhud_enable_music"):GetBool() and theme then
+			surface.PlaySound(theme)
+		end
+	end)
+	
+    -- Voiceline
+	timer.Simple( CFG.VOICE_DELAY, function()
+		local voiceline
+
+		if isDraw then
+			voiceline = voicefile.missiondraw
+		else
+			voiceline = isVictory and voicefile.missionwin or voicefile.missionlose
+		end
+
+		local sound = CoDHUD_GetAnnouncerSound(voiceline)
+		if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
+	end)
 
     -- Scoreboard opens at 6s, overlay drawing stops at 6s
     timer.Create("MW2_RE_Board", CFG.SCOREBOARD_DELAY, 1, function()

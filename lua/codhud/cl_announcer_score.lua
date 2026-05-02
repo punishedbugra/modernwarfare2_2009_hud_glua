@@ -103,6 +103,7 @@ hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
 end)
 
 hook.Add("Think", "CoDHUD_Announcer_Time_Think", function()
+	if _G.CoDHUD_IsRoundEnding then return end
     local ply = LocalPlayer()
     if not IsValid(ply) then return end
 	local voicefile = CoDHUD[CoDHUD_GetHUDType()].VoiceCallouts

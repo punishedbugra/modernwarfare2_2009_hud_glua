@@ -127,7 +127,7 @@ CoDHUD[hudtype].TextStrings = {
 		lose = "MW2_MP_DEFEAT",
 		result = {
 			score = "MW2_MP_SCORE_LIMIT_REACHED",
-			time = "???"
+			time = "MW2_MP_TIME_LIMIT_REACHED"
 		}
 	},
 	scorebar = {
@@ -140,6 +140,7 @@ CoDHUD[hudtype].TextStrings = {
 CoDHUD[hudtype].VoiceCallouts = {
 	winningmusic = "music/mw2/hz_mp_opfor_victory.mp3",
 	losingmusic = "music/mw2/hz_mp_time_out_losing.mp3",
+	drawmusic = "music/mw2/hz_mp_defeat_01.mp3",
 
 	winningfight = "winning",
 	losingfight = "losing",
@@ -151,6 +152,7 @@ CoDHUD[hudtype].VoiceCallouts = {
 	
 	missionwin = "mission_success",
 	missionlose = "mission_fail",
+	missiondraw = "draw",
 }
 
 CoDHUD[hudtype].Timer = {

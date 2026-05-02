@@ -135,7 +135,7 @@ CoDHUD[hudtype].TextStrings = {
 		lose = "MW2_MP_DEFEAT",
 		result = {
 			score = "MW2_MP_SCORE_LIMIT_REACHED",
-			time = "???"
+			time = "MW2_MP_TIME_LIMIT_REACHED"
 		}
 	},
 	scorebar = {
@@ -148,6 +148,7 @@ CoDHUD[hudtype].TextStrings = {
 CoDHUD[hudtype].VoiceCallouts = {
 	winningmusic = "music/mw3/bt_mp_winning_03.mp3",
 	losingmusic = "music/mw3/bt_mp_timerunningout_01b.mp3",
+	drawmusic = "music/mw3/bt_mp_suspense_04.mp3",
 	
 	winningfight = "winning",
 	losingfight = "losing",
@@ -159,6 +160,7 @@ CoDHUD[hudtype].VoiceCallouts = {
 	
 	missionwin = "mission_success",
 	missionlose = "mission_fail",
+	missiondraw = "draw",
 }
 
 CoDHUD[hudtype].Timer = {
@@ -1813,19 +1815,16 @@ local function weaponinfo(...)
 		GRENADE_SHADES    = { 255, 200, 175, 120 },
 
 		-- Reserve Ammo (1-2 digit: 0-99)
-		RES_SIZE    = 64,
 		RES_X       = -60,
 		RES_Y       = 107.5,
 
 		-- Reserve Ammo (3 digit: 100-999)
-		RES3_SIZE   = 48,
-		RES3_X      = -60,
+		RES3_X      = -50,
 		RES3_Y      = 107.5,
 
 		-- Reserve Ammo (4 digit: 1000+)
-		RES4_SIZE   = 38,
-		RES4_X      = -45,
-		RES4_Y      = 115,
+		RES4_X      = -50,
+		RES4_Y      = 112.5,
 
 		-- Text kerning
 		SQUEEZE            = -6,
@@ -1909,59 +1908,7 @@ local function weaponinfo(...)
 		return "default"
 	end
 
-    -- ==========================================
-    -- 1. COMPASS DRAWING
-    -- ==========================================
-    -- local cX   = ScrW() - CoDHUD_S(104)
-    -- local cY   = ScrH() - CoDHUD_S(82)
-    -- local size = CoDHUD_S(274)
-    -- local yaw  = ply:EyeAngles().y
-    -- local angle = -(yaw - 90)
-
-    -- local halfFOV = MASK.FOV / 2.2
-    -- local fadeDeg = MASK.FADE_DEG
-    -- local radius  = size * math.sqrt(2) / 2 + 2
-    -- local steps   = 5
-
-    -- render.SetStencilEnable(true)
-    -- render.ClearStencil()
-    -- render.SetStencilWriteMask(255)
-    -- render.SetStencilTestMask(255)
-    -- render.SetStencilReferenceValue(1)
-    -- render.SetStencilCompareFunction(STENCIL_ALWAYS)
-    -- render.SetStencilPassOperation(STENCIL_REPLACE)
-    -- render.SetStencilFailOperation(STENCIL_KEEP)
-    -- render.SetStencilZFailOperation(STENCIL_KEEP)
-
-    -- render.OverrideColorWriteEnable(true, false)
-    -- draw.NoTexture()
-    -- surface.SetDrawColor(255, 255, 255, 255)
-    
-    -- for i = 0, steps - 1 do
-        -- local a0 = math.rad(-halfFOV + (i / steps)       * MASK.FOV)
-        -- local a1 = math.rad(-halfFOV + ((i + 1) / steps) * MASK.FOV)
-        -- surface.DrawPoly({
-            -- { x = cX,                         y = cY },
-            -- { x = cX + math.sin(a0) * radius, y = cY - math.cos(a0) * radius },
-            -- { x = cX + math.sin(a1) * radius, y = cY - math.cos(a1) * radius },
-        -- })
-    -- end
-    -- render.OverrideColorWriteEnable(false, false) -- Re-enable color drawing
-
-    -- render.SetStencilCompareFunction(STENCIL_EQUAL)
-    -- render.SetStencilPassOperation(STENCIL_KEEP)
-
-    -- surface.SetMaterial(MAT_COMPASS_SHADOW)
-    -- surface.SetDrawColor(0, 0, 0, 255)
-    -- surface.DrawTexturedRectRotated(cX, cY, size, size, angle)
-
-    -- surface.SetMaterial(MAT_COMPASS_LETTERS)
-    -- surface.SetDrawColor(255, 255, 255, 165)
-    -- surface.DrawTexturedRectRotated(cX, cY, size, size, angle)
-
-    -- render.SetStencilEnable(false)
-
-    -- 2. GRENADE DRAWING
+    -- 1. GRENADE DRAWING
     local grenadeCount = math.Clamp(ply:GetAmmoCount("Grenade") or 0, 0, CFG.GRENADE_MAX)
     if grenadeCount > 0 then
         local barW = CoDHUD_SX(CFG.BAR_W)
@@ -1992,7 +1939,7 @@ local function weaponinfo(...)
         end
     end
 
-    -- 3. WEAPON HUD DRAWING
+    -- 2. WEAPON HUD DRAWING
     local wep = ply:GetActiveWeapon()
     if not IsValid(wep) then return end
 
@@ -2009,6 +1956,11 @@ local function weaponinfo(...)
     local barH = CoDHUD_SY(CFG.BAR_H)
     local barX = ScrW() - CoDHUD_SX(CFG.BAR_X_OFF) - barW
     local barY = ScrH() - CoDHUD_SY(CFG.BAR_Y_OFF) - barH
+	
+	draw.NoTexture()
+    surface.SetDrawColor(255, 255, 255, 125)
+    surface.DrawTexturedRectRotated(barX + CoDHUD_S(369), barY + CoDHUD_S(135), CoDHUD_S(47.5), CoDHUD_S(4), 45)
+    surface.DrawTexturedRectRotated(barX + CoDHUD_S(400), barY + CoDHUD_S(118.5), CoDHUD_S(30), CoDHUD_S(4), 0)
 
     surface.SetMaterial(MAT_BAR)
     surface.SetDrawColor(255, 255, 255, 125)
