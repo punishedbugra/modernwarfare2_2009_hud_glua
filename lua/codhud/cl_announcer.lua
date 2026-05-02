@@ -5,6 +5,9 @@ CoDHUD_AnnouncerQueue = CoDHUD_AnnouncerQueue or {}
 CoDHUD_AnnouncerPlaying = CoDHUD_AnnouncerPlaying or false
 CoDHUD_AnnouncerNextTime = CoDHUD_AnnouncerNextTime or 0
 
+-- Music check
+CoDHUD_CurrentMusic = CoDHUD_CurrentMusic or nil
+
 local ANNOUNCER_COOLDOWN = 1 -- small gap between lines
 
 local function CoDHUD_ProcessAnnouncerQueue()
@@ -35,7 +38,20 @@ hook.Add("Think", "CoDHUD_AnnouncerQueue_Think", CoDHUD_ProcessAnnouncerQueue)
 function CoDHUD_PlayAnnouncerSound(path, isMusic)
     if isMusic then
         if not GetConVar("codhud_enable_music"):GetBool() then return end
-        surface.PlaySound(path)
+
+        -- stop previous music immediately
+        if IsValid(CoDHUD_CurrentMusic) then
+            CoDHUD_CurrentMusic:Stop()
+            CoDHUD_CurrentMusic = nil
+        end
+
+        sound.PlayFile("sound/" .. path, "noplay", function(chan, err)
+            if IsValid(chan) then
+                CoDHUD_CurrentMusic = chan
+                chan:Play()
+            end
+        end)
+
         return
     else
         if not GetConVar("codhud_enable_announcer"):GetBool() then return end

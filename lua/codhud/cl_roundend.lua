@@ -204,7 +204,7 @@ net.Receive("CoDHUD_RoundEnd", function()
 		end
 
 		if GetConVar("codhud_enable_music"):GetBool() and theme then
-			surface.PlaySound(theme)
+			CoDHUD_PlayAnnouncerSound( theme, true )
 		end
 	end)
 	

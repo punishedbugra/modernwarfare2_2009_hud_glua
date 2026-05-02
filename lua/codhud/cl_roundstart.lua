@@ -130,7 +130,7 @@ local function CoDHUD_RS_Start(gamemode, timestart)
 
 	timer.Simple( 0.1, function() -- Tiny delay for round restart
 		if GetConVar("codhud_enable_music"):GetBool() and fdata.spawntheme then
-			surface.PlaySound("music/" .. CoDHUD_GetHUDType() .. "/" .. fdata.spawntheme)
+			CoDHUD_PlayAnnouncerSound( "music/" .. CoDHUD_GetHUDType() .. "/" .. fdata.spawntheme, true )
 		end
 		
 		local sound = CoDHUD_GetAnnouncerSound({ CoDHUD.Gamemodes[CoDHUD_GetHUDType()].Callouts[gamemode] or "team_deathmtch" })
