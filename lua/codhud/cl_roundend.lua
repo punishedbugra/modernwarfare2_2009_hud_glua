@@ -57,7 +57,6 @@ local function RE_End()
     re_locked_ang = nil
     re_bw        = 0
     RunConsoleCommand("-showscores")
-    -- RunConsoleCommand("stopsound")
     timer.Remove("MW2_RE_Music")
     timer.Remove("MW2_RE_Voice")
     timer.Remove("MW2_RE_Board")

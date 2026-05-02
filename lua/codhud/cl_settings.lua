@@ -58,11 +58,6 @@ function CoDHUD.GetHUDList()
 			return a[1] < b[1]
 		end)
 	end)
-	
-	timer.Simple( 0.5, function()
-		print( "CoDHUDs Discovered:" )
-		PrintTable(mainHUDs)
-	end )
 
 	return mainHUDs
 end
@@ -70,10 +65,12 @@ end
 local function CoDHUD_OpenFactionConfirm(factionID)
     pendingFaction = factionID
 
+	print(pendingFaction)
+
     if IsValid(rs_confirm) then rs_confirm:Remove() end
 
     local fs = GetConVar("codhud_fullscreen"):GetBool()
-    local menusize = fs and 1 or 0.45
+    local menusize = fs and 1 or 0.55
 
     if IsValid(codhud_menu_frame) then
         codhud_menu_frame:SetVisible(false)
@@ -90,8 +87,28 @@ local function CoDHUD_OpenFactionConfirm(factionID)
         rs_confirm:ShowCloseButton(false)
     end
 
+	local factionData = CoDHUD.Factions[CoDHUD_GetHUDType()][factionID]
+
     rs_confirm.Paint = function(self, w, h)
-        draw.RoundedBox(0, 0, 0, w, h, Color(100,100,100))
+		if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].SettingsMenu then
+			CoDHUD[CoDHUD_GetHUDType()].SettingsMenu(w, h, factionData)
+		else
+			draw.RoundedBox(0, 0, 0, w, h, Color(100,100,100))
+
+			surface.SetDrawColor(255, 255, 255, 125)
+			surface.SetMaterial( Material(CoDHUD_GetHUDType() .. "/menu_anim") )
+			surface.DrawTexturedRect(0, 0, w, h)
+			
+			surface.SetDrawColor(255, 255, 255)
+			surface.SetMaterial( Material(CoDHUD_GetHUDType() .. "/menu_bg") )
+			surface.DrawTexturedRect(0, 0, w, h)
+		end
+
+		surface.SetDrawColor(255, 255, 255)
+		surface.SetMaterial(Material(factionData.scoreIcon, "smooth"))
+		surface.DrawTexturedRect(w - (w * 0.5) - CoDHUD_S(64), CoDHUD_S(64), CoDHUD_S(128), CoDHUD_S(128))
+
+		draw.SimpleTextOutlined( "#" .. factionData.name, "MW2_ChalHeader_Pri", w * 0.5, CoDHUD_S(32), Color(255,255,255), 1, 1, 3, Color(factionData.glow.r, factionData.glow.g, factionData.glow.b, 25) )
     end
 
     local root = vgui.Create("DPanel", rs_confirm)
@@ -103,7 +120,7 @@ local function CoDHUD_OpenFactionConfirm(factionID)
     lbl:Dock(FILL)
     lbl:SetText(language.GetPhrase("CoDHUD.Faction.ChangeWarning"))
     lbl:SetWrap(true)
-    lbl:SetContentAlignment(5)
+    lbl:SetContentAlignment(1)
     lbl:SetFont("DermaLarge")
 
     local bottom = vgui.Create("DPanel", root)
@@ -114,7 +131,7 @@ local function CoDHUD_OpenFactionConfirm(factionID)
     local no = vgui.Create("DButton", bottom)
     no:Dock(LEFT)
     no:SetWide(150)
-    no:SetText("#No")
+    no:SetText("#dialog.cancel")
 
     no.DoClick = function()
         rs_confirm:Remove()
@@ -128,7 +145,7 @@ local function CoDHUD_OpenFactionConfirm(factionID)
     local yes = vgui.Create("DButton", bottom)
     yes:Dock(RIGHT)
     yes:SetWide(150)
-    yes:SetText("#Yes")
+    yes:SetText("#dialog.ok")
 
     yes.DoClick = function()
         rs_confirm:Remove()
@@ -149,7 +166,7 @@ local function CoDHUD_RS_OpenConfirm()
     if IsValid(rs_confirm) then rs_confirm:Remove() end
 	
 	local fs = GetConVar("codhud_fullscreen"):GetBool()
-	local menusize = fs and 1 or 0.45
+	local menusize = fs and 1 or 0.55
 	
     -- hide main menu while confirm is open
     if IsValid(codhud_menu_frame) then
@@ -168,15 +185,19 @@ local function CoDHUD_RS_OpenConfirm()
 	end
 
     rs_confirm.Paint = function(self, w, h)
-        draw.RoundedBox(0, 0, 0, w, h, Color(100,100,100))
-		
-		surface.SetDrawColor(255, 255, 255, 125)
-		surface.SetMaterial( Material(CoDHUD_GetHUDType() .. "/menu_anim") )
-		surface.DrawTexturedRect(0, 0, w, h)
-		
-		surface.SetDrawColor(255, 255, 255)
-		surface.SetMaterial( Material(CoDHUD_GetHUDType() .. "/menu_bg") )
-		surface.DrawTexturedRect(0, 0, w, h)
+		if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].SettingsMenu then
+			CoDHUD[CoDHUD_GetHUDType()].SettingsMenu(w, h)
+		else
+			draw.RoundedBox(0, 0, 0, w, h, Color(100,100,100))
+
+			surface.SetDrawColor(255, 255, 255, 125)
+			surface.SetMaterial( Material(CoDHUD_GetHUDType() .. "/menu_anim") )
+			surface.DrawTexturedRect(0, 0, w, h)
+			
+			surface.SetDrawColor(255, 255, 255)
+			surface.SetMaterial( Material(CoDHUD_GetHUDType() .. "/menu_bg") )
+			surface.DrawTexturedRect(0, 0, w, h)
+		end
     end
 
     -- main container (keeps everything aligned)
@@ -336,19 +357,26 @@ local CoDHUD_SETTINGS = {
                             { type = "checkbox", label = "#CoDHUD.Admin.EndScreen", convar = "codhud_enable_roundend", tooltip = "CoDHUD.Admin.EndScreen.desc" },
                             { type = "checkbox", label = "#CoDHUD.Admin.EndScreen.StartNext", convar = "codhud_enable_roundend_startnext", tooltip = "CoDHUD.Admin.EndScreen.StartNext.desc" },
 							{ type = "checkbox", label = "#CoDHUD.Admin.FriendlyFire", convar = "codhud_friendly_fire", tooltip = "CoDHUD.Admin.FriendlyFire.desc" },
-                            { type = "slider", label = "#CoDHUD.Autobalance.Amount", convar = "codhud_autofaction_limit", tooltip = "CoDHUD.Autobalance.Amount.desc", min = 0, max = 3 },
+                            { type = "combobox", label = "#CoDHUD.Autobalance.Amount", tooltip = "CoDHUD.Autobalance.Amount.desc", choices = {
+									{"CoDHUD.Autobalance.Amount.disable", "0"},
+									{"CoDHUD.Autobalance.Amount.2", "2"},
+									{"CoDHUD.Autobalance.Amount.3", "3"},
+									{"CoDHUD.Autobalance.Amount.4", "4"},
+								},
+								getCurrent = function() return GetConVar("codhud_autofaction_limit"):GetString() end,
+
+								onSelect = function(_, data)
+									net.Start("CoDHUD_SetAutoFaction")
+									net.WriteString(data)
+									net.SendToServer()
+								end
+							},
                         }
                     },
 					
 					{ name = "#CoDHUD.RoundStart", adminOnly = true, controls = {
-							
-							{ type = "label", label = "#CoDHUD.RoundStart.Info" },
-							
-                            { type = "slider", label = "#CoDHUD.Scorelimit", convar = "codhud_score_limit", tooltip = "CoDHUD.Scorelimit.desc", min = 1, max = 150 },
-                            { type = "slider", label = "#CoDHUD.Timelimit", convar = "codhud_time_limit", tooltip = "CoDHUD.Timelimit.desc", min = 0, max = 30 },
-                            { type = "slider", label = "#CoDHUD.RoundStart.Timer", convar = "codhud_matchstart_timer", tooltip = "CoDHUD.RoundStart.Timer.desc", min = 0, max = 15 },
-							{ type = "checkbox", label = "#CoDHUD.RoundStart.Autobalance", convar = "codhud_autobalance_on_roundstart", tooltip = "CoDHUD.RoundStart.Autobalance.desc" },
-							{ type = "combobox", label = "#CoDHUD.RoundStart.Gamemode",
+
+							{ type = "combobox", label = "#CoDHUD.RoundStart.Gamemode", tooltip = "CoDHUD.RoundStart.Info",
 								choices = function() return CoDHUD.Gamemodes[CoDHUD_GetHUDType()] or {} end,
 								getCurrent = function() return GetConVar("codhud_selected_gamemode"):GetString() end,
 								onSelect = function(_, data)
@@ -357,6 +385,15 @@ local CoDHUD_SETTINGS = {
 									net.SendToServer()
 								end
 							},
+							
+                            { type = "slider", label = "#CoDHUD.Scorelimit", convar = "codhud_score_limit", tooltip = "CoDHUD.Scorelimit.desc", min = 1, max = 150 },
+							
+                            { type = "slider", label = "#CoDHUD.Timelimit", convar = "codhud_time_limit", tooltip = "CoDHUD.Timelimit.desc", min = 0, max = 30 },
+							
+                            { type = "slider", label = "#CoDHUD.RoundStart.Timer", convar = "codhud_matchstart_timer", tooltip = "CoDHUD.RoundStart.Timer.desc", min = 0, max = 15 },
+							
+							{ type = "checkbox", label = "#CoDHUD.RoundStart.Autobalance", convar = "codhud_autobalance_on_roundstart", tooltip = "CoDHUD.RoundStart.Autobalance.desc" },
+							
 							{ type = "button", label = "#CoDHUD.RoundStart.Start", 
 								func = function()
 									local lp = LocalPlayer()
@@ -373,7 +410,7 @@ local CoDHUD_SETTINGS = {
 					},
 					
                     { name = "#CoDHUD.Admin.RestrictType", adminOnly = true, controls = {
-                            { type = "combobox", label = "#CoDHUD.Admin.EndScreen.Scorelimit", choices = CoDHUD.GetHUDList(),
+                            { type = "combobox", label = "#CoDHUD.Admin.RestrictType.Choose", tooltip = "CoDHUD.Admin.RestrictType.desc", choices = CoDHUD.GetHUDList(),
 								getCurrent = function() return GetConVar("codhud_game"):GetString() end,
 
 								onSelect = function(_, data)
@@ -390,7 +427,7 @@ local CoDHUD_SETTINGS = {
 									end)
 								end
 							},
-                            { type = "label", label = "#CoDHUD.Admin.RestrictType.desc" },
+                            -- { type = "label", label = "#CoDHUD.Admin.RestrictType.desc" },
                         }
                     },
                 }
@@ -439,6 +476,10 @@ local function CreateSlider(parent, data)
     slider:SetDecimals(data.decimals or 0)
     slider:SetConVar(data.convar)
     slider:Dock(TOP)
+	
+	if data.tooltip then
+        slider:SetTooltip(language.GetPhrase(data.tooltip))
+    end
 
     -- Snap example (optional)
     slider.OnValueChanged = function(self, val)
@@ -450,19 +491,33 @@ local function CreateSlider(parent, data)
 end
 
 local function CreateComboBox(parent, data)
-    local combo = vgui.Create("DComboBox", parent)
-    combo:SetText(data.label)
-    combo:Dock(TOP)
-    combo:DockMargin(5, 2, 5, 2)
+    local container = vgui.Create("DPanel", parent)
+    container:Dock(TOP)
+    container:DockMargin(5, 2, 5, 2)
+    container:SetTall(28)
+    container.Paint = nil
+
+    local lbl = vgui.Create("DLabel", container)
+    lbl:Dock(LEFT)
+    lbl:SetWide(180)
+    lbl:SetText(language.GetPhrase(data.label))
+    lbl:SizeToContents()
+    lbl:DockMargin(5, 0, 5, 0)
+
+    local combo = vgui.Create("DComboBox", container)
+    combo:SetTall(22)
+
+    -- Tooltip (apply to container so it actually triggers reliably)
+    if data.tooltip then
+        local tip = language.GetPhrase(data.tooltip)
+        container:SetTooltip(tip)
+    end
 
     local choices = data.choices
     if isfunction(choices) then
         choices = choices()
     end
-
     choices = choices or {}
-
-    combo._choices = data.choices -- store raw (optional for refresh use)
 
     for _, choice in ipairs(choices) do
         combo:AddChoice(language.GetPhrase(choice[1]), choice[2])
@@ -478,13 +533,28 @@ local function CreateComboBox(parent, data)
         end
     end
 
-    combo.OnSelect = function(_, _, text, dataVal)
+    combo.OnSelect = function(_, _, text, value)
         if data.onSelect then
-            data.onSelect(text, dataVal)
+            data.onSelect(text, value)
         end
     end
 
-    return combo
+    -- Dynamic sizing logic
+    function container:PerformLayout(w, h)
+        local maxW = w * 0.5
+        local x = lbl:GetWide() + 10
+
+        local text = combo:GetValue() or ""
+        surface.SetFont("DermaDefault")
+        local textW = surface.GetTextSize(text) + 40 -- padding for arrow
+
+        local finalW = math.Clamp(textW, 120, maxW)
+
+        combo:SetPos(x, 3)
+        combo:SetSize(finalW, 22)
+    end
+
+    return container
 end
 
 local function PopulateControls(panel, controls)
@@ -647,16 +717,19 @@ concommand.Add("codhud_openmenu", function()
 	end
 
 	frame.Paint = function(self, w, h)
-		draw.RoundedBox(0, 0, 0, w, h, Color(100,100,100))
-		
-		surface.SetDrawColor(255, 255, 255, 125)
-		surface.SetMaterial( Material(CoDHUD_GetHUDType() .. "/menu_anim") )
-		surface.DrawTexturedRect(0, 0, w, h)
-		
-		surface.SetDrawColor(255, 255, 255)
-		surface.SetMaterial( Material(CoDHUD_GetHUDType() .. "/menu_bg") )
-		surface.DrawTexturedRect(0, 0, w, h)
+		if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].SettingsMenu then
+			CoDHUD[CoDHUD_GetHUDType()].SettingsMenu(w, h)
+		else
+			draw.RoundedBox(0, 0, 0, w, h, Color(100,100,100))
 
+			surface.SetDrawColor(255, 255, 255, 125)
+			surface.SetMaterial( Material(CoDHUD_GetHUDType() .. "/menu_anim") )
+			surface.DrawTexturedRect(0, 0, w, h)
+			
+			surface.SetDrawColor(255, 255, 255)
+			surface.SetMaterial( Material(CoDHUD_GetHUDType() .. "/menu_bg") )
+			surface.DrawTexturedRect(0, 0, w, h)
+		end
     end
 
 	local sheet = vgui.Create("DPropertySheet", frame)

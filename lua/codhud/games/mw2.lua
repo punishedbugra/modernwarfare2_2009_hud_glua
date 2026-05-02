@@ -26,7 +26,6 @@ CoDHUD.Factions[hudtype] = {
 	["rangers"] = {
 		name = "MW2_MP_US_ARMY_NAME",
 		short = "MW2_MP_US_ARMY_SHORT_NAME",
-		voice = "US",
 		voicepath = "us/mp/us_1mc_",
 		spawntheme = "us/hz_mp_usspawn_1.mp3",
 		victorytheme = "us/hz_mp_usvictory_1.mp3",
@@ -41,7 +40,6 @@ CoDHUD.Factions[hudtype] = {
 	["taskforce141"] = {
 		name = "MW2_MP_TASKFORCE_NAME",
 		short = "MW2_MP_TASKFORCE_SHORT_NAME",
-		voice = "UK",
 		voicepath = "uk/mp/uk_1mc_",
 		spawntheme = "uk/hz_mp_ukspawn_1.mp3",
 		victorytheme = "uk/hz_mp_ukvictory_1.mp3",
@@ -56,7 +54,6 @@ CoDHUD.Factions[hudtype] = {
 	["seals"] = {
 		name = "MW2_MP_SEALS_UDT_NAME",
 		short = "MW2_MP_SEALS_UDT_SHORT_NAME",
-		voice = "NS",
 		voicepath = "ns/mp/ns_1mc_",
 		spawntheme = "ns/hz_mp_nsspawn_1.mp3",
 		victorytheme = "ns/hz_mp_nsvictory_1.mp3",
@@ -71,7 +68,6 @@ CoDHUD.Factions[hudtype] = {
 	["ussr"] = {
 		name = "MW2_MP_SPETSNAZ_NAME",
 		short = "MW2_MPUI_SPETSNAZ_SHORT",
-		voice = "RU",
 		voicepath = "ru/mp/ru_1mc_",
 		spawntheme = "ru/hz_mp_ruspawn_1.mp3",
 		victorytheme = "ru/hz_mp_ruvictory_1.mp3",
@@ -86,7 +82,6 @@ CoDHUD.Factions[hudtype] = {
 	["arab"] = {
 		name = "MW2_MP_OPFOR_NAME",
 		short = "MW2_MPUI_OPFOR_SHORT",
-		voice = "AB",
 		voicepath = "ab/mp/ab_1mc_",
 		spawntheme = "ab/hz_mp_abspawn_1.mp3",
 		victorytheme = "ab/hz_mp_abvictory_1.mp3",
@@ -101,7 +96,6 @@ CoDHUD.Factions[hudtype] = {
 	["militia"] = {
 		name = "MW2_MP_MILITIA_NAME",
 		short = "MW2_MP_MILITIA_SHORT_NAME",
-		voice = "PG",
 		voicepath = "pg/mp/pg_1mc_",
 		spawntheme = "pg/hz_mp_pgspawn_1.mp3",
 		victorytheme = "pg/hz_mp_pgvictory_1.mp3",
@@ -313,6 +307,22 @@ end
 
 -- [[ HUD ELEMENTS ]]
 CoDHUD[hudtype].MedalsBlockChallenges = true   -- medals pause challenges
+
+local function settingsmenu( ... )
+	local w = select(1, ...)
+	local h = select(2, ...)
+
+	draw.RoundedBox(0, 0, 0, w, h, Color(100,100,100))
+
+	surface.SetDrawColor(255, 255, 255, 125)
+	surface.SetMaterial( Material( "mw2/menu_anim" ) )
+	surface.DrawTexturedRect(0, 0, w, h)
+	
+	surface.SetDrawColor(255, 255, 255)
+	surface.SetMaterial( Material( "mw2/menu_bg" ) )
+	surface.DrawTexturedRect(0, 0, w, h)
+end
+CoDHUD[hudtype].SettingsMenu = settingsmenu
 
 local function challengecomplete( ... )
     local header = select(1, ...)

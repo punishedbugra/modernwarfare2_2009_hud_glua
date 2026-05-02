@@ -3,6 +3,7 @@
 util.AddNetworkString("CoDHUD_StartRound")
 util.AddNetworkString("CoDHUD_RoundStart")
 util.AddNetworkString("CoDHUD_SetGamemode")
+util.AddNetworkString("CoDHUD_SetAutoFaction")
 
 MW2_Gamemode = CreateConVar("codhud_selected_gamemode", "war", {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "Which gamemode to start the round on.")
 CreateConVar( "codhud_autobalance_on_roundstart", "0", { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "If enabled, rebalances all factions at the start of each round." )
@@ -82,6 +83,14 @@ net.Receive("CoDHUD_SetGamemode", function(len, ply)
     local gm = net.ReadString()
 
     RunConsoleCommand("codhud_selected_gamemode", gm)
+end)
+
+net.Receive("CoDHUD_SetAutoFaction", function(len, ply)
+    if not IsValid(ply) or not ply:IsAdmin() then return end
+
+    local val = net.ReadString()
+
+    RunConsoleCommand("codhud_autofaction_limit", val)
 end)
 
 net.Receive("CoDHUD_StartRound", function(len, ply)

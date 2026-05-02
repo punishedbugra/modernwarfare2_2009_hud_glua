@@ -310,6 +310,22 @@ end
 -- [[ HUD ELEMENTS ]]
 CoDHUD[hudtype].MedalsBlockChallenges = false   -- medals pause challenges
 
+local function settingsmenu( ... )
+	local w = select(1, ...)
+	local h = select(2, ...)
+
+	draw.RoundedBox(0, 0, 0, w, h, Color(100,100,100))
+
+	surface.SetDrawColor(255, 255, 255, 125)
+	surface.SetMaterial( Material( "mw2/menu_anim" ) )
+	surface.DrawTexturedRect(0, 0, w, h)
+	
+	surface.SetDrawColor(255, 255, 255)
+	surface.SetMaterial( Material( "mw2/menu_bg" ) )
+	surface.DrawTexturedRect(0, 0, w, h)
+end
+CoDHUD[hudtype].SettingsMenu = settingsmenu
+
 local function challengecomplete( ... )
     local header = select(1, ...)
     local level = select(2, ...)
