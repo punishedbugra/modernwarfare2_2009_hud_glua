@@ -793,7 +793,7 @@ local function medals( ... )
     end
 
     -- POSITION (match XP)
-    local cx = ScrW() * 0.525
+    local cx = ScrW() * 0.505
     local baseY = ScrH() * 0.5 - CoDHUD_SY(124)
 
     -- place medal BELOW XP
@@ -808,24 +808,7 @@ local function medals( ... )
     local localizedText = language.GetPhrase("MW2_" .. activeMedal.text)
 
     draw.SimpleTextOutlined( localizedText, "MW2_Score_Main", cx, y, colYellow, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, outlined and 1 or 0, colBlack )
-
-    -- DESC / POINTS
-    -- if activeMedal.desc then
-        -- local localizedDesc = language.GetPhrase("MW2_" .. activeMedal.desc)
-
-        -- if activeMedal.isSpecial then
-            -- draw.SimpleTextOutlined( localizedDesc, "MW2_MedalDesc", cx, y + CoDHUD_S(22), colWhite, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, outlined and 1 or 0, colBlack )
-        -- else
-            -- local text = localizedDesc .. " (+" .. activeMedal.points .. ")"
-
-            -- draw.SimpleTextOutlined( text, "MW2_MedalDesc", cx, y + CoDHUD_S(22), colYellow, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, outlined and 1 or 0, colBlack )
-        -- end
-    -- else
-        -- draw.SimpleTextOutlined( "+" .. activeMedal.points, "MW2_MedalDesc", cx, y + CoDHUD_S(22), colYellow, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, outlined and 1 or 0, colBlack )
-    -- end
-
 end
-
 CoDHUD[hudtype].Medals = medals
 CoDHUD[hudtype].MedalsSound = nil
 
@@ -1998,7 +1981,8 @@ local function weaponinfo(...)
     local barY = ScrH() - CoDHUD_SY(CFG.BAR_Y_OFF) - barH
 	
 	draw.NoTexture()
-    surface.SetDrawColor(255, 255, 255, 125)
+
+    surface.SetDrawColor(225, 225, 225, 200)
     surface.DrawTexturedRectRotated(barX + CoDHUD_S(369), barY + CoDHUD_S(135), CoDHUD_S(47.5), CoDHUD_S(4), 45)
     surface.DrawTexturedRectRotated(barX + CoDHUD_S(400), barY + CoDHUD_S(118.5), CoDHUD_S(30), CoDHUD_S(4), 0)
 

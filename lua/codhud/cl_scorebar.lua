@@ -1,49 +1,5 @@
 ---- [ SCOREBAR ] ----
 
-local function DrawSqueezedText(text, font, x, y, color, squeeze, squeezeOne, align, squeezeOneBefore, outlineW)
-    local str = tostring(text)
-    surface.SetFont(font)
-
-    local totalW = 0
-    for i = 1, #str do
-        local char     = str:sub(i, i)
-        local nextChar = str:sub(i + 1, i + 1)
-        local w = surface.GetTextSize(char)
-        totalW = totalW + w
-        if i < #str then
-            local gap = (char == "1") and squeezeOne or (nextChar == "1" and squeezeOneBefore or squeeze)
-            totalW = totalW + gap
-        end
-    end
-
-    local runX = (align == 1) and (x - totalW/2) or (align == 2 and x or x - totalW)
-
-    for i = 1, #str do
-        local char     = str:sub(i, i)
-        local nextChar = str:sub(i + 1, i + 1)
-        local o        = outlineW or 0
-        local outlineCol = Color(0, 0, 0, color.a)
-
-        -- if o > 0 then
-            -- draw.SimpleText(char, font, runX - o, y,     outlineCol, 0, 0)
-            -- draw.SimpleText(char, font, runX + o, y,     outlineCol, 0, 0)
-            -- draw.SimpleText(char, font, runX,     y - o, outlineCol, 0, 0)
-            -- draw.SimpleText(char, font, runX,     y + o, outlineCol, 0, 0)
-			
-        -- end
-
-        -- draw.SimpleText(char, font, runX, y, color, 0, 0)
-		
-		draw.SimpleTextOutlined( char, font, runX, y, color, 0, 0, o, outlineCol )
-
-        local w = surface.GetTextSize(char)
-        if i < #str then
-            local gap = (char == "1") and squeezeOne or (nextChar == "1" and squeezeOneBefore or squeeze)
-            runX = runX + w + gap
-        end
-    end
-end
-
 local function GetScorebarData()
     local ply = LocalPlayer()
     if not IsValid(ply) then return end

@@ -1,9 +1,13 @@
 ---- [ CHAT ] ----
+CoDHUD = CoDHUD or {}
+CoDHUD.Factions = CoDHUD.Factions or {}
 
 util.AddNetworkString("CoDHUD_ChatMessage")
 
+CreateConVar("codhud_autofaction_limit", "2", { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Max number of active factions before enforcing auto-balance.")
+
 -- Faction Name Mapping
-local validfactions = {
+CoDHUD.Factions.validfactions = {
 	["mw2"] = {
 		["rangers"]      = "Army Rangers",
 		["taskforce141"] = "Task Force 141",
@@ -23,16 +27,68 @@ local validfactions = {
 	},
 }
 
+function CoDHUD.Factions.GetFactionCounts()
+    local counts = {}
+
+    for _, ply in ipairs(player.GetAll()) do
+        if IsValid(ply) then
+            local f = ply:GetNW2String("CoDHUD_Faction", "rangers")
+            counts[f] = (counts[f] or 0) + 1
+        end
+    end
+
+    return counts
+end
+
+function CoDHUD.Factions.PickBestFaction(factionTable)
+    local counts = CoDHUD.Factions.GetFactionCounts()
+
+    local limit = GetConVar("codhud_autofaction_limit"):GetInt()
+
+    local factions = {}
+    for k, _ in pairs(factionTable) do
+        table.insert(factions, k)
+    end
+
+    -- If we are still below the faction cap, allow free random seeding
+    local activeFactionCount = 0
+    for _, c in pairs(counts) do
+        if c > 0 then activeFactionCount = activeFactionCount + 1 end
+    end
+
+    if limit > 0 and activeFactionCount < limit then
+        -- still seeding factions → random but avoid empty duplication bias
+        return factions[math.random(#factions)]
+    end
+
+    -- Otherwise: pick least populated faction
+    local lowestCount = math.huge
+    local best = {}
+
+    for _, f in ipairs(factions) do
+        local c = counts[f] or 0
+
+        if c < lowestCount then
+            lowestCount = c
+            best = { f }
+        elseif c == lowestCount then
+            table.insert(best, f)
+        end
+    end
+
+    return best[math.random(#best)]
+end
+
 -- [[ 1. FACTION SYNC ]]
 
-local function GetFactionName(factionID)
+function CoDHUD.Factions.GetFactionName(factionID)
 	local c = GetConVar("codhud_game")
 	c = c and c:GetString() or "mw2"
 	
-    local factionTable = validfactions[c]
+    local factionTable = CoDHUD.Factions.validfactions[c]
 
     if not factionTable then
-        factionTable = validfactions["mw2"] -- fallback
+        factionTable = CoDHUD.Factions.validfactions["mw2"] -- fallback
     end
 
     return factionTable[factionID]
@@ -42,11 +98,11 @@ cvars.AddChangeCallback("codhud_game", function(convar, oldValue, newValue)
     print("[CoDHUD] Game changed from " .. oldValue .. " to " .. newValue)
 
     -- Fallback safety
-    if not validfactions[newValue] then
+    if not CoDHUD.Factions.validfactions[newValue] then
         newValue = "mw2"
     end
 
-    local factionTable = validfactions[newValue]
+    local factionTable = CoDHUD.Factions.validfactions[newValue]
     local factionKeys = {}
 
     -- Collect valid faction IDs
@@ -57,13 +113,13 @@ cvars.AddChangeCallback("codhud_game", function(convar, oldValue, newValue)
     -- Assign random faction to every player
     for _, ply in ipairs(player.GetAll()) do
         if IsValid(ply) then
-            local randomFaction = factionKeys[math.random(#factionKeys)]
+            local randomFaction = CoDHUD.Factions.PickBestFaction(factionTable)
 
             -- Store + network it (same logic as your concommand)
             ply.CoDHUD_StoredFaction = randomFaction
             ply:SetNW2String("CoDHUD_Faction", randomFaction)
 
-            print("[CoDHUD] " .. ply:Nick() .. " reassigned to " .. GetFactionName(randomFaction))
+            print("[CoDHUD] " .. ply:Nick() .. " reassigned to " .. CoDHUD.Factions.GetFactionName(randomFaction))
         end
     end
 end, "CoDHUD_GameChangeCallback")
@@ -73,10 +129,19 @@ end, "CoDHUD_GameChangeCallback")
 concommand.Add("codhud_setfaction", function(ply, cmd, args)
     if not IsValid(ply) then return end
     
-    local faction = args[1] and string.lower(args[1]) or "rangers"
+    local faction = args[1] and string.lower(args[1]) or nil
+
+	if faction and CoDHUD.Factions.GetFactionName(faction) then
+		-- manual selection overrides everything
+	else
+		local game = GetConVar("codhud_game"):GetString()
+		local factionTable = CoDHUD.Factions.validfactions[game] or CoDHUD.Factions.validfactions["mw2"]
+
+		faction = CoDHUD.Factions.PickBestFaction(factionTable)
+	end
     
     -- Validate that it is a real faction
-    if not GetFactionName(faction) then faction = "rangers" end
+    if not CoDHUD.Factions.GetFactionName(faction) then faction = "rangers" end
 
     -- Store it in the player object so it survives through the session
     ply.CoDHUD_StoredFaction = faction
@@ -84,7 +149,7 @@ concommand.Add("codhud_setfaction", function(ply, cmd, args)
     -- Update the networked string so the HUD and Scoreboard see it
     ply:SetNW2String("CoDHUD_Faction", faction)
     
-    print("[CoDHUD] Player " .. ply:Nick() .. " joined team " .. GetFactionName(faction))
+    print("[CoDHUD] Player " .. ply:Nick() .. " joined team " .. CoDHUD.Factions.GetFactionName(faction))
 end)
 
 -- Ensure the faction persists through death/respawn on the server side
@@ -92,7 +157,7 @@ hook.Add("PlayerSpawn", "CoDHUD_Chat_PersistenceSync", function(ply)
     local game = GetConVar("codhud_game")
     game = game and game:GetString() or "mw2"
 
-    local factionTable = validfactions[game] or validfactions["mw2"]
+    local factionTable = CoDHUD.Factions.validfactions[game] or CoDHUD.Factions.validfactions["mw2"]
 
     local currentFaction = ply.CoDHUD_StoredFaction or ply:GetNW2String("CoDHUD_Faction", "rangers")
 
@@ -107,12 +172,12 @@ hook.Add("PlayerSpawn", "CoDHUD_Chat_PersistenceSync", function(ply)
         table.insert(keys, k)
     end
 
-    local newFaction = keys[math.random(#keys)]
+    local newFaction = CoDHUD.Factions.PickBestFaction(factionTable)
 
     ply.CoDHUD_StoredFaction = newFaction
     ply:SetNW2String("CoDHUD_Faction", newFaction)
 
-    print("[CoDHUD] " .. ply:Nick() .. " had invalid faction, reassigned to " .. GetFactionName(newFaction))
+    print("[CoDHUD] " .. ply:Nick() .. " had invalid faction, reassigned to " .. CoDHUD.Factions.GetFactionName(newFaction))
 end)
 
 -- [[ 2. CHAT INTERCEPTION ]]
@@ -121,7 +186,7 @@ hook.Add("PlayerSay", "CoDHUD_Chat_Interceptor", function(ply, text, teamOnly)
 
     -- Get faction ID and exact Name
     local factionID = ply:GetNW2String("CoDHUD_Faction", "rangers")
-    local factionName = GetFactionName(factionID) or "Army Rangers"
+    local factionName = CoDHUD.Factions.GetFactionName(factionID) or "Army Rangers"
 
     -- Broadcast to relevant players via Net Message
     net.Start("CoDHUD_ChatMessage")
