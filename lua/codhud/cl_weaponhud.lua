@@ -1,4 +1,4 @@
----- [ WEAPON HUD ] ----
+---- [ CLIENT WEAPON HUD ] ----
 
 -- [[ COMPASS CFG ]]
 local MASK = {

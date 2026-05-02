@@ -8,8 +8,8 @@ CoDHUD.Factions = CoDHUD.Factions or {}
 CoDHUD.Gamemodes = CoDHUD.Gamemodes or {}
 
 -- [[ SPECIAL KILLFEED ICONS ]]
-killicon.Add("CoDHUD_MW3_Suicide", hudtype .. "/killfeed/death_suicide.png", Color(255, 255, 255, 0))
-killicon.Add("CoDHUD_MW3_Headshot", hudtype .. "/killfeed/death_headshot.png", Color(255, 255, 255, 0))
+-- killicon.Add("CoDHUD_MW3_Suicide", hudtype .. "/killfeed/death_suicide.png", Color(255, 255, 255, 0))
+-- killicon.Add("CoDHUD_MW3_Headshot", hudtype .. "/killfeed/death_headshot.png", Color(255, 255, 255, 0))
 
 -- [[ SUSPENSE ]]
 CoDHUD[hudtype].SuspenseTracks = {
@@ -1736,7 +1736,7 @@ local function deathicon( ... )
 			currentAlpha = Lerp((elapsed - (3.7 - 1.0)) / 1.0, 185, 0)
 		end
 
-		local dist = lp:GetPos():Distance(m.pos)
+		local dist = LocalPlayer():GetPos():Distance(m.pos)
 		local scale = math.Clamp(1 - (dist / 2500), 0.5, 1)
 		local scaledSize = 76 * scale
 

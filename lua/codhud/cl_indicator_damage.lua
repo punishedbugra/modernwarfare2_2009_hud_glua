@@ -1,4 +1,4 @@
----- [ DAMAGE INDICATOR, AUDIO & VISUAL ] ----
+---- [ CLIENT DAMAGE INDICATOR, AUDIO & VISUAL ] ----
 
 if CLIENT then
     local matDamage = Material("icons/hit_direction.png", "mips smooth")

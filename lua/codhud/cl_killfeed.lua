@@ -1,4 +1,4 @@
----- [ KILLFEED ] ----
+---- [ CLIENT KILLFEED ] ----
 
 -- ==========================================
 -- CONFIGURATION & TINKERING

@@ -1,4 +1,4 @@
----- [ HITMARKER ] ----
+---- [ CLIENT HITMARKER ] ----
 
 if CLIENT then
     -- [[ VARIABLES ]]

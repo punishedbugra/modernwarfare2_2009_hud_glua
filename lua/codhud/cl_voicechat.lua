@@ -1,4 +1,4 @@
----- [ VOICECHAT ] ----
+---- [ CLIENT VOICECHAT ] ----
 
 local activeSpeakers = {}
 

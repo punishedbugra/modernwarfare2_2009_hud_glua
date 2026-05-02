@@ -1,4 +1,4 @@
----- [ SCOREBOARD ] ----
+---- [ CLIENT SCOREBOARD ] ----
 
 CoDHUD_ScoreboardOpened = false
 

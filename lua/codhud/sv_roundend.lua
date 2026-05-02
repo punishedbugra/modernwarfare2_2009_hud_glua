@@ -12,12 +12,14 @@ local function CoDHUD_DoRoundEnd(winnerFaction, loserFaction, winnerScore, loser
     if RE_Triggered then return end
 	RE_Triggered = true
 
-    net.Start("CoDHUD_RoundEnd")
-        net.WriteString(winnerFaction or "")
-        net.WriteString(loserFaction or "")
-        net.WriteInt(winnerScore or 0, 32)
-        net.WriteInt(loserScore or 0, 32)
-    net.Broadcast()
+	timer.Simple( 0.2, function()
+		net.Start("CoDHUD_RoundEnd")
+			net.WriteString(winnerFaction or "")
+			net.WriteString(loserFaction or "")
+			net.WriteInt(winnerScore or 0, 32)
+			net.WriteInt(loserScore or 0, 32)
+		net.Broadcast()
+	end)
 	
     -- Calculate the approximate center of the map
     local spawns = ents.FindByClass("info_player_start")

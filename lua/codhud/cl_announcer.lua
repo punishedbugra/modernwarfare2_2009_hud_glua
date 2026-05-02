@@ -1,4 +1,4 @@
----- [ ANNOUNCER & MUSIC ] ----
+---- [ CLIENT ANNOUNCER & MUSIC ] ----
 
 -- Queue system
 CoDHUD_AnnouncerQueue = CoDHUD_AnnouncerQueue or {}

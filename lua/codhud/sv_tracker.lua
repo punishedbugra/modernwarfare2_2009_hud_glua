@@ -1,8 +1,8 @@
----- [ DAMAGE, STAT AND HITMARKER TRACKER ] ----
+---- [ SERVER DAMAGE, STAT AND HITMARKER TRACKER ] ----
 
 util.AddNetworkString("CoDHUD_Damage_Update")
-
 util.AddNetworkString("CoDHUD_Hitmarker")
+util.AddNetworkString("CoDHUD_RequestFactionChange")
 
 -- We use PostEntityTakeDamage to ensure we only track real, confirmed damage
 hook.Add("PostEntityTakeDamage", "CoDHUD_Server_Track_Attacker", function(target, dmginfo, took)
@@ -32,4 +32,35 @@ hook.Add("PostEntityTakeDamage", "CoDHUD_Server_Track_Attacker", function(target
     net.Start("CoDHUD_Damage_Update")
         net.WriteEntity(entToSend)
     net.Send(target)
+end)
+
+net.Receive("CoDHUD_RequestFactionChange", function(len, ply)
+    if not IsValid(ply) then return end
+
+    local faction = net.ReadString() or ""
+    local hudType = CoDHUD_GetHUDType()
+
+    if not CoDHUD.Factions[hudType] or not CoDHUD.Factions[hudType][faction] then
+        return
+    end
+
+    -- store faction
+	ply.CoDHUD_StoredFaction = faction
+	ply:SetNW2String("CoDHUD_Faction", faction)
+
+    -- reset SCORE CONTRIBUTION (important distinction)
+    -- Option A: reset frags
+    ply:SetFrags(0)
+    -- ply:SetDeaths(0)
+
+    -- force death + respawn
+    if ply:Alive() then
+        ply:KillSilent()
+    end
+
+    timer.Simple(0.1, function()
+        if IsValid(ply) then
+            ply:Spawn()
+        end
+    end)
 end)

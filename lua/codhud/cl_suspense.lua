@@ -1,4 +1,4 @@
----- [ AMBIANCE / SUSPENSE MUSIC ] ----
+---- [ CLIENT AMBIANCE / SUSPENSE MUSIC ] ----
 
 local SUSPENSE_VOLUME = 0.5 -- Adjusted for CreateSound (0.1 to 1.0)
 local MIN_DELAY = 15        -- seconds

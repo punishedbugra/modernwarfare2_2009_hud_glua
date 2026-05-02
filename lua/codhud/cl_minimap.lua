@@ -1,4 +1,4 @@
----- [ MINIMAP ] ----
+---- [ CLIENT MINIMAP ] ----
 CoDHUD_DeathCache = CoDHUD_DeathCache or {}
 CoDHUD_VisCache = CoDHUD_VisCache or {}
 

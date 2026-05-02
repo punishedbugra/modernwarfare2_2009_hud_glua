@@ -1,4 +1,4 @@
----- [ CHAT ] ----
+---- [ CLIENT CHAT ] ----
 
 local chatHistory = {}
 local MAX_MESSAGES = 4 

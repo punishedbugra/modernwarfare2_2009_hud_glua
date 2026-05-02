@@ -1,17 +1,7 @@
----- [ GAME LOADER & GLOBAL CLIENT HELPERS ] ----
-
--- Automatically add all files to client and server
-local path = "codhud/games/"
-local files = file.Find(path .. "*.lua", "LUA")
-
-table.sort(files)
-
-for _, f in ipairs(files) do
-    AddCSLuaFile(path .. f)
-    if CLIENT then
-        include(path .. f)
-    end
-end
+---- [ CLIENT GAME LOADER & GLOBAL HELPERS ] ----
+CoDHUD = CoDHUD or {}
+CoDHUD.Factions = CoDHUD.Factions or {}
+CoDHUD.Gamemodes = CoDHUD.Gamemodes or {}
 
 -- [[ RESOLUTION SCALING ]]
 local BASE_W, BASE_H = 1920, 1080
@@ -25,12 +15,6 @@ end
 function CoDHUD_S(x)  return math.Round(x * CoDHUD_GetUIScale()) end
 function CoDHUD_SX(x) return math.Round(x * CoDHUD_GetUIScale()) end
 function CoDHUD_SY(y) return math.Round(y * CoDHUD_GetUIScale()) end
-
-
-function CoDHUD_GetHUDType()
-    local c = GetConVar("codhud_game")
-    return c and c:GetString() or "mw2"
-end
 
 -- [[ FONT INIT ]]
 local function InitiateCoDFonts()

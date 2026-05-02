@@ -1,4 +1,4 @@
----- [ LOW HEALTH AUDIO & VISUALS ] ----
+---- [ CLIENT LOW HEALTH AUDIO & VISUALS ] ----
 
 -- Configuration
 local flashDuration = 3.1 

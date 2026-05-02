@@ -1,4 +1,4 @@
----- [ SETTINGS FILE ] ----
+---- [ CLIENT SETTINGS FILE ] ----
 
 -- [[ CLIENT CONVARS ]]
 CreateClientConVar("codhud_quickdisable_hud", "0", true, false, "Quickly disable all HUD options.")
@@ -41,6 +41,109 @@ end)
 
 local codhud_menu_frame = nil
 local rs_confirm = nil
+local pendingFaction = nil
+
+function CoDHUD.GetHUDList()
+	local mainHUDs = {}
+
+	timer.Simple( 0.25, function()
+		for _, hud in pairs(CoDHUD.TypeRegistry or {}) do
+			table.insert(mainHUDs, {
+				hud.name,       -- display text
+				hud.codename    -- convar value
+			})
+		end
+
+		table.sort(mainHUDs, function(a, b)
+			return a[1] < b[1]
+		end)
+	end)
+	
+	timer.Simple( 0.5, function()
+		print( "CoDHUDs Discovered:" )
+		PrintTable(mainHUDs)
+	end )
+
+	return mainHUDs
+end
+
+local function CoDHUD_OpenFactionConfirm(factionID)
+    pendingFaction = factionID
+
+    if IsValid(rs_confirm) then rs_confirm:Remove() end
+
+    local fs = GetConVar("codhud_fullscreen"):GetBool()
+    local menusize = fs and 1 or 0.45
+
+    if IsValid(codhud_menu_frame) then
+        codhud_menu_frame:SetVisible(false)
+    end
+
+    rs_confirm = vgui.Create("DFrame")
+    rs_confirm:SetSize(ScrW() * menusize, ScrH() * menusize)
+    rs_confirm:Center()
+    rs_confirm:SetTitle("#CoDHUD.Title")
+    rs_confirm:MakePopup()
+
+    if fs then
+        rs_confirm:SetDraggable(false)
+        rs_confirm:ShowCloseButton(false)
+    end
+
+    rs_confirm.Paint = function(self, w, h)
+        draw.RoundedBox(0, 0, 0, w, h, Color(100,100,100))
+    end
+
+    local root = vgui.Create("DPanel", rs_confirm)
+    root:Dock(FILL)
+    root:DockMargin(20, 20, 20, 20)
+    root.Paint = nil
+
+    local lbl = vgui.Create("DLabel", root)
+    lbl:Dock(FILL)
+    lbl:SetText(language.GetPhrase("CoDHUD.Faction.ChangeWarning"))
+    lbl:SetWrap(true)
+    lbl:SetContentAlignment(5)
+    lbl:SetFont("DermaLarge")
+
+    local bottom = vgui.Create("DPanel", root)
+    bottom:Dock(BOTTOM)
+    bottom:SetTall(50)
+    bottom.Paint = nil
+
+    local no = vgui.Create("DButton", bottom)
+    no:Dock(LEFT)
+    no:SetWide(150)
+    no:SetText("#No")
+
+    no.DoClick = function()
+        rs_confirm:Remove()
+        if IsValid(codhud_menu_frame) then
+            codhud_menu_frame:SetVisible(true)
+            codhud_menu_frame:MakePopup()
+        end
+        pendingFaction = nil
+    end
+
+    local yes = vgui.Create("DButton", bottom)
+    yes:Dock(RIGHT)
+    yes:SetWide(150)
+    yes:SetText("#Yes")
+
+    yes.DoClick = function()
+        rs_confirm:Remove()
+
+        net.Start("CoDHUD_RequestFactionChange")
+        net.WriteString(pendingFaction or "")
+        net.SendToServer()
+
+        pendingFaction = nil
+
+        if IsValid(codhud_menu_frame) then
+            codhud_menu_frame:SetVisible(false)
+        end
+    end
+end
 
 local function CoDHUD_RS_OpenConfirm()
     if IsValid(rs_confirm) then rs_confirm:Remove() end
@@ -463,7 +566,7 @@ local function CreateCategory(parent, data)
             btn:SetToolTip(language.GetPhrase(faction.name) or id:upper())
 
             btn.DoClick = function()
-                RunConsoleCommand("set_faction", id)
+                CoDHUD_OpenFactionConfirm(id)
                 surface.PlaySound("ui/buttonclick.wav")
             end
 
@@ -515,7 +618,7 @@ end
 
 concommand.Add("codhud_openmenu", function()
 	local fs = GetConVar("codhud_fullscreen"):GetBool()
-	local menusize = fs and 1 or 0.45
+	local menusize = fs and 1 or 0.55
 	
 	codhud_menu_frame = vgui.Create("DFrame")
 	local frame = codhud_menu_frame

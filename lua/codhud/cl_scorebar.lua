@@ -1,4 +1,16 @@
----- [ SCOREBAR ] ----
+---- [ CLIENT SCOREBAR ] ----
+
+local function GetFactionScore(faction)
+    local total = 0
+
+    for _, p in ipairs(player.GetAll()) do
+        if p:GetNW2String("CoDHUD_Faction", "") == faction then
+            total = total + math.max(0, p:Frags())
+        end
+    end
+
+    return total
+end
 
 local function GetScorebarData()
     local ply = LocalPlayer()
@@ -29,20 +41,21 @@ local function GetScorebarData()
 
 	data.mins = mins
 
-    -- SCORES (unchanged logic)
-    local clientScore = math.max(0, ply:Frags())
-    local topEnemyScore = 0
+    -- SCORES
+	local myFaction = ply:GetNW2String("CoDHUD_Faction", "")
 
-    for _, p in ipairs(player.GetAll()) do
-        if p == ply then continue end
-        local score = math.max(0, p:Frags())
-        if score > topEnemyScore then
-            topEnemyScore = score
-        end
-    end
+	local clientScore = GetFactionScore(myFaction)
+	local enemyScore = 0
+
+	for _, p in ipairs(player.GetAll()) do
+		local f = p:GetNW2String("CoDHUD_Faction", "")
+		if f ~= myFaction then
+			enemyScore = enemyScore + math.max(0, p:Frags())
+		end
+	end
 
     data.clientScore = clientScore
-    data.enemyScore  = topEnemyScore
+    data.enemyScore  = enemyScore
 
     -- STATUS COLORS
     local COL_WINNING = Color(110, 220, 120, 255)
@@ -52,10 +65,10 @@ local function GetScorebarData()
     data.statusText = str.scorebar.tied or "MW2_MPUI_TIED_CAPS"
     data.statusCol  = COL_TIE
 
-    if clientScore > topEnemyScore then
+    if clientScore > enemyScore then
         data.statusText = str.scorebar.winning or "MW2_MPUI_WINNING_CAPS"
         data.statusCol  = COL_WINNING
-    elseif clientScore < topEnemyScore then
+    elseif clientScore < enemyScore then
         data.statusText = str.scorebar.losing or "MW2_MPUI_LOSING_CAPS"
         data.statusCol  = COL_LOSING
     end

@@ -1,4 +1,4 @@
----- [ IDENTIFY FRIEND-OR-FOE ] ----
+---- [ CLIENT IDENTIFY FRIEND-OR-FOE ] ----
 
 if CLIENT then
     local CFG = {

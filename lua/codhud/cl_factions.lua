@@ -1,10 +1,15 @@
----- [ CLIENT FACTION ] ----
+---- [ CLIENT FACTION DATA ] ----
 
 local function SyncFactionPersistence()
     local lp = LocalPlayer()
     if not IsValid(lp) then return end
     local saved = cookie.GetString("CoDHUD_SelectedFaction", "rangers")
-    if not CoDHUD.Factions[CoDHUD_GetHUDType()][saved] then saved = "rangers" end
+    local hudType = CoDHUD_GetHUDType()
+	if not CoDHUD or not CoDHUD.Factions or not hudType or not CoDHUD.Factions[hudType] then return end
+
+	if not CoDHUD.Factions[hudType][saved] then
+		saved = "rangers"
+	end
     lp:SetNW2String("CoDHUD_Faction", saved)
     RunConsoleCommand("codhud_setfaction", saved)
 end

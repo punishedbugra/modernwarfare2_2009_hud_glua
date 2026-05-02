@@ -3,35 +3,18 @@ local files, _ = file.Find("codhud/*.lua", "LUA")
 CoDHUD = CoDHUD or {}
 CoDHUD.TypeRegistry = CoDHUD.TypeRegistry or {}
 
-if CLIENT then
-	function CoDHUD.RegisterHUD(codename, displayname)
-		if not codename or not displayname then return end
+function CoDHUD.RegisterHUD(codename, displayname)
+	if not codename or not displayname then return end
 
-		CoDHUD.TypeRegistry[codename] = {
-			codename = codename,
-			name = displayname
-		}
-		
-		-- timer.Simple( 0.25, function() print( "CoDHUD Registered: " .. (codename or "Unknown Name") .. " - " .. (displayname or "Unknown Title") ) end )
-	end
+	CoDHUD.TypeRegistry[codename] = {
+		codename = codename,
+		name = displayname
+	}
+end
 
-	function CoDHUD.GetHUDList()
-		local mainHUDs = {}
-
-		for _, hud in pairs(CoDHUD.TypeRegistry or {}) do
-			table.insert(mainHUDs, {
-				hud.name,       -- display text
-				hud.codename    -- convar value
-			})
-		end
-
-		table.sort(mainHUDs, function(a, b)
-			return a[1] < b[1]
-		end)
-
-		return mainHUDs
-	end
-
+function CoDHUD_GetHUDType()
+    local c = GetConVar("codhud_game")
+    return c and c:GetString() or "mw2"
 end
 
 for _, f in ipairs(files) do
@@ -50,4 +33,19 @@ for _, f in ipairs(files) do
     elseif f:StartWith("sh_") then
         include(path)
     end
+end
+
+local gamespath = "codhud/games/"
+local files = file.Find(gamespath .. "*.lua", "LUA")
+
+table.sort(files)
+
+for _, f in ipairs(files) do
+    local fullpath = gamespath .. f
+
+    if SERVER then
+        AddCSLuaFile(fullpath)
+    end
+
+    include(fullpath)
 end

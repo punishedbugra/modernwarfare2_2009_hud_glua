@@ -1,4 +1,4 @@
----- [ MODERN WARFARE 1-3 HEADER ] ----
+---- [ CLIENT HEADER SYSTEM - MODERN WARFARE 1-3 ] ----
 
 CoDHUD_Header_MW = {}
 CoDHUD_Header_MW.__index = CoDHUD_Header_MW

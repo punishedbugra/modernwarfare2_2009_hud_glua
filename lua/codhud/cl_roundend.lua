@@ -18,8 +18,6 @@ local CFG = {
     ICON_FADE_TIME   = 1.0,
 }
 
-local voicefile = CoDHUD[CoDHUD_GetHUDType()].VoiceCallouts
-
 -- ============================================================
 --  Match Bonus
 -- ============================================================
@@ -59,7 +57,7 @@ local function RE_End()
     re_locked_ang = nil
     re_bw        = 0
     RunConsoleCommand("-showscores")
-    RunConsoleCommand("stopsound")
+    -- RunConsoleCommand("stopsound")
     timer.Remove("MW2_RE_Music")
     timer.Remove("MW2_RE_Voice")
     timer.Remove("MW2_RE_Board")
@@ -75,6 +73,9 @@ net.Receive("CoDHUD_RoundEnd", function()
     local loserFac  = net.ReadString()
     local winnerSc  = net.ReadInt(32)
     local loserSc   = net.ReadInt(32)
+	
+	local hud = CoDHUD[CoDHUD_GetHUDType()]
+	local voicefile = hud and hud.VoiceCallouts or {}
 
 	local str = CoDHUD[CoDHUD_GetHUDType()].TextStrings
 
@@ -175,10 +176,10 @@ net.Receive("CoDHUD_RoundEnd", function()
 	
     ws_result = language.GetPhrase(ws_result)
 
-	print(CoDHUD_RoundEndTime - CurTime())
-
     -- Write-in state reset
-	if (CoDHUD_MatchMaxTime > 0) and (CoDHUD_RoundEndTime - CurTime()) <= 0.1 then
+	local timeLeft = (CoDHUD_RoundEndTime or 0) - CurTime()
+
+	if (CoDHUD_MatchMaxTime > 0) and timeLeft <= 0.1 then
 		ws_limit = language.GetPhrase(str.re.result.time or "MW2_MP_TIME_LIMIT_REACHED")
 	else
 		ws_limit = language.GetPhrase(str.re.result.score or "MW2_MP_SCORE_LIMIT_REACHED")
@@ -217,7 +218,7 @@ net.Receive("CoDHUD_RoundEnd", function()
 			voiceline = isVictory and voicefile.missionwin or voicefile.missionlose
 		end
 
-		local sound = CoDHUD_GetAnnouncerSound(voiceline)
+		local sound = CoDHUD_GetAnnouncerSound(voiceline or nil)
 		if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
 	end)
 

@@ -1,4 +1,4 @@
----- [ CHAT ] ----
+---- [ SERVER CHAT ] ----
 CoDHUD = CoDHUD or {}
 CoDHUD.Factions = CoDHUD.Factions or {}
 

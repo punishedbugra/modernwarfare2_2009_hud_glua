@@ -1,4 +1,4 @@
----- [ GRENADE INDICATOR ] ----
+---- [ CLIENT GRENADE INDICATOR ] ----
 
 CoDHUD = CoDHUD or {}
 
