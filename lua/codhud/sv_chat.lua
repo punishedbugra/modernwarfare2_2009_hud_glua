@@ -99,40 +99,77 @@ end
 cvars.AddChangeCallback("codhud_game", function(convar, oldValue, newValue)
     print("[CoDHUD] Game changed from " .. oldValue .. " to " .. newValue)
 
-    -- Fallback safety
     if not CoDHUD.Factions.validfactions[newValue] then
         newValue = "mw2"
     end
 
-    local factionTable = CoDHUD.Factions.validfactions[newValue]
-    local factionKeys = {}
+    local players = player.GetAll()
 
-    -- Collect valid faction IDs
-    for k, _ in pairs(factionTable) do
-        table.insert(factionKeys, k)
-    end
+    if GetConVar("codhud_autobalance_on_roundstart"):GetBool() then
+        CoDHUD.Factions.RebuildPool()
 
-    -- Assign random faction to every player
-    for _, ply in ipairs(player.GetAll()) do
-        if IsValid(ply) then
-            local randomFaction = CoDHUD.Factions.PickBestFaction(factionTable)
+        local counts = {}
+        table.Shuffle(players)
 
-            -- Store + network it (same logic as your concommand)
-            ply.CoDHUD_StoredFaction = randomFaction
-            ply:SetNW2String("CoDHUD_Faction", randomFaction)
+        for _, ply in ipairs(players) do
+            if IsValid(ply) then
+                local faction = CoDHUD.Factions.PickFromPool(counts)
 
-            print("[CoDHUD] " .. ply:Nick() .. " reassigned to " .. CoDHUD.Factions.GetFactionName(randomFaction))
-	
-			local textstr = "MW2_GAME_CHANGEDTO"
-			local factionName = CoDHUD.Factions[CoDHUD_GetHUDType()][randomFaction].name
+                counts[faction] = (counts[faction] or 0) + 1
 
-			net.Start("CoDHUD_PlayerAutoBalanced")
-			net.WriteString(textstr)
-			net.WriteString(ply:Nick())
-			net.WriteString(factionName)
-			net.Broadcast()
+                ply.CoDHUD_StoredFaction = faction
+                ply:SetNW2String("CoDHUD_Faction", faction)
+
+				local textstr = "MW2_GAME_CHANGEDTO"
+				local factionName = CoDHUD.Factions[CoDHUD_GetHUDType()][faction].name
+
+				net.Start("CoDHUD_PlayerAutoBalanced")
+				net.WriteString(textstr)
+				net.WriteString(ply:Nick())
+				net.WriteString(factionName)
+				net.Broadcast()
+
+                print("[CoDHUD] (Game Change) " .. ply:Nick() .. " -> " .. faction)
+            end
+        end
+    else
+        local factionTable = CoDHUD.Factions.validfactions[newValue]
+
+        for _, ply in ipairs(players) do
+            if IsValid(ply) then
+                local faction = CoDHUD.Factions.PickBestFaction(factionTable)
+
+                ply.CoDHUD_StoredFaction = faction
+                ply:SetNW2String("CoDHUD_Faction", faction)
+
+				local textstr = "MW2_GAME_CHANGEDTO"
+				local factionName = CoDHUD.Factions[CoDHUD_GetHUDType()][faction].name
+
+				net.Start("CoDHUD_PlayerAutoBalanced")
+				net.WriteString(textstr)
+				net.WriteString(ply:Nick())
+				net.WriteString(factionName)
+				net.Broadcast()
+
+                print("[CoDHUD] (Game Change) " .. ply:Nick() .. " -> " .. faction)
+            end
         end
     end
+
+    timer.Simple(0.1, function()
+        for _, ply in ipairs(players) do
+            if IsValid(ply) then
+                ply:SetFrags(0)
+                ply:SetDeaths(0)
+
+                if ply:Alive() then
+                    ply:KillSilent()
+                end
+
+                ply:Spawn()
+            end
+        end
+    end)
 end, "CoDHUD_GameChangeCallback")
 
 -- This command is called by the client's SyncFactionPersistence() 

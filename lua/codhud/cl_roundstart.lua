@@ -238,23 +238,23 @@ hook.Add("RenderScreenspaceEffects", "CoDHUD_RS_BW", function()
     })
 end)
 
-hook.Add("CreateMove", "CoDHUD_RS_BlockInput", function(cmd)
-    if not rs_movement_locked then return end
-    cmd:ClearMovement()
+-- hook.Add("CreateMove", "CoDHUD_RS_BlockInput", function(cmd)
+    -- if not rs_movement_locked then return end
+    -- cmd:ClearMovement()
 	
-    cmd:RemoveKey(IN_ATTACK)
-	cmd:RemoveKey(IN_ATTACK2)
-	cmd:RemoveKey(IN_RELOAD)
-	cmd:RemoveKey(IN_USE)
-	cmd:RemoveKey(IN_JUMP)
-	cmd:RemoveKey(IN_DUCK)
-	cmd:RemoveKey(IN_SPEED)
-	cmd:RemoveKey(IN_WALK)
+    -- cmd:RemoveKey(IN_ATTACK)
+	-- cmd:RemoveKey(IN_ATTACK2)
+	-- cmd:RemoveKey(IN_RELOAD)
+	-- cmd:RemoveKey(IN_USE)
+	-- cmd:RemoveKey(IN_JUMP)
+	-- cmd:RemoveKey(IN_DUCK)
+	-- cmd:RemoveKey(IN_SPEED)
+	-- cmd:RemoveKey(IN_WALK)
 	
-    if rs_locked_ang then
-        cmd:SetViewAngles(rs_locked_ang)
-    end
-end)
+    -- if rs_locked_ang then
+        -- cmd:SetViewAngles(rs_locked_ang)
+    -- end
+-- end)
 
 net.Receive("CoDHUD_RoundStart", function()
     local gamemode = net.ReadString()

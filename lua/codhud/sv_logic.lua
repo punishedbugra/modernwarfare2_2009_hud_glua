@@ -1,15 +1,6 @@
 ---- [ SERVER LOGIC FOR MEDALS & CHALLENGES ] ----
 
 -- Register all Medal and Challenge Network Strings
-util.AddNetworkString("CoDHUD_Medal_Headshot")
-util.AddNetworkString("CoDHUD_Medal_DoubleKill")
-util.AddNetworkString("CoDHUD_Medal_TripleKill")
-util.AddNetworkString("CoDHUD_Medal_MultiKill")
-util.AddNetworkString("CoDHUD_Medal_Longshot")
-util.AddNetworkString("CoDHUD_Medal_OneShot")
-util.AddNetworkString("CoDHUD_Medal_FirstBlood")
-util.AddNetworkString("CoDHUD_Medal_Comeback")
-util.AddNetworkString("CoDHUD_Medal_Payback")
 util.AddNetworkString("CoDHUD_Challenge_Generic")
 util.AddNetworkString("CoDHUD_Challenge_Flyswatter")
 
@@ -203,10 +194,7 @@ hook.Add("PlayerDeath", "CoDHUD_MainTracker", function(victim, inflictor, attack
     if victim:LastHitGroup() == HITGROUP_HEAD then
 		attacker.CoDHUD_Session.headshots = attacker.CoDHUD_Session.headshots + 1
 		attacker.CoDHUD_Session.weaponHeadshots[wepClass] = (attacker.CoDHUD_Session.weaponHeadshots[wepClass] or 0) + 1
-		
-        net.Start("CoDHUD_Medal_Headshot")
-        net.Send(attacker)
-        
+
         local h = attacker.CoDHUD_Session.headshots
         -- if h == 50 then TriggerChallenge(attacker, "expert1", "EXPERT_1", 1, "GET_N_HEADSHOTS", 50)
         -- elseif h == 150 then TriggerChallenge(attacker, "expert2", "EXPERT_1", 2, "GET_N_HEADSHOTS", 150)
@@ -222,9 +210,7 @@ hook.Add("PlayerDeath", "CoDHUD_MainTracker", function(victim, inflictor, attack
     -- 2. ONE SHOTS (Ghillie)
     if victim:GetMaxHealth() <= 100 and victim:Health() <= 0 then
         attacker.CoDHUD_Session.oneShots = attacker.CoDHUD_Session.oneShots + 1
-        net.Start("CoDHUD_Medal_OneShot")
-        net.Send(attacker)
-        
+
         local os = attacker.CoDHUD_Session.oneShots
         if os == 50 then TriggerChallenge(attacker, "ghillie1", "GHILLIE", 1, "DESC_GHILLIE", 50, 1000)
         elseif os == 100 then TriggerChallenge(attacker, "ghillie2", "GHILLIE", 2, "DESC_GHILLIE", 100, 2500)
@@ -235,8 +221,6 @@ hook.Add("PlayerDeath", "CoDHUD_MainTracker", function(victim, inflictor, attack
     local dist = attacker:GetPos():Distance(victim:GetPos())
     if dist >= 1200 then
         attacker.CoDHUD_Life.longshots = attacker.CoDHUD_Life.longshots + 1
-        net.Start("CoDHUD_Medal_Longshot")
-        net.Send(attacker)
         if attacker.CoDHUD_Life.longshots == 3 then
             TriggerChallenge(attacker, "nbk", "NBK", nil, "DESC_NBK", nil, 2000)
         end

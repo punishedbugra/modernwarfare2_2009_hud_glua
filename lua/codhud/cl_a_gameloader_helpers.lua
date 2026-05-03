@@ -18,6 +18,9 @@ function CoDHUD_SY(y) return math.Round(y * CoDHUD_GetUIScale()) end
 
 -- [[ FONT INIT ]]
 local function InitiateCoDFonts()
+	-- [ SETTINGS ]
+    surface.CreateFont( "CoDHUD_Settings_Main",		{ font = "Conduit ITC", size = CoDHUD_S(42), weight = 10,  antialias = true })
+	
 	-- [ MW2 ]
 	-- Challenges
     surface.CreateFont( "MW2_ChalHeader_Pri",		{ font = "Carbon Regular", size = CoDHUD_S(46), weight = 10,  blursize = 0, antialias = true,  outline = false })
@@ -83,7 +86,7 @@ local function InitiateCoDFonts()
     surface.CreateFont( "MW2_Scoreboard_Timer",		{ font = "BankGothic Md BT", size = CoDHUD_S(34), weight = 400, antialias = true, })
 	
 	-- IFF
-    surface.CreateFont("MW2_TargetName_Primary",	{ font = "Conduit ITC Bold",  size = CoDHUD_S(32), weight = 400, antialias = true, shadow = true })
+    surface.CreateFont("MW2_TargetName_Primary",	{ font = "Conduit ITC",  size = CoDHUD_S(32), weight = 400, antialias = true, shadow = true })
 
 	-- Voice Chat
 	surface.CreateFont("MW2_VoiceFont",				{ font = "Conduit ITC",  size = CoDHUD_S(30),  weight = 600,  antialias = true, shadow = true })

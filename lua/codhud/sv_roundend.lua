@@ -19,6 +19,14 @@ local function CoDHUD_DoRoundEnd(winnerFaction, loserFaction, winnerScore, loser
 			net.WriteInt(winnerScore or 0, 32)
 			net.WriteInt(loserScore or 0, 32)
 		net.Broadcast()
+		
+		for _, ply in ipairs(player.GetAll()) do
+            if IsValid(ply) then
+                if ply:Alive() then
+                    ply:Freeze(true)
+                end
+            end
+        end
 	end)
 	
     -- Calculate the approximate center of the map
@@ -44,6 +52,7 @@ local function CoDHUD_DoRoundEnd(winnerFaction, loserFaction, winnerScore, loser
         for _, ply in ipairs(player.GetAll()) do
             if IsValid(ply) then
                 if ply:Alive() then
+					ply:Freeze(false) -- To be safe
                     ply:StripWeapons()
                     ply:KillSilent()
                 end
@@ -90,6 +99,7 @@ local function CoDHUD_DoRoundEnd(winnerFaction, loserFaction, winnerScore, loser
 					p:SetFrags(0)
 					p:SetDeaths(0)
 					p:Spawn()
+					p:Freeze(true)
 				end
 			end
 
@@ -103,6 +113,12 @@ local function CoDHUD_DoRoundEnd(winnerFaction, loserFaction, winnerScore, loser
 				net.WriteInt(maxtimer, 32)
 				net.WriteFloat(CoDHUD_RoundEndTimeSV or 0)
 			net.Broadcast()
+
+			timer.Simple( matchtimer, function()
+				for _, p in ipairs(player.GetAll()) do
+					p:Freeze(false)
+				end
+			end)
 		else
 			for _, ply in ipairs(player.GetAll()) do
 				if IsValid(ply) then

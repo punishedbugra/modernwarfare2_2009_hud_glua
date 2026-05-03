@@ -134,6 +134,7 @@ net.Receive("CoDHUD_StartRound", function(len, ply)
 				p:SetFrags(0)
 				p:SetDeaths(0)
 				p:Spawn()
+				p:Freeze(true)
 			end
 
 			net.Start("CoDHUD_RoundStart")
@@ -143,6 +144,12 @@ net.Receive("CoDHUD_StartRound", function(len, ply)
 				net.WriteFloat(CoDHUD_RoundEndTimeSV or 0) -- NEW
 			net.Broadcast()
 		end)
+		
+		timer.Simple( matchtimer, function()
+			for _, p in ipairs(player.GetAll()) do
+				p:Freeze(false)
+			end
+		end)
 		return
 	end
 
@@ -150,8 +157,15 @@ net.Receive("CoDHUD_StartRound", function(len, ply)
         p:SetFrags(0)
         p:SetDeaths(0)
         p:Spawn()
+		p:Freeze(true)
     end
-
+		
+	timer.Simple( matchtimer, function()
+		for _, p in ipairs(player.GetAll()) do
+			p:Freeze(false)
+		end
+	end)
+	
 	net.Start("CoDHUD_RoundStart")
 		net.WriteString(gamemode)
 		net.WriteInt(matchtimer, 6)
@@ -164,13 +178,23 @@ hook.Add("PlayerInitialSpawn", "CoDHUD_LateJoinRoundSync", function(ply)
     timer.Simple(1, function()
         if not IsValid(ply) then return end
 
-        -- prevent duplicates
         if ply.CoDHUD_HasSyncedRound then return end
         ply.CoDHUD_HasSyncedRound = true
 
         local gamemode = GetConVar("codhud_selected_gamemode"):GetString()
         local matchtimer = GetConVar("codhud_matchstart_timer"):GetInt()
         local maxtimer = GetConVar("codhud_time_limit"):GetFloat()
+
+        local game = GetConVar("codhud_game"):GetString()
+        local factionTable = CoDHUD.Factions.validfactions[game] or CoDHUD.Factions.validfactions["mw2"]
+
+        local faction = ply.CoDHUD_StoredFaction
+
+        if not faction or not factionTable[faction] then
+            faction = CoDHUD.Factions.PickBestFaction(factionTable)
+            ply.CoDHUD_StoredFaction = faction
+            ply:SetNW2String("CoDHUD_Faction", faction)
+        end
 
         net.Start("CoDHUD_RoundStart")
             net.WriteString(gamemode)

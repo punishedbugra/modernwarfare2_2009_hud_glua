@@ -42,6 +42,7 @@ end)
 local codhud_menu_frame = nil
 local rs_confirm = nil
 local pendingFaction = nil
+local pendingGame = nil
 
 function CoDHUD.GetHUDList()
 	local mainHUDs = {}
@@ -119,7 +120,10 @@ local function CoDHUD_OpenFactionConfirm(factionID)
     lbl:SetText(language.GetPhrase("CoDHUD.Faction.ChangeWarning"))
     lbl:SetWrap(true)
     lbl:SetContentAlignment(1)
-    lbl:SetFont("DermaLarge")
+    lbl:SetFont("CoDHUD_Settings_Main")
+	function lbl:PerformLayout()
+		self:SetFGColor(Color(255,255,255))
+	end
 
     local bottom = vgui.Create("DPanel", root)
     bottom:Dock(BOTTOM)
@@ -209,8 +213,8 @@ local function CoDHUD_RS_OpenConfirm()
     lbl:Dock(TOP)
     lbl:SetTall(300)
     lbl:SetText("#CoDHUD.RoundStart.Notice")
-    lbl:SetFont("DermaLarge")
-    lbl:SetContentAlignment(7)
+    lbl:SetFont("CoDHUD_Settings_Main")
+    lbl:SetContentAlignment(4)
     lbl:SetWrap(true)
 	function lbl:PerformLayout()
 		self:SetFGColor(Color(255,255,255))
@@ -257,6 +261,119 @@ local function CoDHUD_RS_OpenConfirm()
 
         net.Start("CoDHUD_StartRound")
         net.SendToServer()
+    end
+end
+
+local function CoDHUD_OpenGameConfirm(newGame)
+    if IsValid(rs_confirm) then rs_confirm:Remove() end
+
+    local fs = GetConVar("codhud_fullscreen"):GetBool()
+    local menusize = fs and 1 or 0.55
+
+    local currentGame = GetConVar("codhud_game"):GetString()
+    pendingGame = newGame
+	
+	currentGame = string.upper(currentGame)
+	newGame = string.upper(newGame)
+
+    if IsValid(codhud_menu_frame) then
+        codhud_menu_frame:SetVisible(false)
+    end
+
+    rs_confirm = vgui.Create("DFrame")
+    rs_confirm:SetSize(ScrW() * menusize, ScrH() * menusize)
+    rs_confirm:Center()
+    rs_confirm:SetTitle("#CoDHUD.Title")
+    rs_confirm:MakePopup()
+
+    if fs then
+        rs_confirm:SetDraggable(false)
+        rs_confirm:ShowCloseButton(false)
+    end
+
+    rs_confirm.Paint = function(self, w, h)
+        if CoDHUD[CoDHUD_GetHUDType()] and CoDHUD[CoDHUD_GetHUDType()].SettingsMenu then
+            CoDHUD[CoDHUD_GetHUDType()].SettingsMenu(w, h)
+        else
+            draw.RoundedBox(0, 0, 0, w, h, Color(100,100,100))
+        end
+    end
+
+    local root = vgui.Create("DPanel", rs_confirm)
+    root:Dock(FILL)
+    root:DockMargin(20, 20, 20, 20)
+    root.Paint = nil
+
+    -- CURRENT -> NEW DISPLAY
+    local top = vgui.Create("DLabel", root)
+    top:Dock(TOP)
+    top:SetTall(120)
+	top:SetFont("CoDHUD_Settings_Main")
+	function top:PerformLayout()
+		self:SetFGColor(Color(255,255,255))
+	end
+
+    top:SetContentAlignment(5)
+
+    top:SetText(
+        string.format(
+            "%s -> %s",
+            language.GetPhrase("CoDHUD.Type." .. currentGame),
+            language.GetPhrase("CoDHUD.Type." .. newGame)
+		)
+	)
+
+    -- WARNING TEXT
+    local lbl = vgui.Create("DLabel", root)
+    lbl:Dock(FILL)
+    lbl:SetText(language.GetPhrase("CoDHUD.Admin.RestrictType.Warning"))
+    lbl:SetWrap(true)
+    lbl:SetContentAlignment(7)
+	lbl:SetFont("CoDHUD_Settings_Main")
+	function lbl:PerformLayout()
+		self:SetFGColor(Color(255,255,255))
+	end
+
+
+    -- BUTTONS
+    local bottom = vgui.Create("DPanel", root)
+    bottom:Dock(BOTTOM)
+    bottom:SetTall(50)
+    bottom.Paint = nil
+
+    local no = vgui.Create("DButton", bottom)
+    no:Dock(LEFT)
+    no:SetWide(150)
+    no:SetText("#dialog.cancel")
+
+    no.DoClick = function()
+        rs_confirm:Remove()
+
+        if IsValid(codhud_menu_frame) then
+            codhud_menu_frame:SetVisible(true)
+            codhud_menu_frame:MakePopup()
+        end
+
+        pendingGame = nil
+    end
+
+    local yes = vgui.Create("DButton", bottom)
+    yes:Dock(RIGHT)
+    yes:SetWide(150)
+    yes:SetText("#dialog.ok")
+
+    yes.DoClick = function()
+        rs_confirm:Remove()
+
+        net.Start("CoDHUD_SetGame")
+        net.WriteString(pendingGame or "")
+        net.SendToServer()
+
+        pendingGame = nil
+
+        if IsValid(codhud_menu_frame) then
+            codhud_menu_frame:SetVisible(false)
+        end
     end
 end
 
@@ -416,22 +533,14 @@ local CoDHUD_SETTINGS = {
                     { name = "#CoDHUD.Admin.RestrictType", adminOnly = true, controls = {
                             { type = "combobox", label = "#CoDHUD.Admin.RestrictType.Choose", tooltip = "CoDHUD.Admin.RestrictType.desc", choices = CoDHUD.GetHUDList(),
 								getCurrent = function() return GetConVar("codhud_game"):GetString() end,
-
 								onSelect = function(_, data)
-									if IsValid(codhud_menu_frame) then
-										codhud_menu_frame:Close()
-									end
+									local current = GetConVar("codhud_game"):GetString()
 
-									net.Start("CoDHUD_SetGame")
-									net.WriteString(data)
-									net.SendToServer()
+									if data == current then return end
 
-									timer.Simple(0, function()
-										RunConsoleCommand("codhud_openmenu")
-									end)
+									CoDHUD_OpenGameConfirm(data)
 								end
 							},
-                            -- { type = "label", label = "#CoDHUD.Admin.RestrictType.desc" },
                         }
                     },
                 }

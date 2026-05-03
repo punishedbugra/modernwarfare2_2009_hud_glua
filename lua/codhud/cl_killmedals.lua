@@ -75,10 +75,7 @@ if CLIENT then
         if _G.CoDHUD_OnMedalReceived then _G.CoDHUD_OnMedalReceived("longshot") end
     end)
 
-    net.Receive("CoDHUD_Medal_OneShot",    function()
-        AddMedalToQueue("SPLASHES_ONE_SHOT_KILL", true, 0, "SPLASHES_ONE_SHOT_KILL_DESC", true)
-        if _G.CoDHUD_OnMedalReceived then _G.CoDHUD_OnMedalReceived("oneshot") end
-    end)
+    net.Receive("CoDHUD_Medal_OneShot",    function() AddMedalToQueue("SPLASHES_ONE_SHOT_KILL", true, 50, "SPLASHES_ONE_SHOT_KILL_DESC", true) end)
 
     net.Receive("CoDHUD_Medal_FirstBlood", function() AddMedalToQueue("SPLASHES_FIRSTBLOOD", true,  100, "SPLASHES_FIRSTBLOOD_DESC")              end)
     net.Receive("CoDHUD_Medal_Comeback",   function() AddMedalToQueue("SPLASHES_COMEBACK",    true,  100, "SPLASHES_COMEBACK_DESC") end)

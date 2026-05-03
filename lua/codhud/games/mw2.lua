@@ -8,8 +8,10 @@ CoDHUD.Factions = CoDHUD.Factions or {}
 CoDHUD.Gamemodes = CoDHUD.Gamemodes or {}
 
 -- [[ SPECIAL KILLFEED ICONS ]]
--- killicon.Add("CoDHUD_MW2_Suicide", hudtype .. "/killfeed/death_suicide.png", Color(255, 255, 255, 0))
--- killicon.Add("CoDHUD_MW2_Headshot", hudtype .. "/killfeed/death_headshot.png", Color(255, 255, 255, 0))
+if CLIENT then
+	killicon.Add("CoDHUD_MW2_Suicide", hudtype .. "/killfeed/death_suicide.png", Color(255, 255, 255, 0))
+	killicon.Add("CoDHUD_MW2_Headshot", hudtype .. "/killfeed/death_headshot.png", Color(255, 255, 255, 0))
+end
 
 -- [[ SUSPENSE ]]
 CoDHUD[hudtype].SuspenseTracks = {
@@ -757,14 +759,17 @@ local function killfeed( ... )
 
 			local alpha = math.min(165 * fadeFactor, 255)
 
-			local offsetX = 0
-			local offsetY = 0
+			local offsetX = CoDHUD_S(0)
+			local offsetY = CoDHUD_S(-15)
 
 			if cls == "CoDHUD_MW2_Headshot" then
 				offsetY = CoDHUD_S(-2)
 			end
 
-			killicon.Draw(x + (w * 0.5) + gap, iconY + (h * 0.33) + offsetY, cls, alpha)
+			-- surface.SetDrawColor(255,255,255,alpha)
+			-- surface.DrawRect(x + gap + offsetX, iconY + (h * 0.33) + offsetY, w, h)
+			
+			killicon.Render(x + gap + offsetX, iconY + (h * 0.33) + offsetY, cls, alpha, false, false)
 
 			x = x + w + (gap * 2)
 
