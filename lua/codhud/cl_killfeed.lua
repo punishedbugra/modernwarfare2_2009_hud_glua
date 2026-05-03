@@ -79,8 +79,6 @@ hook.Add("AddDeathNotice", "CoDHUD_Killfeed_Core", function(attacker, team1, inf
 end)
 
 -- Meta Events
-local str = CoDHUD[CoDHUD_GetHUDType()].TextStrings
-
 gameevent.Listen("player_connect")
 hook.Add("player_connect", "CoDHUD_Feed_Join", function(data)
     table.insert(KillFeed, { 
@@ -100,7 +98,6 @@ hook.Add("player_disconnect", "CoDHUD_Feed_Leave", function(data)
 		dieTime = CurTime() + CFG.LIFETIME
 	})
 end)
-
 
 net.Receive("CoDHUD_PlayerAutoBalanced", function()
 	local textstr = net.ReadString()

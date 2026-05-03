@@ -135,7 +135,6 @@ hook.Add("HUDPaint", "CoDHUD_DrawChat", function()
 
             -- Determine Name Color based on Server Faction (NW2String)
             local nameCol = COL_WHITE
-			local fac = data.ply:GetNW2String("CoDHUD_Faction", "rangers")
 			
             if IsValid(data.ply) then
 				nameCol = GetFactionColor(ply)

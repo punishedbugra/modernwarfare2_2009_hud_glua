@@ -161,13 +161,15 @@ concommand.Add("codhud_setfaction", function(ply, cmd, args)
     ply:SetNW2String("CoDHUD_Faction", faction)
     
 	local textstr = "MW2_GAME_CHANGEDTO"
-	local factionName = CoDHUD.Factions[CoDHUD_GetHUDType()].name
+	local factionName = CoDHUD.Factions[CoDHUD_GetHUDType()].name or ""
 
-	net.Start("CoDHUD_PlayerAutoBalanced")
-	net.WriteString(textstr)
-	net.WriteString(ply:Nick())
-	net.WriteString(factionName)
-	net.Broadcast()
+	if factionName ~= "" then
+		net.Start("CoDHUD_PlayerAutoBalanced")
+		net.WriteString(textstr)
+		net.WriteString(ply:Nick())
+		net.WriteString(factionName)
+		net.Broadcast()
+	end
 	
     print("[CoDHUD] Player " .. ply:Nick() .. " joined team " .. CoDHUD.Factions.GetFactionName(faction))
 end)

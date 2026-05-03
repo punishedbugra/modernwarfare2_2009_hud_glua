@@ -159,3 +159,28 @@ net.Receive("CoDHUD_StartRound", function(len, ply)
 		net.WriteFloat(CoDHUD_RoundEndTimeSV or 0) -- NEW
 	net.Broadcast()
 end)
+
+hook.Add("PlayerInitialSpawn", "CoDHUD_LateJoinRoundSync", function(ply)
+    timer.Simple(1, function()
+        if not IsValid(ply) then return end
+
+        -- prevent duplicates
+        if ply.CoDHUD_HasSyncedRound then return end
+        ply.CoDHUD_HasSyncedRound = true
+
+        local gamemode = GetConVar("codhud_selected_gamemode"):GetString()
+        local matchtimer = GetConVar("codhud_matchstart_timer"):GetInt()
+        local maxtimer = GetConVar("codhud_time_limit"):GetFloat()
+
+        net.Start("CoDHUD_RoundStart")
+            net.WriteString(gamemode)
+            net.WriteInt(0, 6)
+            net.WriteInt(maxtimer, 32)
+            net.WriteFloat(CoDHUD_RoundEndTimeSV or 0)
+        net.Send(ply)
+    end)
+end)
+
+hook.Add("PlayerDisconnected", "CoDHUD_ResetLateJoinFlag", function(ply)
+    ply.CoDHUD_HasSyncedRound = nil
+end)

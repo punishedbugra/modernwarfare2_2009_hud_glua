@@ -32,7 +32,7 @@ hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
 
     for _, p in ipairs(player.GetAll()) do
         if p == ply then continue end
-        local pScore = math.max(0, p:Frags()) * 100
+        local pScore = math.max(0, p:Frags())
         if pScore > topEnemyScore then 
             topEnemyScore = pScore 
         end
@@ -52,10 +52,10 @@ hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
 
     -- 5. Music Trigger (Passing 'true' to indicate this is music)
     if not MusicTriggered then
-        if (limit - lpScore) <= 3 and lpScore > topEnemyScore and lpScore > 0 then
+        if (limit - lpScore) <= (limit * 0.75) and lpScore > 0 then
             MusicTriggered = true
             CoDHUD_PlayAnnouncerSound(voicefile.winningmusic, true)
-        elseif (limit - topEnemyScore) <= 3 and topEnemyScore > lpScore and topEnemyScore > 0 then
+        elseif (limit - topEnemyScore) <= 3 and topEnemyScore > 0 then
             MusicTriggered = true
             CoDHUD_PlayAnnouncerSound(voicefile.losingmusic, true)
         end
@@ -63,7 +63,7 @@ hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
 
     -- 6. Near End Announcer
     if not NearEndTriggered then
-        if (limit - lpScore) <= 3 and lpScore > topEnemyScore and lpScore > 0 then
+        if (limit - lpScore) <= (limit * 0.75) and lpScore > topEnemyScore and lpScore > 0 then
             NearEndTriggered = true
 			local sound = CoDHUD_GetAnnouncerSound(voicefile.winningfight)
 
@@ -96,7 +96,7 @@ hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
         elseif currentState == "losing" then
 			local sound = CoDHUD_GetAnnouncerSound(voicefile.leadlost)
 			if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
-        elseif currentState == "tied" and (lpScore > 0 or topEnemyScore > 0) then
+        elseif currentState == "tied" and lpScore > 0 and topEnemyScore > 0 then
 			local sound = CoDHUD_GetAnnouncerSound(voicefile.leadtied)
 			if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
         end
