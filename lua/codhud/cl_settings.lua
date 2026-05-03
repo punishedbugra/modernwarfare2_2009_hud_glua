@@ -65,8 +65,6 @@ end
 local function CoDHUD_OpenFactionConfirm(factionID)
     pendingFaction = factionID
 
-	print(pendingFaction)
-
     if IsValid(rs_confirm) then rs_confirm:Remove() end
 
     local fs = GetConVar("codhud_fullscreen"):GetBool()
@@ -327,27 +325,33 @@ local CoDHUD_SETTINGS = {
 				}
 			},
 			
-			{ name = "#CoDHUD.Audio", categories = {
+			{ name = "#CoDHUD.Settings", categories = {
 					{ name = "#CoDHUD.Audio.Announcer", controls = {
 							{ type = "checkbox", label = "#CoDHUD.Audio.Announcer.Enable", convar = "codhud_enable_announcer", tooltip = "#CoDHUD.Audio.Announcer.Enable.desc" },
 							{ type = "checkbox", label = "#CoDHUD.Audio.Announcer.English", convar = "codhud_enable_announcer_english", tooltip = "#CoDHUD.Audio.Announcer.English.desc" },
 						}
 					},
 					{ name = "#CoDHUD.Audio.Music", controls = {
-							{ type = "checkbox", label = "#CoDHUD.Audio.Music.Enable",				convar = "codhud_enable_music", 			tooltip = "#CoDHUD.Audio.Music.Enable.desc" },
-							{ type = "checkbox", label = "#CoDHUD.Audio.Music.Ambient",				convar = "codhud_enable_suspense", 			tooltip = "#CoDHUD.Audio.Music.Ambient.desc" },
+							{ type = "checkbox", label = "#CoDHUD.Audio.Music.Enable", convar = "codhud_enable_music", tooltip = "#CoDHUD.Audio.Music.Enable.desc" },
+							{ type = "checkbox", label = "#CoDHUD.Audio.Music.Ambient", convar = "codhud_enable_suspense", tooltip = "#CoDHUD.Audio.Music.Ambient.desc" },
+						}
+					},
+					{ name = "#CoDHUD.Challenges", controls = {
+							{ type = "button",	label = "#CoDHUD.Challenges.Reset",
+								func = function()
+									RunConsoleCommand("codhud_challenge_clear")
+								end
+							},
+							{ type = "label", label = "#CoDHUD.Challenges.Reset.desc" },
+						}
+					},
+					{ name = "#CoDHUD.Menu", controls = {
+							{ type = "checkbox",	label = "#CoDHUD.Menu.Fullscreen", convar = "codhud_fullscreen", tooltip = "CoDHUD.Menu.Fullscreen.desc" },
 						}
 					},
 				}
 			},
 
-			{ name = "#CoDHUD.MenuSettings", categories = {
-					{ name = "#CoDHUD.MenuSettings", controls = {
-							{ type = "checkbox",	label = "#CoDHUD.Menu.Fullscreen",			convar = "codhud_fullscreen",		tooltip = "CoDHUD.Menu.Fullscreen.desc" },
-						}
-					},
-				}
-			},
 		}
 	},
 
@@ -613,6 +617,14 @@ local function CreateCategory(parent, data)
 
 		local sorted = {}
 		local factions = CoDHUD.Factions[CoDHUD_GetHUDType()] or {}
+		local factionCounts = {}
+
+		for _, ply in ipairs(player.GetAll()) do
+			local fac = ply:GetNW2String("CoDHUD_Faction", "rangers")
+			if fac == "" then fac = "rangers" end
+
+			factionCounts[fac] = (factionCounts[fac] or 0) + 1
+		end
 
 		for id, factionData in pairs(factions) do
 			table.insert(sorted, {id = id, data = factionData})
@@ -625,6 +637,7 @@ local function CreateCategory(parent, data)
 		for _, entry in ipairs(sorted) do
 			local id = entry.id
 			local faction = entry.data
+			local count = factionCounts[id] or 0
 
 			local btn = vgui.Create("DImageButton")
 			btn:SetSize(64, 64)
@@ -635,22 +648,39 @@ local function CreateCategory(parent, data)
 			end
             btn:SetToolTip(language.GetPhrase(faction.name) or id:upper())
 
+			local current = LocalPlayer():GetNW2String("CoDHUD_Faction", "rangers")
+
             btn.DoClick = function()
-                CoDHUD_OpenFactionConfirm(id)
+				if id ~= current then CoDHUD_OpenFactionConfirm(id) end
                 surface.PlaySound("ui/buttonclick.wav")
             end
 
 			btn.PaintOver = function(self, w, h)
-				local current = LocalPlayer():GetNW2String("CoDHUD_Faction", "rangers")
-
+				-- Selection highlight
 				if current == id then
-					-- Outer faint border
 					surface.SetDrawColor(255, 255, 255, 60)
 					surface.DrawOutlinedRect(0, 0, w, h, 4)
 
-					-- Inner sharp border
 					surface.SetDrawColor(255, 255, 255, 255)
 					surface.DrawOutlinedRect(2, 2, w - 4, h - 4, 2)
+				end
+
+				-- ✅ Player count indicator
+				if count > 0 then
+					local txt = tostring(count)
+
+					surface.SetFont("DermaDefaultBold")
+					local tw, th = surface.GetTextSize(txt)
+
+					local pad = 6
+					local bx = w - tw - pad * 2 - 4
+					local by = 4
+
+					-- background box
+					draw.RoundedBox(4, bx, by, tw + pad * 2, th + pad, Color(0, 0, 0, 225))
+
+					-- text
+					draw.SimpleText(txt, "DermaDefaultBold", bx + (tw + pad * 2) / 2, by + (th + pad) / 2, Color(255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 				end
 			end
 

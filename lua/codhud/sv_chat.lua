@@ -1,8 +1,10 @@
----- [ SERVER CHAT ] ----
+---- [ SERVER CHAT & KILLFEED ] ----
 CoDHUD = CoDHUD or {}
 CoDHUD.Factions = CoDHUD.Factions or {}
 
 util.AddNetworkString("CoDHUD_ChatMessage")
+util.AddNetworkString("CoDHUD_PlayerChangeTeam")
+util.AddNetworkString("CoDHUD_PlayerAutoBalanced")
 
 CreateConVar("codhud_autofaction_limit", "2", { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Max number of active factions before enforcing auto-balance.")
 
@@ -120,6 +122,15 @@ cvars.AddChangeCallback("codhud_game", function(convar, oldValue, newValue)
             ply:SetNW2String("CoDHUD_Faction", randomFaction)
 
             print("[CoDHUD] " .. ply:Nick() .. " reassigned to " .. CoDHUD.Factions.GetFactionName(randomFaction))
+	
+			local textstr = "MW2_GAME_CHANGEDTO"
+			local factionName = CoDHUD.Factions[CoDHUD_GetHUDType()][randomFaction].name
+
+			net.Start("CoDHUD_PlayerAutoBalanced")
+			net.WriteString(textstr)
+			net.WriteString(ply:Nick())
+			net.WriteString(factionName)
+			net.Broadcast()
         end
     end
 end, "CoDHUD_GameChangeCallback")
@@ -149,6 +160,15 @@ concommand.Add("codhud_setfaction", function(ply, cmd, args)
     -- Update the networked string so the HUD and Scoreboard see it
     ply:SetNW2String("CoDHUD_Faction", faction)
     
+	local textstr = "MW2_GAME_CHANGEDTO"
+	local factionName = CoDHUD.Factions[CoDHUD_GetHUDType()].name
+
+	net.Start("CoDHUD_PlayerAutoBalanced")
+	net.WriteString(textstr)
+	net.WriteString(ply:Nick())
+	net.WriteString(factionName)
+	net.Broadcast()
+	
     print("[CoDHUD] Player " .. ply:Nick() .. " joined team " .. CoDHUD.Factions.GetFactionName(faction))
 end)
 
@@ -176,8 +196,17 @@ hook.Add("PlayerSpawn", "CoDHUD_Chat_PersistenceSync", function(ply)
 
     ply.CoDHUD_StoredFaction = newFaction
     ply:SetNW2String("CoDHUD_Faction", newFaction)
+	
+	local textstr = "MW2_GAME_CHANGEDTO"
+	local factionName = CoDHUD.Factions.GetFactionName(newFaction)
 
     print("[CoDHUD] " .. ply:Nick() .. " had invalid faction, reassigned to " .. CoDHUD.Factions.GetFactionName(newFaction))
+
+	net.Start("CoDHUD_PlayerAutoBalanced")
+	net.WriteString(textstr)
+	net.WriteString(ply:Nick())
+	net.WriteString(factionName)
+	net.Broadcast()
 end)
 
 -- [[ 2. CHAT INTERCEPTION ]]

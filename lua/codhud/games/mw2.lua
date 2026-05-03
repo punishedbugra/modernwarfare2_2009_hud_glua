@@ -716,8 +716,8 @@ local function killfeed( ... )
 
         -- Vertical Offset Logic: Start lower and rise up
         local yOffset = (1 - animProgress) * CoDHUD_S(ANIM_RISE)
-		-- local currentY = baseY - ((#KillFeed - i) * spacing) + yOffset
-
+		local currentY = baseY - ((#KillFeed - i) * spacing) + yOffset
+		
         local x = xPos
         local finalTxtAlpha = 155 * fadeFactor
 
@@ -741,8 +741,6 @@ local function killfeed( ... )
 
 			if not w or w <= 0 then w = ICON_BOX_W end
 			if not h or h <= 0 then h = ICON_BOX_H end
-
-			local currentY = baseY - ((#KillFeed - i) * spacing) + yOffset
 
 			local gap = CoDHUD_S(10)
 

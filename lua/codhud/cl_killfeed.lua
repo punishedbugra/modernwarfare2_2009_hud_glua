@@ -85,7 +85,7 @@ gameevent.Listen("player_connect")
 hook.Add("player_connect", "CoDHUD_Feed_Join", function(data)
     table.insert(KillFeed, { 
 		type = "meta", 
-		msg = string.format( language.GetPhrase(str.connected or "MW2_MP_CONNECTED"), data.name ), 
+		msg = string.format( language.GetPhrase(CoDHUD[CoDHUD_GetHUDType()].TextStrings.connected or "MW2_MP_CONNECTED"), data.name ), 
 		spawnTime = CurTime(), 
 		dieTime = CurTime() + CFG.LIFETIME
 	})
@@ -95,11 +95,49 @@ gameevent.Listen("player_disconnect")
 hook.Add("player_disconnect", "CoDHUD_Feed_Leave", function(data)
     table.insert(KillFeed, {
 		type = "meta",
-		msg = string.format( language.GetPhrase(str.leftgame or "MW2_EXE_LEFTGAME"), data.name ),
+		msg = string.format( language.GetPhrase(CoDHUD[CoDHUD_GetHUDType()].TextStrings.leftgame or "MW2_EXE_LEFTGAME"), data.name ),
 		spawnTime = CurTime(),
 		dieTime = CurTime() + CFG.LIFETIME
 	})
 end)
+
+
+net.Receive("CoDHUD_PlayerAutoBalanced", function()
+	local textstr = net.ReadString()
+	local plrname = net.ReadString()
+	local faction = net.ReadString()
+	
+	timer.Simple( 0.1, function()
+		table.insert(KillFeed, {
+			type = "meta",
+			msg = string.format( language.GetPhrase(textstr), plrname, language.GetPhrase(faction) ),
+			spawnTime = CurTime(),
+			dieTime = CurTime() + CFG.LIFETIME
+		})
+	end)
+end)
+
+-- timer.Create("CoDHUD_DebugKillfeedSpam", 2, 0, function()
+    -- if not GetConVar("codhud_enable_killfeed"):GetBool() then return end
+
+    -- local ct = CurTime()
+
+    -- local testMessages = {
+        -- "Player1 connected",
+        -- "Player2 left the game",
+        -- "TestUser joined",
+        -- "Bot42 disconnected",
+        -- "Debug message lol",
+        -- "Something happened"
+    -- }
+
+    -- table.insert(KillFeed, {
+        -- type = "meta",
+        -- msg = table.Random(testMessages),
+        -- spawnTime = ct,
+        -- dieTime = ct + CFG.LIFETIME
+    -- })
+-- end)
 
 -- [[ RENDERING ]]
 hook.Add("HUDPaint", "CoDHUD_Killfeed_Draw", function()
