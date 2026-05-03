@@ -1564,23 +1564,50 @@ local function scoreboard( ... )
 		draw.SimpleTextOutlined(pScore, "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_SCORE),   y + (h / 2), tCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
 
 		-- Ping Indicator
+		local ping = ply:Ping()
+
+		local barCount = 4
+		local col = Color(0, 255, 0, 255) -- default green
+
+		if ping >= 150 then
+			barCount = 1
+			col = Color(255, 60, 60, 255) -- red
+		elseif ping >= 100 then
+			barCount = 2
+			col = Color(255, 140, 0, 255) -- orange
+		elseif ping >= 50 then
+			barCount = 3
+			col = Color(180, 255, 80, 255) -- lighter green
+		else
+			barCount = 4
+			col = Color(0, 255, 0, 255) -- green
+		end
+
 		local boxSize = CoDHUD_S(CFG.PING_BOX_SIZE)
 		local pingX = barRight + CoDHUD_S(CFG.PING_X_OFF)
 		local pingY = y + (h / 2) - (boxSize / 2)
 
+		-- background box
 		surface.SetDrawColor(0, 0, 0, CFG.PING_BOX_ALPHA)
 		surface.DrawRect(pingX, pingY, boxSize, boxSize)
 
-		surface.SetDrawColor(0, 255, 0, 255)
 		local rodW = CoDHUD_S(CFG.PING_BAR_W)
 		local rodSpacing = CoDHUD_S(CFG.PING_BAR_SPACING)
 		local totalRodsWidth = (rodW * 4) + (rodSpacing * 3)
 		local startX = pingX + (boxSize / 2) - (totalRodsWidth / 2)
 
+		-- draw 4 bars, filling only barCount
 		for i = 1, 4 do
 			local bh = (boxSize - CoDHUD_S(6)) * (i / 4)
-			surface.DrawRect(startX + ((i - 1) * (rodW + rodSpacing)), pingY + (boxSize - bh - CoDHUD_S(3)), rodW, bh)
+
+			if i <= barCount then
+				surface.SetDrawColor(col.r, col.g, col.b, col.a)
+				surface.DrawRect( startX + ((i - 1) * (rodW + rodSpacing)), pingY + (boxSize - bh - CoDHUD_S(3)), rodW, bh )
+			end
+
 		end
+		
+		-- draw.SimpleTextOutlined(" - " .. ping, "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_DEATHS) + boxSize + CoDHUD_S(CFG.PING_BAR_W) + CoDHUD_S(10), y + (h / 2), Color(255,255,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, outlined and 1 or 0, Color(0, 0, 0))
 	end
 
     local scrW, scrH = ScrW(), ScrH()
