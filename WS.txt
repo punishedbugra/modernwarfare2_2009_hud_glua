@@ -2,11 +2,14 @@ A sequel, improvement and rewrite of landocalrissian's original [url=https://ste
 
 [h3] Regarding localized voicelines [/h3]
 To reduce the size of the addon, it will only contain the necessary elements, including materials, code, localization and English voicelines.
-The addon, just like the original, does support localized voicelines. You can get them here: [url=https://steamcommunity.com/workshop/filedetails/?id=1587455087]Workshop Link[/url]
+
+The addon, just like the original, does support localized voicelines.
+However, they are not included here due to file size.
+You can get them here: [url=https://steamcommunity.com/workshop/filedetails/?id=1587455087]Workshop Link[/url]
 
 [hr][/hr]
 [h1] Features [/h1]
-[h3] Brand New Features [/h3]
+[h3] New Highlighted Features [/h3]
 [list]
 	[*] Customizable HUD Types; Switch to another game's HUD and its factions
 	[*] Round End now supports Time Limits:
@@ -14,6 +17,7 @@ The addon, just like the original, does support localized voicelines. You can ge
 		[*] HUD Timers will now count down
 		[*] Will be hidden if no time limit is set
 	[/list]
+	[*] GMinimap support
 	[*] Reworked settings menu and options
 	[*] And so many major and minor additions and fixes
 [/list]
@@ -52,7 +56,7 @@ Full HUD functionality, including, but not limited to:
 		[/tr]
 	[/table]
 	*Unofficial
-	**Not in MW3
+	**Only in some Games
 [/list]
 
 [hr][/hr]
