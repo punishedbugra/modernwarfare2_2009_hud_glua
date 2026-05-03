@@ -52,10 +52,10 @@ hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
 
     -- 5. Music Trigger (Passing 'true' to indicate this is music)
     if not MusicTriggered then
-        if (limit - lpScore) <= (limit * 0.15) and lpScore > 0 then
+        if (limit - lpScore) <= (limit * 0.25) and lpScore > 0 then
             MusicTriggered = true
             CoDHUD_PlayAnnouncerSound(voicefile.winningmusic, true)
-        elseif (limit - topEnemyScore) <= (limit * 0.15) and topEnemyScore > 0 then
+        elseif (limit - topEnemyScore) <= (limit * 0.25) and topEnemyScore > 0 then
             MusicTriggered = true
             CoDHUD_PlayAnnouncerSound(voicefile.losingmusic, true)
         end
@@ -63,13 +63,13 @@ hook.Add("Think", "CoDHUD_Announcer_Score_Think", function()
 
     -- 6. Near End Announcer
     if not NearEndTriggered then
-        if (limit - lpScore) <= (limit * 0.15) and lpScore > topEnemyScore and lpScore > 0 then
+        if (limit - lpScore) <= (limit * 0.25) and lpScore > topEnemyScore and lpScore > 0 then
             NearEndTriggered = true
 			local sound = CoDHUD_GetAnnouncerSound(voicefile.winningfight)
 
 			if sound then CoDHUD_PlayAnnouncerSound(sound, false) end
 
-        elseif (limit - topEnemyScore) <= (limit * 0.15) and topEnemyScore > lpScore and topEnemyScore > 0 then
+        elseif (limit - topEnemyScore) <= (limit * 0.25) and topEnemyScore > lpScore and topEnemyScore > 0 then
             NearEndTriggered = true
 			local sound = CoDHUD_GetAnnouncerSound(voicefile.losingfight)
 			if sound then CoDHUD_PlayAnnouncerSound(sound, false) end

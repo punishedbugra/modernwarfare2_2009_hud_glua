@@ -2,6 +2,17 @@
 
 CoDHUD_ScoreboardOpened = false
 
+CoDHUD = CoDHUD or {}
+CoDHUD.Scoreboard = CoDHUD.Scoreboard or {}
+
+CoDHUD.Scoreboard.Scroll = 0
+CoDHUD.Scoreboard.ContentHeight = 0
+CoDHUD.Scoreboard.VisibleHeight = CoDHUD_S(800)
+
+hook.Add("OnScreenSizeChanged", "MW2_Scoreboard_Resize", function()
+    CoDHUD.Scoreboard.VisibleHeight = CoDHUD_S(800)
+end)
+
 hook.Add("DrawOverlay", "MW2_Scoreboard_Main", function()
     if not CoDHUD_ScoreboardOpened then return end
 	if (not GetConVar("codhud_enable_scoreboard"):GetBool()) or GetConVar("codhud_quickdisable_hud"):GetBool() then return end
@@ -26,6 +37,29 @@ end)
 hook.Add("ScoreboardHide", "MW2_Scoreboard_Close", function() 
 	if (not GetConVar("codhud_enable_scoreboard"):GetBool()) or GetConVar("codhud_quickdisable_hud"):GetBool() then return end
 	CoDHUD_ScoreboardOpened = false
+end)
+
+hook.Add("PlayerBindPress", "MW2_Scoreboard_Scroll", function(ply, bind, pressed)
+    if not CoDHUD_ScoreboardOpened then return end
+    if not pressed then return end
+
+    local sb = CoDHUD.Scoreboard
+
+    -- how much we can scroll
+    local maxScroll = math.max(0, sb.ContentHeight - sb.VisibleHeight)
+
+    if bind == "invnext" then
+        sb.Scroll = sb.Scroll + 60
+    elseif bind == "invprev" then
+        sb.Scroll = sb.Scroll - 60
+    else
+        return
+    end
+
+    -- clamp AFTER change
+    sb.Scroll = math.Clamp(sb.Scroll, 0, maxScroll)
+
+    return true
 end)
 
 hook.Add("HUDShouldDraw", "MW2_Scoreboard_HideHUD", function(name)

@@ -269,3 +269,7 @@ net.Receive("CoDHUD_RoundStart", function()
         CoDHUD_RS_Start(gamemode, timestart)
     end)
 end)
+
+net.Receive("CoDHUD_SyncFactionPool", function()
+    CoDHUD.Factions.ActivePool = net.ReadTable()
+end)

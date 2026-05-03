@@ -1564,6 +1564,11 @@ local function scoreboard( ... )
 	local MAT_GRADIENT_L = Material("vgui/gradient-l")
 	local MAT_ICON_DEAD  = Material(hudtype .. "/icons/hud_status_dead.png", "mips smooth")
 
+	local viewportTop = CoDHUD_S(175)
+	local viewportHeight = CoDHUD_S(800) -- cap scoreboard height (~65% screen)
+
+	local viewportBottom = viewportTop + viewportHeight
+
 	local function SortLogic(a, b)
 		local scoreA = math.max(0, a:Frags() * 100)
 		local scoreB = math.max(0, b:Frags() * 100)
@@ -1694,40 +1699,62 @@ local function scoreboard( ... )
     local barH = CoDHUD_S(CFG.BAR_H)
     local barX = (scrW / 2) - (barW / 2) + CoDHUD_S(CFG.BAR_X_OFF)
     local barRight = barX + barW
+	
+	CoDHUD.Scoreboard.ContentHeight = 0
 
-	local startY = CoDHUD_S(CFG.BAR_Y_OFF)
+	for _, facData in ipairs(factionList) do
+		local factionHeight = CoDHUD_S(CFG.ICON_SIZE) + (#facData.players * (barH + CoDHUD_S(CFG.ROW_GAP))) + CoDHUD_S(CFG.TEAM_GAP)
 
-	for fi, facData in ipairs(factionList) do
-		local players = facData.players
-		local facKey = facData.key
-		local fData = CoDHUD.Factions[hudtype] and CoDHUD.Factions[hudtype][facKey] or {
-			name = facKey,
-			short = facKey,
-			color = Color(120,120,120)
-		}
-
-		local sectionY = startY
-
-		-- ICON
-		local iconPath = hudtype .. "/factions/faction_128_" .. facKey .. ".png"
-		local mat = Material(iconPath, "smooth")
-
-		surface.SetMaterial(mat)
-		surface.SetDrawColor(255,255,255,255)
-		surface.DrawTexturedRect(barX + CoDHUD_S(CFG.ICON_X_OFF), sectionY + CoDHUD_S(CFG.ICON_Y_OFF), CoDHUD_S(CFG.ICON_SIZE), CoDHUD_S(CFG.ICON_SIZE))
-
-		draw.SimpleTextOutlined( language.GetPhrase(fData.short) .. " (" .. #players .. ")", "MW2_Scoreboard_Text", barX + CoDHUD_S(CFG.FAC_NAME_X), sectionY + CoDHUD_S(CFG.FAC_NAME_Y), Color(255,255,255), 0,0, outlined and 1 or 0, Color(0,0,0) )
-
-		-- rows
-		for i, ply in ipairs(players) do
-			local rowY = sectionY + (i - 1) * (barH + CoDHUD_S(CFG.ROW_GAP))
-			DrawPlayerRow(ply, lp, barX, rowY, barW, barH, barRight, fData.color)
-		end
-
-		-- push next faction down
-		local sectionHeight = CoDHUD_S(0) + (#players * (barH + CoDHUD_S(CFG.ROW_GAP)))
-		startY = startY + sectionHeight + CoDHUD_S(CFG.TEAM_GAP)
+		CoDHUD.Scoreboard.ContentHeight = CoDHUD.Scoreboard.ContentHeight + factionHeight
 	end
+
+	-- include top header space so scroll math is correct
+	CoDHUD.Scoreboard.ContentHeight = CoDHUD.Scoreboard.ContentHeight + CoDHUD_S(200)
+	
+	local sb = CoDHUD.Scoreboard
+
+	local startY = CoDHUD_S(CFG.BAR_Y_OFF) - math.floor(sb.Scroll)
+	local headerY = CoDHUD_S(CFG.BAR_Y_OFF) - CoDHUD_S(35) - CoDHUD.Scoreboard.Scroll
+	
+	render.SetScissorRect(0, viewportTop, ScrW(), viewportBottom, true)
+		-- Stats column headers
+		draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_DEATHS"), "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_DEATHS), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
+		draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_ASSISTS"), "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_ASSISTS), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
+		draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_KILLS"), "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_KILLS), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
+		draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_SCORE"), "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_SCORE), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
+		
+		for fi, facData in ipairs(factionList) do
+			local players = facData.players
+			local facKey = facData.key
+			local fData = CoDHUD.Factions[hudtype] and CoDHUD.Factions[hudtype][facKey] or {
+				name = facKey,
+				short = facKey,
+				color = Color(120,120,120)
+			}
+
+			local sectionY = startY
+
+			-- ICON
+			local iconPath = CoDHUD.Factions[hudtype][facKey].spawnIcon
+			local mat = Material(iconPath, "smooth")
+
+			surface.SetMaterial(mat)
+			surface.SetDrawColor(255,255,255,255)
+			surface.DrawTexturedRect(barX + CoDHUD_S(CFG.ICON_X_OFF), sectionY + CoDHUD_S(CFG.ICON_Y_OFF), CoDHUD_S(CFG.ICON_SIZE), CoDHUD_S(CFG.ICON_SIZE))
+
+			draw.SimpleTextOutlined( language.GetPhrase(fData.short) .. " (" .. #players .. ")", "MW2_Scoreboard_Text", barX + CoDHUD_S(CFG.FAC_NAME_X), sectionY + CoDHUD_S(CFG.FAC_NAME_Y), Color(255,255,255), 0,0, outlined and 1 or 0, Color(0,0,0) )
+
+			-- rows
+			for i, ply in ipairs(players) do
+				local rowY = sectionY + (i - 1) * (barH + CoDHUD_S(CFG.ROW_GAP))
+				DrawPlayerRow(ply, lp, barX, rowY, barW, barH, barRight, fData.color)
+			end
+
+			-- push next faction down
+			local sectionHeight = CoDHUD_S(0) + (#players * (barH + CoDHUD_S(CFG.ROW_GAP)))
+			startY = startY + sectionHeight + CoDHUD_S(CFG.TEAM_GAP)
+		end
+	render.SetScissorRect(0, 0, 0, 0, false)
 
     surface.SetDrawColor(110, 110, 110, CFG.HEADER_ALPHA)
     surface.SetMaterial(MAT_GRADIENT_L)
@@ -1743,13 +1770,6 @@ local function scoreboard( ... )
     local timeStr = string.format("%d:%02d", mins, secs)
     DrawSqueezedText(timeStr, "MW2_Scoreboard_Timer", scrW - CoDHUD_S(CFG.TIMER_X_POS), CoDHUD_S(CFG.TIMER_Y_OFF), Color(255, 255, 255, 255), CFG.SQUEEZE, CFG.SQUEEZE_ONE, 0, CFG.SQUEEZE_ONE_BEFORE, outlined and 1.5 or 0)
 
-    -- Stats column headers
-    local headerY = CoDHUD_S(CFG.BAR_Y_OFF) - CoDHUD_S(35)
-	draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_DEATHS"), "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_DEATHS), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
-	draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_ASSISTS"), "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_ASSISTS), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
-	draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_KILLS"), "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_KILLS), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
-	draw.SimpleTextOutlined( language.GetPhrase("MW2_CGAME_SB_SCORE"), "MW2_Scoreboard_Text", barRight - CoDHUD_S(CFG.OFF_SCORE), headerY, Color(255,255,255), TEXT_ALIGN_RIGHT, 0, outlined and 1 or 0, Color(0,0,0) )
-	
 	local lp = LocalPlayer()
 	local myFaction = lp:GetNW2String("CoDHUD_Faction", "rangers")
 	if myFaction == "" then myFaction = "rangers" end

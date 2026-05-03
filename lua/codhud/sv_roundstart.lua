@@ -4,6 +4,8 @@ util.AddNetworkString("CoDHUD_StartRound")
 util.AddNetworkString("CoDHUD_RoundStart")
 util.AddNetworkString("CoDHUD_SetGamemode")
 util.AddNetworkString("CoDHUD_SetAutoFaction")
+util.AddNetworkString("CoDHUD_RestrictFactionChange")
+util.AddNetworkString("CoDHUD_SyncFactionPool")
 
 MW2_Gamemode = CreateConVar("codhud_selected_gamemode", "war", {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "Which gamemode to start the round on.")
 CreateConVar( "codhud_autobalance_on_roundstart", "0", { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "If enabled, rebalances all factions at the start of each round." )
@@ -77,6 +79,21 @@ function CoDHUD.Factions.PickFromPool(counts)
     return best[math.random(#best)]
 end
 
+function CoDHUD.Factions.IsTwoFactionMode()
+    local pool = CoDHUD.Factions.ActivePool
+    return pool and #pool == 2
+end
+
+function CoDHUD.Factions.GetTwoFactionMap()
+    local pool = CoDHUD.Factions.ActivePool
+    if not pool or #pool ~= 2 then return nil end
+
+    return {
+        [pool[1]] = 1,
+        [pool[2]] = 2
+    }
+end
+
 net.Receive("CoDHUD_SetGamemode", function(len, ply)
     if not IsValid(ply) or not ply:IsAdmin() then return end
 
@@ -110,6 +127,10 @@ net.Receive("CoDHUD_StartRound", function(len, ply)
 
 	if GetConVar("codhud_autobalance_on_roundstart"):GetBool() then
 		CoDHUD.Factions.RebuildPool()
+		
+		net.Start("CoDHUD_SyncFactionPool")
+		net.WriteTable(CoDHUD.Factions.ActivePool or {})
+		net.Broadcast()
 		
 		local players = player.GetAll()
 		table.Shuffle(players)
@@ -207,4 +228,26 @@ end)
 
 hook.Add("PlayerDisconnected", "CoDHUD_ResetLateJoinFlag", function(ply)
     ply.CoDHUD_HasSyncedRound = nil
+end)
+
+hook.Add("PlayerSelectSpawn", "CoDHUD_TwoFactionSpawns", function(ply)
+    if not CoDHUD.Factions.IsTwoFactionMode() then return end
+
+    local map = CoDHUD.Factions.GetTwoFactionMap()
+    if not map then return end
+
+    local faction = ply.CoDHUD_StoredFaction
+    local teamID = map[faction]
+
+    if teamID == 1 then
+        local spawns = ents.FindByClass("info_player_counterterrorist")
+        if #spawns > 0 then
+            return table.Random(spawns)
+        end
+    elseif teamID == 2 then
+        local spawns = ents.FindByClass("info_player_terrorist")
+        if #spawns > 0 then
+            return table.Random(spawns)
+        end
+    end
 end)

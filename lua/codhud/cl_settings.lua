@@ -492,6 +492,18 @@ local CoDHUD_SETTINGS = {
 									net.SendToServer()
 								end
 							},
+							{ type = "combobox", label = "#CoDHUD.Admin.RestrictFactionChance", tooltip = "CoDHUD.Admin.RestrictFactionChance.desc", choices = {
+									{"CoDHUD.Admin.RestrictFactionChance.disable", "0"},
+									{"CoDHUD.Admin.RestrictFactionChance.freely", "1"},
+									{"CoDHUD.Admin.RestrictFactionChance.pool", "2"},
+								},
+								getCurrent = function()
+									return GetConVar("codhud_restrictfactions"):GetString()
+								end,
+								onSelect = function(_, data)
+									RunConsoleCommand("codhud_restrictfactions", data)
+								end
+							}
                         }
                     },
 					
@@ -759,13 +771,49 @@ local function CreateCategory(parent, data)
 
 			local current = LocalPlayer():GetNW2String("CoDHUD_Faction", "rangers")
 
-            btn.DoClick = function()
-				if id ~= current then CoDHUD_OpenFactionConfirm(id) end
-                surface.PlaySound("ui/buttonclick.wav")
-            end
+			btn.DoClick = function()
+				local current = LocalPlayer():GetNW2String("CoDHUD_Faction", "rangers")
+				if id == current then return end
+
+				local mode = GetConVar("codhud_restrictfactions"):GetInt()
+
+				-- 0 = blocked
+				if mode == 0 then return end
+
+				-- 2 = pool restriction
+				if mode == 2 then
+					local pool = CoDHUD.Factions.ActivePool or {}
+					if not table.HasValue(pool, id) then return end
+				end
+
+				CoDHUD_OpenFactionConfirm(id)
+				surface.PlaySound("ui/buttonclick.wav")
+			end
 
 			btn.PaintOver = function(self, w, h)
-				-- Selection highlight
+				local current = LocalPlayer():GetNW2String("CoDHUD_Faction", "rangers")
+				local mode = GetConVar("codhud_restrictfactions"):GetInt()
+
+				local blocked = false
+
+				if id ~= current then
+					if mode == 0 then
+						blocked = true
+					elseif mode == 2 then
+						local pool = CoDHUD.Factions.ActivePool or {}
+						if not table.HasValue(pool, id) then
+							blocked = true
+						end
+					end
+				end
+
+				-- Darken blocked factions
+				if blocked then
+					surface.SetDrawColor(0, 0, 0, 180)
+					surface.DrawRect(0, 0, w, h)
+				end
+
+				-- Existing selection highlight
 				if current == id then
 					surface.SetDrawColor(255, 255, 255, 60)
 					surface.DrawOutlinedRect(0, 0, w, h, 4)
@@ -774,7 +822,7 @@ local function CreateCategory(parent, data)
 					surface.DrawOutlinedRect(2, 2, w - 4, h - 4, 2)
 				end
 
-				-- ✅ Player count indicator
+				-- Player count (keep your existing code below)
 				if count > 0 then
 					local txt = tostring(count)
 

@@ -44,6 +44,11 @@ net.Receive("CoDHUD_RequestFactionChange", function(len, ply)
         return
     end
 
+	if not CoDHUD.Factions.CanPlayerChooseFaction(ply, faction) then
+		print("[CoDHUD] Blocked faction change for", ply:Nick(), "->", faction)
+		return
+	end
+
     -- store faction
 	ply.CoDHUD_StoredFaction = faction
 	ply:SetNW2String("CoDHUD_Faction", faction)

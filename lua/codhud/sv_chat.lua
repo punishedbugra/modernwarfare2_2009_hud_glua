@@ -7,6 +7,7 @@ util.AddNetworkString("CoDHUD_PlayerChangeTeam")
 util.AddNetworkString("CoDHUD_PlayerAutoBalanced")
 
 CreateConVar("codhud_autofaction_limit", "2", { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Max number of active factions before enforcing auto-balance.")
+CreateConVar("codhud_restrictfactions", "1", {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "Restrict when players can change factions: 0 = disabled, 1 = free, 2 = pool only")
 
 -- Faction Name Mapping
 CoDHUD.Factions.validfactions = {
