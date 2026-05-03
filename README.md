@@ -29,7 +29,6 @@ And so much more.
 |Russian|X|X| |
 |Swedish| |X|X|
 |Turkish| |X|X|
-|Turkish|X|X| |
 
 **LANG** - Language
 **VL** - Has Voicelines
