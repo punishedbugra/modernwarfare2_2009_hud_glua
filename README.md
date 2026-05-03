@@ -20,20 +20,17 @@ And so much more.
 |`LANG`|`VL`|`SETT`|`UNOF`|
 |---|---|---|---|
 |English|X|X| |
-|German|X|X| |
-|Spanish|X|X| |
-|French|X|X| |
-|Italian|X|X| |
-|Japanese|X|X| |
-|Polish|X|X| |
-|Russian|X|X| |
+|German|X| | |
+|Spanish|X| | |
+|French|X| | |
+|Italian|X| | |
+|Japanese|X| | |
+|Polish|X| | |
+|Russian|X| | |
 |Swedish| |X|X|
 |Turkish| |X|X|
 
-**LANG** - Language
-**VL** - Has Voicelines
-**SETT** - Has translated settings
-**UNOF** - Unofficial translation
+**LANG** - Language / **VL** - Has Voicelines / **SETT** - Has translated settings / **UNOF** - Unofficial translation
 
 ## Regarding localization pull requests
 Wanna help translate the addon? Great! Just create a fork, do your translations, and send out a pull request.
