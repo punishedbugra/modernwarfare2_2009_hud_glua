@@ -31,24 +31,3 @@ if SERVER then
 	end)
 end
 
-function CoDHUD.Factions.CanPlayerChooseFaction(ply, faction)
-    local mode = GetConVar("codhud_restrictfactions"):GetInt()
-
-    -- 0 = cannot change
-    if mode == 0 then
-        return false
-    end
-
-    -- 1 = free
-    if mode == 1 then
-        return true
-    end
-
-    -- 2 = only from pool
-    if mode == 2 then
-        local pool = CoDHUD.Factions.ActivePool or {}
-        return table.HasValue(pool, faction)
-    end
-
-    return true
-end

@@ -136,6 +136,8 @@ hook.Add("Think", "CoDHUD_Announcer_Time_Think", function()
 	if has60Callout and CoDHUD_HadAbove60 and timeLeft < 60 then
 		CoDHUD_HadAbove60 = false
 
+		timer.Remove("CoDHUD_SuspenseTimer")
+
 		local lpScore = math.max(0, LocalPlayer():Frags())
 		local topEnemyScore = 0
 
@@ -181,6 +183,8 @@ hook.Add("Think", "CoDHUD_Announcer_Time_Think", function()
 	if CoDHUD_HadAbove30 and timeLeft < 30 and not CoDHUD_LowTimeTriggered then
 		CoDHUD_LowTimeTriggered = true
 		CoDHUD_HadAbove30 = false
+
+		timer.Remove("CoDHUD_SuspenseTimer")
 
 		local sound = CoDHUD_GetAnnouncerSound(voicefile.lowtime)
 

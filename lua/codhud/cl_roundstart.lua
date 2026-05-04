@@ -100,6 +100,9 @@ local function CoDHUD_RS_Start(gamemode, timestart)
 
 	local matchtimestart = timestart
 
+	-- prevent suspense music from interfering with spawn theme
+	timer.Remove("CoDHUD_SuspenseTimer")
+
     rs_active      = true
     rs_movement_locked = true
     rs_phase       = "faction"
@@ -130,7 +133,7 @@ local function CoDHUD_RS_Start(gamemode, timestart)
 
 	timer.Simple( 0.1, function() -- Tiny delay for round restart
 		if GetConVar("codhud_enable_music"):GetBool() and fdata.spawntheme then
-			CoDHUD_PlayAnnouncerSound( "music/" .. CoDHUD_GetHUDType() .. "/" .. fdata.spawntheme, true )
+			CoDHUD_PlayAnnouncerSound( "music/" .. CoDHUD_GetHUDType() .. "/" .. fdata.spawntheme, true, nil, true )
 		end
 		
 		local sound = CoDHUD_GetAnnouncerSound({ CoDHUD.Gamemodes[CoDHUD_GetHUDType()].Callouts[gamemode] or "team_deathmtch" })

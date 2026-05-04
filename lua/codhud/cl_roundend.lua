@@ -203,7 +203,7 @@ net.Receive("CoDHUD_RoundEnd", function()
 		end
 
 		if GetConVar("codhud_enable_music"):GetBool() and theme then
-			CoDHUD_PlayAnnouncerSound( theme, true )
+			CoDHUD_PlayAnnouncerSound( theme, true, nil, true )
 		end
 	end)
 	

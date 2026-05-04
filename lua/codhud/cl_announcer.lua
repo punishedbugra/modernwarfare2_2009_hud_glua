@@ -7,6 +7,7 @@ CoDHUD_AnnouncerNextTime = CoDHUD_AnnouncerNextTime or 0
 
 -- Music check
 CoDHUD_CurrentMusic = CoDHUD_CurrentMusic or nil
+CoDHUD_MusicVolumeScale = 1
 
 local ANNOUNCER_COOLDOWN = 1 -- small gap between lines
 
@@ -35,7 +36,7 @@ end
 hook.Add("Think", "CoDHUD_AnnouncerQueue_Think", CoDHUD_ProcessAnnouncerQueue)
 
 -- Helper to play sounds with toggle checks
-function CoDHUD_PlayAnnouncerSound(path, isMusic)
+function CoDHUD_PlayAnnouncerSound(path, isMusic, volume)
     if isMusic then
         if not GetConVar("codhud_enable_music"):GetBool() then return end
 
@@ -45,12 +46,20 @@ function CoDHUD_PlayAnnouncerSound(path, isMusic)
             CoDHUD_CurrentMusic = nil
         end
 
-        sound.PlayFile("sound/" .. path, "noplay", function(chan, err)
-            if IsValid(chan) then
-                CoDHUD_CurrentMusic = chan
-                chan:Play()
-            end
-        end)
+		sound.PlayFile("sound/" .. path, "noplay", function(chan, err)
+			if IsValid(chan) then
+				CoDHUD_CurrentMusic = chan
+
+				-- apply global attenuation for ambience/music separation
+				local vol = 1
+				if isMusic then
+					vol = volume or 1 * (CoDHUD_MusicVolumeScale or 1)
+				end
+
+				chan:SetVolume(vol)
+				chan:Play()
+			end
+		end)
 
         return
     else
