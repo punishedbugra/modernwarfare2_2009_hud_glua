@@ -3,8 +3,10 @@ CoDHUD = CoDHUD or {}
 CoDHUD.Factions = CoDHUD.Factions or {}
 
 util.AddNetworkString("CoDHUD_ChatMessage")
+util.AddNetworkString("CoDHUD_KillfeedMessage")
 util.AddNetworkString("CoDHUD_PlayerChangeTeam")
 util.AddNetworkString("CoDHUD_PlayerAutoBalanced")
+util.AddNetworkString("CoDHUD_RestrictFactionsSync")
 
 CreateConVar("codhud_autofaction_limit", "2", { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Max number of active factions before enforcing auto-balance.")
 CreateConVar("codhud_restrictfactions", "1", {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "Restrict when players can change factions: 0 = disabled, 1 = free, 2 = pool only")
@@ -46,6 +48,12 @@ end
 
 cvars.AddChangeCallback("codhud_game", function(convar, oldValue, newValue)
     print("[CoDHUD] Game changed from " .. oldValue .. " to " .. newValue)
+
+	local textstr = "[SYSTEM] Game changed! (" .. oldValue .. " > " .. newValue .. ")"
+
+	net.Start("CoDHUD_KillfeedMessage")
+	net.WriteString(textstr)
+	net.Broadcast()
 
     if not CoDHUD.Factions.validfactions[newValue] then
         newValue = "mw2"
@@ -222,8 +230,8 @@ function CoDHUD.Factions.RebuildPool()
     
     CoDHUD.Factions.ActivePool = CoDHUD.Factions.BuildFactionPool(factionTable)
 
-    print("[CoDHUD] Active faction pool:")
-    PrintTable(CoDHUD.Factions.ActivePool)
+    -- print("[CoDHUD] Active faction pool:")
+    -- PrintTable(CoDHUD.Factions.ActivePool)
 end
 
 hook.Add("Initialize", "CoDHUD_InitPool", function()
@@ -404,14 +412,14 @@ local function CoDHUD_AssignFaction(ply)
 end
 
 hook.Add("PlayerInitialSpawn", "CoDHUD_AssignFactionOnJoin", function(ply)
-    timer.Simple(0.1, function()
+    timer.Simple(0.5, function()
         if not IsValid(ply) then return end
         CoDHUD_AssignFaction(ply)
     end)
 end)
 
 hook.Add("PlayerInitialSpawn", "CoDHUD_LateJoinRoundSync", function(ply)
-    timer.Simple(0.1, function()
+    timer.Simple(1, function()
         if not IsValid(ply) then return end
 
         if ply.CoDHUD_HasSyncedRound then return end
@@ -420,6 +428,17 @@ hook.Add("PlayerInitialSpawn", "CoDHUD_LateJoinRoundSync", function(ply)
         local gamemode = GetConVar("codhud_selected_gamemode"):GetString()
         local matchtimer = GetConVar("codhud_matchstart_timer"):GetInt()
         local maxtimer = GetConVar("codhud_time_limit"):GetFloat()
+
+		if IsValid(ply) then
+			ply:SetFrags(0)
+			ply:SetDeaths(0)
+
+			if ply:Alive() then
+				ply:KillSilent()
+			end
+
+			ply:Spawn()
+		end
 
         net.Start("CoDHUD_RoundStart")
             net.WriteString(gamemode)
@@ -456,41 +475,21 @@ hook.Add("PlayerSelectSpawn", "CoDHUD_TwoFactionSpawns", function(ply)
     end
 end)
 
--- hook.Add("PlayerSpawn", "CoDHUD_Chat_PersistenceSync", function(ply)
-    -- local game = GetConVar("codhud_game")
-    -- game = game and game:GetString() or "mw2"
+local function SyncRestrictFactions()
+    net.Start("CoDHUD_RestrictFactionsSync")
+    net.WriteUInt(GetConVar("codhud_restrictfactions"):GetInt(), 2)
+    net.Broadcast()
+end
 
-    -- local factionTable = CoDHUD.Factions.validfactions[game] or CoDHUD.Factions.validfactions["mw2"]
+cvars.AddChangeCallback("codhud_restrictfactions", function()
+    SyncRestrictFactions()
+end)
 
-    -- local currentFaction = ply.CoDHUD_StoredFaction or ply:GetNW2String("CoDHUD_Faction", "rangers")
-
-    -- if factionTable[currentFaction] then
-        -- ply.CoDHUD_StoredFaction = currentFaction
-        -- ply:SetNW2String("CoDHUD_Faction", currentFaction)
-        -- return
-    -- end
-
-    -- local keys = {}
-    -- for k, _ in pairs(factionTable) do
-        -- table.insert(keys, k)
-    -- end
-
-    -- local newFaction = CoDHUD.Factions.PickBestFaction(factionTable)
-
-    -- ply.CoDHUD_StoredFaction = newFaction
-    -- ply:SetNW2String("CoDHUD_Faction", newFaction)
-	
-	-- local textstr = "MW2_GAME_CHANGEDTO"
-	-- local factionName = CoDHUD.Factions.GetFactionName(newFaction)
-
-    -- print("[CoDHUD] " .. ply:Nick() .. " had invalid faction, reassigned to " .. CoDHUD.Factions.GetFactionName(newFaction))
-
-	-- net.Start("CoDHUD_PlayerAutoBalanced")
-		-- net.WriteString(textstr)
-		-- net.WriteString(ply:Nick())
-		-- net.WriteString(factionName)
-	-- net.Broadcast()
--- end)
+hook.Add("PlayerInitialSpawn", "CoDHUD_SendRestrictFactions", function(ply)
+    net.Start("CoDHUD_RestrictFactionsSync")
+    net.WriteUInt(GetConVar("codhud_restrictfactions"):GetInt(), 2)
+    net.Send(ply)
+end)
 
 -- [[ 2. CHAT INTERCEPTION ]]
 hook.Add("PlayerSay", "CoDHUD_Chat_Interceptor", function(ply, text, teamOnly)

@@ -114,6 +114,19 @@ net.Receive("CoDHUD_PlayerAutoBalanced", function()
 	end)
 end)
 
+net.Receive("CoDHUD_KillfeedMessage", function()
+	local textstr = net.ReadString()
+	
+	timer.Simple( 0.1, function()
+		table.insert(KillFeed, {
+			type = "meta",
+			msg = textstr,
+			spawnTime = CurTime(),
+			dieTime = CurTime() + CFG.LIFETIME
+		})
+	end)
+end)
+
 -- timer.Create("CoDHUD_DebugKillfeedSpam", 2, 0, function()
     -- if not GetConVar("codhud_enable_killfeed"):GetBool() then return end
 

@@ -44,6 +44,12 @@ local rs_confirm = nil
 local pendingFaction = nil
 local pendingGame = nil
 
+CoDHUD.RestrictFactions = 1
+
+net.Receive("CoDHUD_RestrictFactionsSync", function()
+    CoDHUD.RestrictFactions = net.ReadUInt(2)
+end)
+
 function CoDHUD.GetHUDList()
 	local mainHUDs = {}
 
@@ -775,7 +781,7 @@ local function CreateCategory(parent, data)
 				local current = LocalPlayer():GetNW2String("CoDHUD_Faction", "rangers")
 				if id == current then return end
 
-				local mode = GetConVar("codhud_restrictfactions"):GetInt()
+				local mode = CoDHUD.RestrictFactions
 
 				-- 0 = blocked
 				if mode == 0 then return end
@@ -792,7 +798,7 @@ local function CreateCategory(parent, data)
 
 			btn.PaintOver = function(self, w, h)
 				local current = LocalPlayer():GetNW2String("CoDHUD_Faction", "rangers")
-				local mode = GetConVar("codhud_restrictfactions"):GetInt()
+				local mode = CoDHUD.RestrictFactions
 
 				local blocked = false
 

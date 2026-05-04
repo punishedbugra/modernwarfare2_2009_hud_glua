@@ -61,6 +61,7 @@ local function RE_End()
     timer.Remove("MW2_RE_Voice")
     timer.Remove("MW2_RE_Board")
     timer.Remove("MW2_RE_Done")
+	timer.Remove("CoDHUD_SuspenseTimer")
 	_G.CoDHUD_IsRoundEnding = false
 end
 
@@ -72,7 +73,10 @@ net.Receive("CoDHUD_RoundEnd", function()
     local loserFac  = net.ReadString()
     local winnerSc  = net.ReadInt(32)
     local loserSc   = net.ReadInt(32)
-	
+
+	-- prevent suspense music from interfering with spawn theme
+	timer.Remove("CoDHUD_SuspenseTimer")
+
 	local hud = CoDHUD[CoDHUD_GetHUDType()]
 	local voicefile = hud and hud.VoiceCallouts or {}
 
